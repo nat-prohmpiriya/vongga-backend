@@ -42,9 +42,6 @@ data/
 # Redis dump file
 dump.rdb
 
-# Swagger docs (can be regenerated)
-docs/
-
 # Binary files
 bin/
 dist/

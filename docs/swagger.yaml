@@ -1,0 +1,188 @@
+basePath: /api
+definitions:
+  domain.AuthProvider:
+    enum:
+    - google
+    - apple
+    - email
+    type: string
+    x-enum-varnames:
+    - Google
+    - Apple
+    - Email
+  domain.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      firebase_uid:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      photo_url:
+        type: string
+      provider:
+        $ref: '#/definitions/domain.AuthProvider'
+      updated_at:
+        type: string
+    type: object
+  handler.ErrorResponse:
+    properties:
+      error:
+        example: error message
+        type: string
+    type: object
+  handler.LoginRequest:
+    properties:
+      firebaseToken:
+        example: firebase_id_token_here
+        type: string
+    type: object
+  handler.LoginResponse:
+    properties:
+      accessToken:
+        example: access_token_here
+        type: string
+      refreshToken:
+        example: refresh_token_here
+        type: string
+      user:
+        $ref: '#/definitions/domain.User'
+    type: object
+  handler.LogoutRequest:
+    properties:
+      refreshToken:
+        example: refresh_token_here
+        type: string
+    type: object
+  handler.RefreshTokenRequest:
+    properties:
+      refreshToken:
+        example: refresh_token_here
+        type: string
+    type: object
+  handler.TokenResponse:
+    properties:
+      accessToken:
+        example: access_token_here
+        type: string
+      refreshToken:
+        example: refresh_token_here
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: your.email@vongga.com
+    name: API Support
+  description: This is the Vongga backend server API documentation
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Vongga Backend API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login with Firebase ID token and get JWT tokens
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Login with Firebase token
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revoke refresh token
+      parameters:
+      - description: Logout request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Logout user
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Get new access token using refresh token
+      parameters:
+      - description: Refresh token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - auth
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
