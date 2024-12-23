@@ -1,15 +1,15 @@
-module github.com/vongga/vongga-backend
+module github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend
 
 go 1.21
 
 require (
 	firebase.google.com/go/v4 v4.13.0
 	github.com/gofiber/fiber/v2 v2.52.5
+	github.com/gofiber/swagger v1.1.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
-	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
-	github.com/lib/pq v1.10.9
 	github.com/redis/go-redis/v9 v9.3.1
+	github.com/swaggo/swag v1.16.3
 	go.mongodb.org/mongo-driver v1.13.1
 	google.golang.org/api v0.154.0
 )
@@ -36,7 +36,6 @@ require (
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
-	github.com/gofiber/swagger v1.1.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -54,7 +53,6 @@ require (
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
-	github.com/swaggo/swag v1.16.3 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect

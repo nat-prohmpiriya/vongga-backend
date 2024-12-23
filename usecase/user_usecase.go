@@ -1,10 +1,10 @@
 package usecase
 
 import (
-	"database/sql"
-	"errors"
+	"context"
+	"time"
 
-	"github.com/vongga/vongga-backend/domain"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 )
 
 type userUseCase struct {

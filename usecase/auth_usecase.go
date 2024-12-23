@@ -2,15 +2,14 @@ package usecase
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
-	"firebase.google.com/go/v4/auth"
+	firebase "firebase.google.com/go/v4/auth"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/redis/go-redis/v9"
-	"github.com/vongga/vongga-backend/domain"
 )
 
 type authUseCase struct {

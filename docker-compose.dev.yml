@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.dev
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - .:/app
+  #     - go-modules:/go/pkg/mod  # Cache Go modules
+  #   environment:
+  #     - SERVER_ADDRESS=:8080
+  #     - MONGO_URI=mongodb://mongo:27017
+  #     - MONGO_DB=vongga
+  #     - REDIS_URI=redis:6379
+  #     - REDIS_PASSWORD=
+  #     - JWT_SECRET=your-secret-key-dev
+  #     - REFRESH_TOKEN_SECRET=your-refresh-secret-dev
+  #   depends_on:
+  #     - mongo
+  #     - redis
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+volumes:
+  mongodb_data:
+  go-modules:

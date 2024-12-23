@@ -2,7 +2,7 @@ package handler
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/vongga/vongga-backend/domain"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 )
 
 type AuthHandler struct {

@@ -8,12 +8,12 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
-	_ "github.com/vongga/vongga-backend/docs" // swagger docs
-	"github.com/vongga/vongga-backend/config"
-	"github.com/vongga/vongga-backend/delivery/http/handler"
-	"github.com/vongga/vongga-backend/delivery/http/middleware"
-	"github.com/vongga/vongga-backend/repository"
-	"github.com/vongga/vongga-backend/usecase"
+	_ "github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/docs" // swagger docs
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/config"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/http/handler"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/http/middleware"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/repository"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/usecase"
 )
 
 // @title Vongga Backend API
@@ -81,9 +81,16 @@ func main() {
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userUseCase)
 	authHandler := handler.NewAuthHandler(authUseCase)
+	healthHandler := handler.NewHealthHandler(db, redisClient)
 
 	// Initialize Fiber app
 	app := fiber.New()
+
+	// Swagger
+	app.Get("/swagger/*", swagger.HandlerDefault)
+
+	// Health check - public endpoint
+	app.Get("/api/health", healthHandler.Health)
 
 	// Middleware
 	app.Use(logger.New())
@@ -92,9 +99,6 @@ func main() {
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		AllowMethods: "GET, POST, PUT, DELETE",
 	}))
-
-	// Swagger
-	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	// Routes
 	api := app.Group("/api")
