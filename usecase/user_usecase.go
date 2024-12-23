@@ -64,3 +64,11 @@ func (u *userUseCase) GetUserByID(id string) (*domain.User, error) {
 func (u *userUseCase) GetUserByFirebaseUID(firebaseUID string) (*domain.User, error) {
 	return u.userRepo.FindByFirebaseUID(firebaseUID)
 }
+
+func (u *userUseCase) GetUserByUsername(username string) (*domain.User, error) {
+	return u.userRepo.FindByUsername(username)
+}
+
+func (u *userUseCase) UpdateUser(user *domain.User) error {
+	return u.userRepo.Update(user)
+}

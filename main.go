@@ -130,6 +130,8 @@ func main() {
 	users := protectedApi.Group("/users")
 	users.Post("/", userHandler.CreateOrUpdateUser)
 	users.Get("/profile", userHandler.GetProfile)
+	users.Patch("/", userHandler.UpdateUser)
+	users.Get("/check-username", userHandler.CheckUsername)
 
 	// File upload route
 	protectedApi.Post("/upload", fileHandler.Upload)

@@ -2,12 +2,14 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 )
 
 type userRepository struct {
@@ -21,20 +23,31 @@ func NewUserRepository(db *mongo.Database) domain.UserRepository {
 }
 
 func (r *userRepository) Create(user *domain.User) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	now := time.Now()
-	user.CreatedAt = now
-	user.UpdatedAt = now
-
-	result, err := r.collection.InsertOne(ctx, user)
-	if err != nil {
-		return err
+	// Generate a unique username
+	baseUsername := utils.GenerateUsername(user.DisplayName, user.Email)
+	
+	// Keep trying until we find a unique username
+	username := baseUsername
+	attempt := 1
+	for {
+		existingUser, err := r.FindByUsername(username)
+		if err != nil {
+			return err
+		}
+		if existingUser == nil {
+			break
+		}
+		// If username exists, try with a different number
+		username = fmt.Sprintf("%s%d", baseUsername, attempt)
+		attempt++
 	}
+	
+	user.Username = username
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
 
-	user.ID = result.InsertedID.(primitive.ObjectID)
-	return nil
+	_, err := r.collection.InsertOne(context.Background(), user)
+	return err
 }
 
 func (r *userRepository) FindByFirebaseUID(firebaseUID string) (*domain.User, error) {
@@ -88,6 +101,18 @@ func (r *userRepository) FindByID(id string) (*domain.User, error) {
 	}
 
 	return user, nil
+}
+
+func (r *userRepository) FindByUsername(username string) (*domain.User, error) {
+	var user domain.User
+	err := r.collection.FindOne(context.Background(), bson.M{"username": username}).Decode(&user)
+	if err == mongo.ErrNoDocuments {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (r *userRepository) Update(user *domain.User) error {
