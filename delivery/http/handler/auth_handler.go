@@ -26,7 +26,7 @@ func NewAuthHandler(authUseCase domain.AuthUseCase) *AuthHandler {
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Router /auth/login [post]
-func (h *AuthHandler) Login(c *fiber.Ctx) error {
+func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
 	var req struct {
 		FirebaseToken string `json:"firebaseToken"`
 	}

@@ -8,10 +8,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
-	_ "github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/docs" // swagger docs
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/config"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/http/handler"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/http/middleware"
+	_ "github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/docs" // swagger docs
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/repository"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/usecase"
 )
@@ -107,22 +107,22 @@ func main() {
 
 	// Routes
 	api := app.Group("/api")
-	
+
 	// Public routes
 	auth := api.Group("/auth")
-	auth.Post("/login", authHandler.Login)
+	auth.Post("/verifyTokenFirebase", authHandler.VerifyTokenFirebase)
 	auth.Post("/refresh", authHandler.RefreshToken)
 	auth.Post("/logout", authHandler.Logout)
 
 	// Protected routes
 	protectedApi := app.Group("/api")
 	protectedApi.Use(middleware.JWTAuthMiddleware(cfg.JWTSecret))
-	
+
 	// User routes
 	users := protectedApi.Group("/users")
 	users.Post("/", userHandler.CreateOrUpdateUser)
 	users.Get("/profile", userHandler.GetProfile)
-	
+
 	// File upload route
 	protectedApi.Post("/upload", fileHandler.Upload)
 
