@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 )
 
 type AuthHandler struct {
@@ -27,28 +28,37 @@ func NewAuthHandler(authUseCase domain.AuthUseCase) *AuthHandler {
 // @Failure 401 {object} ErrorResponse
 // @Router /auth/login [post]
 func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
+	logger := utils.NewLogger("AuthHandler.VerifyTokenFirebase")
+	
 	var req struct {
 		FirebaseToken string `json:"firebaseToken"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
+		logger.LogInput(req)
+		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
 	}
 
-	user, tokenPair, err := h.authUseCase.Login(c.Context(), req.FirebaseToken)
+	logger.LogInput(req)
+	user, tokenPair, err := h.authUseCase.VerifyTokenFirebase(c.Context(), req.FirebaseToken)
 	if err != nil {
+		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	return c.JSON(fiber.Map{
-		"user":         user,
-		"accessToken":  tokenPair.AccessToken,
-		"refreshToken": tokenPair.RefreshToken,
-	})
+	response := LoginResponse{
+		User:         user,
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
+	}
+
+	logger.LogOutput(response, nil)
+	return c.JSON(response)
 }
 
 // RefreshToken godoc
@@ -63,27 +73,33 @@ func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
 // @Failure 401 {object} ErrorResponse
 // @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
-	var req struct {
-		RefreshToken string `json:"refreshToken"`
-	}
-
+	logger := utils.NewLogger("AuthHandler.RefreshToken")
+	
+	var req RefreshTokenRequest
 	if err := c.BodyParser(&req); err != nil {
+		logger.LogInput(req)
+		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
 	}
 
+	logger.LogInput(req)
 	tokenPair, err := h.authUseCase.RefreshToken(c.Context(), req.RefreshToken)
 	if err != nil {
+		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	return c.JSON(fiber.Map{
-		"accessToken":  tokenPair.AccessToken,
-		"refreshToken": tokenPair.RefreshToken,
-	})
+	response := TokenResponse{
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
+	}
+
+	logger.LogOutput(response, nil)
+	return c.JSON(response)
 }
 
 // Logout godoc
@@ -98,23 +114,27 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/logout [post]
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
-	var req struct {
-		RefreshToken string `json:"refreshToken"`
-	}
-
+	logger := utils.NewLogger("AuthHandler.Logout")
+	
+	var req LogoutRequest
 	if err := c.BodyParser(&req); err != nil {
+		logger.LogInput(req)
+		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
 	}
 
+	logger.LogInput(req)
 	err := h.authUseCase.RevokeRefreshToken(c.Context(), req.RefreshToken)
 	if err != nil {
+		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
+	logger.LogOutput("Logout successful", nil)
 	return c.SendStatus(fiber.StatusOK)
 }
 

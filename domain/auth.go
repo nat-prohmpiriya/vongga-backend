@@ -8,7 +8,7 @@ type TokenPair struct {
 }
 
 type AuthUseCase interface {
-	Login(ctx context.Context, firebaseToken string) (*User, *TokenPair, error)
+	VerifyTokenFirebase(ctx context.Context, firebaseToken string) (*User, *TokenPair, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error)
 	RevokeRefreshToken(ctx context.Context, refreshToken string) error
 }

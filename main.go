@@ -6,7 +6,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/config"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/http/handler"
@@ -14,6 +13,8 @@ import (
 	_ "github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/docs" // swagger docs
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/repository"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/usecase"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
+	"github.com/redis/go-redis/v9"
 )
 
 // @title Vongga Backend API
@@ -56,12 +57,19 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Initialize Redis
-	redisClient, err := config.InitRedis(cfg)
+	// Initialize Redis client
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     cfg.RedisURI,
+		Password: cfg.RedisPassword,
+		DB:       0,
+	})
+
+	// Test Redis connection
+	_, err = redisClient.Ping(context.Background()).Result()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
-	defer redisClient.Close()
+	log.Println("Connected to Redis successfully")
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
@@ -98,7 +106,7 @@ func main() {
 	app.Get("/api/health", healthHandler.Health)
 
 	// Middleware
-	app.Use(logger.New())
+	app.Use(utils.RequestLogger())
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
@@ -114,8 +122,8 @@ func main() {
 	auth.Post("/refresh", authHandler.RefreshToken)
 	auth.Post("/logout", authHandler.Logout)
 
-	// Protected routes
-	protectedApi := app.Group("/api")
+	// Protected routes (everything under /api except /auth)
+	protectedApi := api.Group("")
 	protectedApi.Use(middleware.JWTAuthMiddleware(cfg.JWTSecret))
 
 	// User routes

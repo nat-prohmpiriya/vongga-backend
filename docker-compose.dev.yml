@@ -23,17 +23,25 @@ services:
   #     - redis
 
   mongo:
-    image: mongo:latest
+    image: mongo:6.0
     ports:
       - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: vongga
     volumes:
       - mongodb_data:/data/db
 
   redis:
-    image: redis:latest
+    image: redis:7.2
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
 
 volumes:
   mongodb_data:
   go-modules:
+  redis_data:

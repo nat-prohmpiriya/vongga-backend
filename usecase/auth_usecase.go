@@ -4,14 +4,13 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-
-	// "errors"
 	"fmt"
 	"time"
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -45,25 +44,32 @@ func NewAuthUseCase(
 	}
 }
 
-func (u *authUseCase) Login(ctx context.Context, firebaseToken string) (*domain.User, *domain.TokenPair, error) {
+func (u *authUseCase) VerifyTokenFirebase(ctx context.Context, firebaseToken string) (*domain.User, *domain.TokenPair, error) {
+	logger := utils.NewLogger("AuthUseCase.VerifyTokenFirebase")
+	logger.LogInput(firebaseToken)
+
 	// Verify Firebase token
 	token, err := u.authClient.VerifyIDToken(ctx, firebaseToken)
 	if err != nil {
-		return nil, nil, err
+		logger.LogOutput(nil, fmt.Errorf("invalid firebase token: %v", err))
+		return nil, nil, fmt.Errorf("invalid firebase token: %v", err)
 	}
 
 	// Get or create user
 	user, err := u.userRepo.FindByFirebaseUID(token.UID)
 	if err != nil {
-		return nil, nil, err
+		logger.LogOutput(nil, fmt.Errorf("error finding user: %v", err))
+		return nil, nil, fmt.Errorf("error finding user: %v", err)
 	}
 
 	if user == nil {
 		// Get user info from Firebase
 		firebaseUser, err := u.authClient.GetUser(ctx, token.UID)
 		if err != nil {
-			return nil, nil, err
+			logger.LogOutput(nil, fmt.Errorf("error getting firebase user: %v", err))
+			return nil, nil, fmt.Errorf("error getting firebase user: %v", err)
 		}
+		logger.LogInput("user from firebase", firebaseUser)
 
 		// Create new user
 		user = &domain.User{
@@ -71,25 +77,38 @@ func (u *authUseCase) Login(ctx context.Context, firebaseToken string) (*domain.
 			Email:       firebaseUser.Email,
 			FirstName:   firebaseUser.DisplayName,
 			PhotoURL:    firebaseUser.PhotoURL,
-			Provider:    getProviderFromFirebase(firebaseUser.ProviderID),
+			Provider:    getProviderFromFirebase(firebaseUser.ProviderUserInfo[0].ProviderID),
 		}
 
 		err = u.userRepo.Create(user)
 		if err != nil {
-			return nil, nil, err
+			logger.LogOutput(nil, fmt.Errorf("error creating user: %v", err))
+			return nil, nil, fmt.Errorf("error creating user: %v", err)
 		}
 	}
 
 	// Generate token pair
 	tokenPair, err := u.generateTokenPair(ctx, user.ID.Hex())
 	if err != nil {
-		return nil, nil, err
+		logger.LogOutput(nil, fmt.Errorf("error generating tokens: %v", err))
+		return nil, nil, fmt.Errorf("error generating tokens: %v", err)
 	}
 
+	result := struct {
+		User      *domain.User
+		TokenPair *domain.TokenPair
+	}{
+		User:      user,
+		TokenPair: tokenPair,
+	}
+	logger.LogOutput(result, nil)
 	return user, tokenPair, nil
 }
 
 func (u *authUseCase) RefreshToken(ctx context.Context, refreshToken string) (*domain.TokenPair, error) {
+	logger := utils.NewLogger("AuthUseCase.RefreshToken")
+	logger.LogInput(refreshToken)
+
 	// Verify refresh token
 	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -99,11 +118,13 @@ func (u *authUseCase) RefreshToken(ctx context.Context, refreshToken string) (*d
 	})
 
 	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error parsing refresh token: %v", err))
 		return nil, err
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
+		logger.LogOutput(nil, fmt.Errorf("invalid refresh token"))
 		return nil, fmt.Errorf("invalid refresh token")
 	}
 
@@ -112,17 +133,29 @@ func (u *authUseCase) RefreshToken(ctx context.Context, refreshToken string) (*d
 	key := fmt.Sprintf("refresh_token:%s:%s", userID, refreshToken)
 	exists, err := u.redisClient.Exists(ctx, key).Result()
 	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error checking refresh token in Redis: %v", err))
 		return nil, err
 	}
 	if exists == 0 {
+		logger.LogOutput(nil, fmt.Errorf("refresh token has been revoked"))
 		return nil, fmt.Errorf("refresh token has been revoked")
 	}
 
 	// Generate new token pair
-	return u.generateTokenPair(ctx, userID)
+	tokenPair, err := u.generateTokenPair(ctx, userID)
+	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error generating new token pair: %v", err))
+		return nil, err
+	}
+
+	logger.LogOutput(tokenPair, nil)
+	return tokenPair, nil
 }
 
 func (u *authUseCase) RevokeRefreshToken(ctx context.Context, refreshToken string) error {
+	logger := utils.NewLogger("AuthUseCase.RevokeRefreshToken")
+	logger.LogInput(refreshToken)
+
 	// Verify refresh token
 	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -132,21 +165,33 @@ func (u *authUseCase) RevokeRefreshToken(ctx context.Context, refreshToken strin
 	})
 
 	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error parsing refresh token: %v", err))
 		return err
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
+		logger.LogOutput(nil, fmt.Errorf("invalid refresh token"))
 		return fmt.Errorf("invalid refresh token")
 	}
 
 	// Remove refresh token from Redis
 	userID := claims["user_id"].(string)
 	key := fmt.Sprintf("refresh_token:%s:%s", userID, refreshToken)
-	return u.redisClient.Del(ctx, key).Err()
+	err = u.redisClient.Del(ctx, key).Err()
+	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error revoking refresh token: %v", err))
+		return err
+	}
+
+	logger.LogOutput("Refresh token revoked successfully", nil)
+	return nil
 }
 
 func (u *authUseCase) generateTokenPair(ctx context.Context, userID string) (*domain.TokenPair, error) {
+	logger := utils.NewLogger("AuthUseCase.generateTokenPair")
+	logger.LogInput(userID)
+
 	// Generate access token
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userID,
@@ -156,6 +201,7 @@ func (u *authUseCase) generateTokenPair(ctx context.Context, userID string) (*do
 
 	accessTokenString, err := accessToken.SignedString([]byte(u.jwtSecret))
 	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error generating access token: %v", err))
 		return nil, err
 	}
 
@@ -169,6 +215,7 @@ func (u *authUseCase) generateTokenPair(ctx context.Context, userID string) (*do
 
 	refreshTokenString, err := refreshToken.SignedString([]byte(u.refreshTokenSecret))
 	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error generating refresh token: %v", err))
 		return nil, err
 	}
 
@@ -176,13 +223,16 @@ func (u *authUseCase) generateTokenPair(ctx context.Context, userID string) (*do
 	key := fmt.Sprintf("refresh_token:%s:%s", userID, refreshTokenString)
 	err = u.redisClient.Set(ctx, key, "valid", u.refreshTokenExpiry).Err()
 	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error storing refresh token in Redis: %v", err))
 		return nil, err
 	}
 
-	return &domain.TokenPair{
+	tokenPair := &domain.TokenPair{
 		AccessToken:  accessTokenString,
 		RefreshToken: refreshTokenString,
-	}, nil
+	}
+	logger.LogOutput(tokenPair, nil)
+	return tokenPair, nil
 }
 
 func generateRandomString(n int) string {
@@ -192,6 +242,8 @@ func generateRandomString(n int) string {
 }
 
 func getProviderFromFirebase(providerID string) domain.AuthProvider {
+	logger := utils.NewLogger("AuthUseCase.getProviderFromFirebase")
+	logger.LogInput(providerID)
 	switch providerID {
 	case "google.com":
 		return domain.Google
