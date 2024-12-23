@@ -1,10 +1,11 @@
 package usecase
 
 import (
-	"context"
+	// "context"
 	"time"
 
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type userUseCase struct {
@@ -21,14 +22,16 @@ func (u *userUseCase) CreateOrUpdateUser(firebaseUID, email, firstName, lastName
 	// Try to find existing user
 	user, err := u.userRepo.FindByFirebaseUID(firebaseUID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == mongo.ErrNoDocuments {
 			// Create new user
 			user = &domain.User{
 				FirebaseUID: firebaseUID,
-				Email:      email,
-				FirstName:  firstName,
-				LastName:   lastName,
-				PhotoURL:   photoURL,
+				Email:       email,
+				FirstName:   firstName,
+				LastName:    lastName,
+				PhotoURL:    photoURL,
+				CreatedAt:   time.Now(),
+				UpdatedAt:   time.Now(),
 			}
 			err = u.userRepo.Create(user)
 			if err != nil {
@@ -40,9 +43,11 @@ func (u *userUseCase) CreateOrUpdateUser(firebaseUID, email, firstName, lastName
 	}
 
 	// Update existing user
+	user.Email = email
 	user.FirstName = firstName
 	user.LastName = lastName
 	user.PhotoURL = photoURL
+	user.UpdatedAt = time.Now()
 
 	err = u.userRepo.Update(user)
 	if err != nil {
@@ -53,23 +58,9 @@ func (u *userUseCase) CreateOrUpdateUser(firebaseUID, email, firstName, lastName
 }
 
 func (u *userUseCase) GetUserByID(id string) (*domain.User, error) {
-	user, err := u.userRepo.FindByID(id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("user not found")
-		}
-		return nil, err
-	}
-	return user, nil
+	return u.userRepo.FindByID(id)
 }
 
 func (u *userUseCase) GetUserByFirebaseUID(firebaseUID string) (*domain.User, error) {
-	user, err := u.userRepo.FindByFirebaseUID(firebaseUID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("user not found")
-		}
-		return nil, err
-	}
-	return user, nil
+	return u.userRepo.FindByFirebaseUID(firebaseUID)
 }

@@ -2,11 +2,14 @@ package usecase
 
 import (
 	"context"
-	"errors"
+	"crypto/rand"
+	"encoding/base64"
+
+	// "errors"
 	"fmt"
 	"time"
 
-	firebase "firebase.google.com/go/v4/auth"
+	"firebase.google.com/go/v4/auth"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/redis/go-redis/v9"
@@ -65,10 +68,10 @@ func (u *authUseCase) Login(ctx context.Context, firebaseToken string) (*domain.
 		// Create new user
 		user = &domain.User{
 			FirebaseUID: token.UID,
-			Email:      firebaseUser.Email,
-			FirstName:  firebaseUser.DisplayName,
-			PhotoURL:   firebaseUser.PhotoURL,
-			Provider:   getProviderFromFirebase(firebaseUser.ProviderID),
+			Email:       firebaseUser.Email,
+			FirstName:   firebaseUser.DisplayName,
+			PhotoURL:    firebaseUser.PhotoURL,
+			Provider:    getProviderFromFirebase(firebaseUser.ProviderID),
 		}
 
 		err = u.userRepo.Create(user)

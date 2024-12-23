@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -96,6 +98,7 @@ func (r *userRepository) Update(user *domain.User) error {
 
 	update := bson.M{
 		"$set": bson.M{
+			"email":      user.Email,
 			"first_name": user.FirstName,
 			"last_name":  user.LastName,
 			"photo_url":  user.PhotoURL,
@@ -103,6 +106,6 @@ func (r *userRepository) Update(user *domain.User) error {
 		},
 	}
 
-	_, err := r.collection.UpdateOne(ctx, bson.M{"firebase_uid": user.FirebaseUID}, update)
+	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": user.ID}, update)
 	return err
 }
