@@ -22,6 +22,7 @@ type Config struct {
 
 	// Firebase
 	FirebaseCredentialsPath string
+	FirebaseBucketName     string
 
 	// JWT
 	JWTSecret            string
@@ -50,12 +51,13 @@ func LoadConfig() *Config {
 
 		// Firebase
 		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", "firebase-credentials.json"),
+		FirebaseBucketName:     getEnv("FIREBASE_BUCKET_NAME", "vongga-platform.appspot.com"),
 
 		// JWT
 		JWTSecret:          getEnv("JWT_SECRET", "your-secret-key"),
-		JWTExpiryHours:    1,  // 1 hour
+		JWTExpiryHours:    24,
 		RefreshTokenSecret: getEnv("REFRESH_TOKEN_SECRET", "your-refresh-secret-key"),
-		RefreshTokenExpiry: 30, // 30 days
+		RefreshTokenExpiry: 7,
 	}
 }
 

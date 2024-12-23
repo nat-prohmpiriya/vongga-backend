@@ -65,6 +65,10 @@ func main() {
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
+	fileRepo, err := repository.NewFileStorage("firebase-credentials.json", cfg.FirebaseBucketName)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize use cases
 	userUseCase := usecase.NewUserUseCase(userRepo)
@@ -82,6 +86,7 @@ func main() {
 	userHandler := handler.NewUserHandler(userUseCase)
 	authHandler := handler.NewAuthHandler(authUseCase)
 	healthHandler := handler.NewHealthHandler(db, redisClient)
+	fileHandler := handler.NewFileHandler(fileRepo)
 
 	// Initialize Fiber app
 	app := fiber.New()
@@ -110,11 +115,16 @@ func main() {
 	auth.Post("/logout", authHandler.Logout)
 
 	// Protected routes
-	api.Use(middleware.JWTAuthMiddleware(cfg.JWTSecret))
+	protectedApi := app.Group("/api")
+	protectedApi.Use(middleware.JWTAuthMiddleware(cfg.JWTSecret))
 	
-	users := api.Group("/users")
+	// User routes
+	users := protectedApi.Group("/users")
 	users.Post("/", userHandler.CreateOrUpdateUser)
 	users.Get("/profile", userHandler.GetProfile)
+	
+	// File upload route
+	protectedApi.Post("/upload", fileHandler.Upload)
 
 	// Start server
 	log.Fatal(app.Listen(cfg.ServerAddress))
