@@ -16,14 +16,15 @@ const (
 
 type User struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	FirebaseUID string             `bson:"firebase_uid" json:"firebase_uid"`
-	FirstName   string             `bson:"first_name" json:"first_name"`
-	LastName    string             `bson:"last_name" json:"last_name"`
+	CreatedAt   time.Time          `bson:"created_at" json:"createdAt"`
+	UpdatedAt   time.Time          `bson:"updated_at" json:"updatedAt"`
+	FirebaseUID string             `bson:"firebase_uid" json:"firebaseUid"`
+	DisplayName string             `bson:"display_name" json:"displayName"`
+	FirstName   string             `bson:"first_name" json:"firstName"`
+	LastName    string             `bson:"last_name" json:"lastName"`
 	Email       string             `bson:"email" json:"email"`
-	PhotoURL    string             `bson:"photo_url" json:"photo_url"`
+	PhotoURL    string             `bson:"photo_url" json:"photoUrl"`
 	Provider    AuthProvider       `bson:"provider" json:"provider"`
-	CreatedAt   time.Time          `bson:"created_at" json:"created_at"`
-	UpdatedAt   time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
 type UserRepository interface {

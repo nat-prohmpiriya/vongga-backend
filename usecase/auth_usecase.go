@@ -75,7 +75,7 @@ func (u *authUseCase) VerifyTokenFirebase(ctx context.Context, firebaseToken str
 		user = &domain.User{
 			FirebaseUID: token.UID,
 			Email:       firebaseUser.Email,
-			FirstName:   firebaseUser.DisplayName,
+			DisplayName: firebaseUser.DisplayName,
 			PhotoURL:    firebaseUser.PhotoURL,
 			Provider:    getProviderFromFirebase(firebaseUser.ProviderUserInfo[0].ProviderID),
 		}
