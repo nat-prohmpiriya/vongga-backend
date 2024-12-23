@@ -1,55 +1,149 @@
 package handler
 
 import (
+	"fmt"
+	"path/filepath"
+
 	"github.com/gofiber/fiber/v2"
 	domain "github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain/file"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 )
 
 type FileHandler struct {
 	fileRepo domain.FileRepository
 }
 
-func NewFileHandler(repo domain.FileRepository) *FileHandler {
+func NewFileHandler(fileRepo domain.FileRepository) *FileHandler {
 	return &FileHandler{
-		fileRepo: repo,
+		fileRepo: fileRepo,
 	}
 }
 
 func (h *FileHandler) Upload(c *fiber.Ctx) error {
-	// Get file from form
+	logger := utils.NewLogger("FileHandler.Upload")
+
+	// Get file from request
 	file, err := c.FormFile("file")
 	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error getting file from request: %v", err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "No file uploaded",
+			"error": "file is required",
 		})
 	}
 
-	// Open the file
-	src, err := file.Open()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Error opening file",
-		})
-	}
-	defer src.Close()
+	logger.LogInput(map[string]interface{}{
+		"filename":    file.Filename,
+		"size":       file.Size,
+		"header":     file.Header,
+		"contentType": file.Header.Get("Content-Type"),
+	})
 
-	// Create file model
-	fileModel := &domain.File{
-		FileName:    file.Filename,
-		FileSize:    file.Size,
-		ContentType: file.Header.Get("Content-Type"),
-	}
-
-	// Upload file to Firebase Storage
-	err = h.fileRepo.Upload(fileModel, src)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+	// Validate file type
+	contentType := file.Header.Get("Content-Type")
+	if !isValidFileType(contentType) {
+		err := fmt.Errorf("invalid file type: %s", contentType)
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "File uploaded successfully",
-		"file":    fileModel,
+	// Validate file size (max 10MB)
+	if file.Size > 10*1024*1024 {
+		err := fmt.Errorf("file size too large: %d bytes", file.Size)
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	// Open file
+	fileData, err := file.Open()
+	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error opening file: %v", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "error opening file",
+		})
+	}
+	defer fileData.Close()
+
+	// Create file model
+	fileModel := &domain.File{
+		FileName:    file.Filename,
+		ContentType: contentType,
+	}
+
+	// Upload file
+	err = h.fileRepo.Upload(fileModel, fileData)
+	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error uploading file: %v", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "error uploading file",
+		})
+	}
+
+	logger.LogOutput(map[string]interface{}{
+		"fileURL":  fileModel.FileURL,
+		"fileName": fileModel.FileName,
+	}, nil)
+
+	return c.JSON(fiber.Map{
+		"url":      fileModel.FileURL,
+		"fileName": fileModel.FileName,
 	})
+}
+
+func (h *FileHandler) GetURL(c *fiber.Ctx) error {
+	logger := utils.NewLogger("FileHandler.GetURL")
+	
+	fileName := c.Params("fileName")
+	if fileName == "" {
+		err := fmt.Errorf("fileName is required")
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	logger.LogInput(fileName)
+
+	url, err := h.fileRepo.GetURL(fileName)
+	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error getting file URL: %v", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "error getting file URL",
+		})
+	}
+
+	logger.LogOutput(map[string]string{
+		"url": url,
+	}, nil)
+
+	return c.JSON(fiber.Map{
+		"url": url,
+	})
+}
+
+func isValidFileType(contentType string) bool {
+	validTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
+	}
+
+	return validTypes[contentType]
+}
+
+func isValidFileExtension(filename string) bool {
+	validExtensions := map[string]bool{
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".gif":  true,
+		".webp": true,
+	}
+
+	ext := filepath.Ext(filename)
+	return validExtensions[ext]
 }

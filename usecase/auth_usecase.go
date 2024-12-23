@@ -46,7 +46,9 @@ func NewAuthUseCase(
 
 func (u *authUseCase) VerifyTokenFirebase(ctx context.Context, firebaseToken string) (*domain.User, *domain.TokenPair, error) {
 	logger := utils.NewLogger("AuthUseCase.VerifyTokenFirebase")
-	logger.LogInput(firebaseToken)
+	logger.LogInput(map[string]string{
+		"firebaseToken": firebaseToken,
+	})
 
 	// Verify Firebase token
 	token, err := u.authClient.VerifyIDToken(ctx, firebaseToken)
@@ -75,8 +77,6 @@ func (u *authUseCase) VerifyTokenFirebase(ctx context.Context, firebaseToken str
 		user = &domain.User{
 			FirebaseUID: token.UID,
 			Email:       firebaseUser.Email,
-			DisplayName: firebaseUser.DisplayName,
-			PhotoURL:    firebaseUser.PhotoURL,
 			Provider:    getProviderFromFirebase(firebaseUser.ProviderUserInfo[0].ProviderID),
 		}
 
@@ -107,7 +107,9 @@ func (u *authUseCase) VerifyTokenFirebase(ctx context.Context, firebaseToken str
 
 func (u *authUseCase) RefreshToken(ctx context.Context, refreshToken string) (*domain.TokenPair, error) {
 	logger := utils.NewLogger("AuthUseCase.RefreshToken")
-	logger.LogInput(refreshToken)
+	logger.LogInput(map[string]string{
+		"refreshToken": refreshToken,
+	})
 
 	// Verify refresh token
 	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
@@ -154,7 +156,9 @@ func (u *authUseCase) RefreshToken(ctx context.Context, refreshToken string) (*d
 
 func (u *authUseCase) RevokeRefreshToken(ctx context.Context, refreshToken string) error {
 	logger := utils.NewLogger("AuthUseCase.RevokeRefreshToken")
-	logger.LogInput(refreshToken)
+	logger.LogInput(map[string]string{
+		"refreshToken": refreshToken,
+	})
 
 	// Verify refresh token
 	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {

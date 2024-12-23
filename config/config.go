@@ -22,7 +22,7 @@ type Config struct {
 
 	// Firebase
 	FirebaseCredentialsPath string
-	FirebaseBucketName     string
+	FirebaseStorageBucket  string
 
 	// JWT
 	JWTSecret            string
@@ -51,28 +51,30 @@ func LoadConfig() *Config {
 
 		// Firebase
 		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", "firebase-credentials.json"),
-		FirebaseBucketName:     getEnv("FIREBASE_BUCKET_NAME", "vongga-platform.appspot.com"),
+		FirebaseStorageBucket:  getEnv("FIREBASE_STORAGE_BUCKET", ""),
 
 		// JWT
 		JWTSecret:          getEnv("JWT_SECRET", "your-secret-key"),
-		JWTExpiryHours:    24,
+		JWTExpiryHours:     24,
 		RefreshTokenSecret: getEnv("REFRESH_TOKEN_SECRET", "your-refresh-secret-key"),
-		RefreshTokenExpiry: 7,
+		RefreshTokenExpiry: 30,
 	}
 }
 
+// GetJWTExpiry returns JWT expiry duration
 func (c *Config) GetJWTExpiry() time.Duration {
 	return time.Duration(c.JWTExpiryHours) * time.Hour
 }
 
+// GetRefreshTokenExpiry returns refresh token expiry duration
 func (c *Config) GetRefreshTokenExpiry() time.Duration {
 	return time.Duration(c.RefreshTokenExpiry) * 24 * time.Hour
 }
 
+// getEnv gets environment variable with fallback
 func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
+	if value, exists := os.LookupEnv(key); exists {
+		return value
 	}
-	return value
+	return defaultValue
 }

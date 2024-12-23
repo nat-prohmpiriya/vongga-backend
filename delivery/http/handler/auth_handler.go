@@ -16,17 +16,7 @@ func NewAuthHandler(authUseCase domain.AuthUseCase) *AuthHandler {
 	}
 }
 
-// Login godoc
-// @Summary Login with Firebase token
-// @Description Login with Firebase ID token and get JWT tokens
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body LoginRequest true "Login request"
-// @Success 200 {object} LoginResponse
-// @Failure 400 {object} ErrorResponse
-// @Failure 401 {object} ErrorResponse
-// @Router /auth/login [post]
+// VerifyTokenFirebase verifies Firebase ID token and returns user data with JWT tokens
 func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
 	logger := utils.NewLogger("AuthHandler.VerifyTokenFirebase")
 	
@@ -61,17 +51,7 @@ func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-// RefreshToken godoc
-// @Summary Refresh access token
-// @Description Get new access token using refresh token
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body RefreshTokenRequest true "Refresh token request"
-// @Success 200 {object} TokenResponse
-// @Failure 400 {object} ErrorResponse
-// @Failure 401 {object} ErrorResponse
-// @Router /auth/refresh [post]
+// RefreshToken refreshes the access token using a refresh token
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	logger := utils.NewLogger("AuthHandler.RefreshToken")
 	
@@ -102,17 +82,7 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-// Logout godoc
-// @Summary Logout user
-// @Description Revoke refresh token
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body LogoutRequest true "Logout request"
-// @Success 200 "OK"
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /auth/logout [post]
+// Logout revokes the refresh token
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	logger := utils.NewLogger("AuthHandler.Logout")
 	
@@ -134,39 +104,34 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 		})
 	}
 
-	logger.LogOutput("Logout successful", nil)
+	logger.LogOutput("Successfully logged out", nil)
 	return c.SendStatus(fiber.StatusOK)
 }
 
-// LoginRequest represents the login request body
+// Request/Response types
 type LoginRequest struct {
 	FirebaseToken string `json:"firebaseToken" example:"firebase_id_token_here"`
 }
 
-// RefreshTokenRequest represents the refresh token request body
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refreshToken" example:"refresh_token_here"`
 }
 
-// LogoutRequest represents the logout request body
 type LogoutRequest struct {
 	RefreshToken string `json:"refreshToken" example:"refresh_token_here"`
 }
 
-// LoginResponse represents the login response
 type LoginResponse struct {
 	User         *domain.User `json:"user"`
 	AccessToken  string       `json:"accessToken" example:"access_token_here"`
 	RefreshToken string       `json:"refreshToken" example:"refresh_token_here"`
 }
 
-// TokenResponse represents the token response
 type TokenResponse struct {
 	AccessToken  string `json:"accessToken" example:"access_token_here"`
 	RefreshToken string `json:"refreshToken" example:"refresh_token_here"`
 }
 
-// ErrorResponse represents an error response
 type ErrorResponse struct {
 	Error string `json:"error" example:"error message"`
 }

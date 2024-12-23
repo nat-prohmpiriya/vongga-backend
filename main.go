@@ -73,7 +73,7 @@ func main() {
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
-	fileRepo, err := repository.NewFileStorage("firebase-credentials.json", cfg.FirebaseBucketName)
+	fileRepo, err := repository.NewFileStorage("firebase-credentials.json", cfg.FirebaseStorageBucket)
 	if err != nil {
 		log.Fatal(err)
 	}
