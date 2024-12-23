@@ -1,7 +1,169 @@
-ผมจะช่วยแปลง Data Structure เป็น Mermaid ER Diagram ครับ:
+ยังไม่ครบในคำตอบเดียวครับ ผมจะรวมทุก Entity ให้ครบในคำตอบเดียว:
 
 ```mermaid
 erDiagram
+    User {
+        ObjectID id PK
+        string username
+        string email
+        string passwordHash
+        string fullName
+        string bio
+        string avatar
+        string coverPhoto
+        string phoneNumber
+        date birthDate
+        string gender
+        boolean isVerified
+        array interests
+        GeoLocation location
+        array datingPhotos
+    }
+
+    Post {
+        ObjectID id PK
+        ObjectID userId FK
+        string content
+        array media
+        array hashtags
+        Location location
+        int likes
+        int shares
+        int comments
+        string visibility
+        array mentions
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Comment {
+        ObjectID id PK
+        ObjectID postId FK
+        ObjectID userId FK
+        string content
+        array media
+        int likes
+        array replies
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Reaction {
+        ObjectID id PK
+        ObjectID userId FK
+        ObjectID targetId FK
+        string targetType
+        string type
+        datetime createdAt
+    }
+
+    Message {
+        ObjectID id PK
+        ObjectID senderId FK
+        ObjectID receiverId FK
+        string content
+        array media
+        boolean isRead
+        datetime readAt
+        datetime createdAt
+    }
+
+    Notification {
+        ObjectID id PK
+        ObjectID userId FK
+        string type
+        string content
+        ObjectID targetId
+        string targetType
+        boolean isRead
+        datetime createdAt
+    }
+
+    BaseModel {
+        ObjectID id PK
+        datetime createdAt
+        datetime updatedAt
+        datetime deletedAt
+        boolean isActive
+        int version
+    }
+
+    Follow {
+        ObjectID id PK
+        ObjectID followerId FK
+        ObjectID followingId FK
+        datetime createdAt
+        string status
+    }
+
+    Friendship {
+        ObjectID id PK
+        ObjectID userId1 FK
+        ObjectID userId2 FK
+        string status
+        ObjectID requestedBy FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    GeoLocation {
+        string type
+        array coordinates
+        string city
+        string country
+    }
+
+    SubPost {
+        ObjectID id PK
+        ObjectID parentId FK
+        string content
+        array media
+        int likes
+        array comments
+        datetime createdAt
+        datetime updatedAt
+        int order
+    }
+
+    Media {
+        string type
+        string url
+        string thumbnailUrl
+        string description
+        int64 size
+        float duration
+    }
+
+    Location {
+        string type
+        array coordinates
+        string placeName
+        string address
+    }
+
+    Hashtag {
+        ObjectID id PK
+        string name
+        int postCount
+        array posts
+    }
+
+    UserSettings {
+        ObjectID userId FK
+        boolean privateAccount
+        boolean emailNotifications
+        boolean pushNotifications
+        string language
+        string theme
+    }
+
+    DatingPhoto {
+        string url
+        string description
+        boolean isMain
+        datetime uploadedAt
+    }
+
     User ||--o{ Post : creates
     User ||--o{ Comment : writes
     User ||--o{ Reaction : gives
@@ -10,121 +172,33 @@ erDiagram
     User ||--o{ Message : exchanges
     User ||--o{ Notification : receives
     User ||--o{ UserSettings : has
-
-    Post ||--o{ Comment : contains
-    Post ||--o{ Reaction : receives
-    Post ||--o{ SubPost : has
+    User ||--|| GeoLocation : has
+    User ||--o{ DatingPhoto : has
+    Post ||--o{ SubPost : contains
     Post ||--o{ Media : includes
-    Post }|--|| Location : has
-    Post }o--o{ Hashtag : tagged_with
-
-    Comment ||--o{ Reaction : receives
+    Post ||--|| Location : has
+    SubPost ||--o{ Media : includes
     Comment ||--o{ Media : contains
-    Comment ||--o{ Comment : replies_to
-
-    USER {
-        ObjectID id PK
-        string username
-        string email
-        string password
-        string firstName
-        string lastName
-        string avatar
-        string bio
-        datetime createdAt
-        datetime updatedAt
-        int followersCount
-        int followingCount
-        int friendsCount
-        string provider
-        boolean emailVerified
-        datetime dateOfBirth
-        string gender
-        array interestedIn
-        object location
-        string relationStatus
-        float height
-        array interests
-        string occupation
-        string education
-        array photos
-        boolean isVerified
-        string status
-        string phoneNumber
-    }
-
-    POST {
-        ObjectID id PK
-        ObjectID userId FK
-        string content
-        array media
-        map reactionCounts
-        array comments
-        array subPosts
-        datetime createdAt
-        datetime updatedAt
-        array tags
-        object location
-        string visibility
-        int shareCount
-        int viewCount
-        boolean isEdited
-        array editHistory
-    }
-
-    COMMENT {
-        ObjectID id PK
-        ObjectID userId FK
-        ObjectID postId FK
-        string content
-        array media
-        map reactionCounts
-        datetime createdAt
-        datetime updatedAt
-        ObjectID replyTo FK
-    }
-
-    REACTION {
-        ObjectID id PK
-        ObjectID postId FK
-        ObjectID commentId FK
-        ObjectID userId FK
-        string type
-        datetime createdAt
-        datetime updatedAt
-    }
-
-    MESSAGE {
-        ObjectID id PK
-        ObjectID senderId FK
-        ObjectID receiverId FK
-        string content
-        array media
-        datetime createdAt
-        datetime readAt
-    }
-
-    NOTIFICATION {
-        ObjectID id PK
-        ObjectID userId FK
-        string type
-        ObjectID actorId FK
-        ObjectID postId FK
-        string content
-        boolean isRead
-        datetime createdAt
-    }
+    Message ||--o{ Media : contains
+    Post }o--o{ Hashtag : tagged_with
 ```
 
-ผมได้แสดงความสัมพันธ์หลักๆ ระหว่าง Entity ต่างๆ:
+ตอนนี้ครบทุก Entity และความสัมพันธ์ในคำตอบเดียวแล้วครับ ประกอบด้วย:
+1. User
+2. Post
+3. Comment
+4. Reaction
+5. Message
+6. Notification
+7. BaseModel
+8. Follow
+9. Friendship
+10. GeoLocation
+11. SubPost
+12. Media
+13. Location
+14. Hashtag
+15. UserSettings
+16. DatingPhoto
 
-1. User เป็นศูนย์กลางที่เชื่อมโยงกับ Entity อื่นๆ
-2. Post มีความสัมพันธ์กับ Comment, Reaction และ Media
-3. Comment สามารถมี Reply (Self-referential)
-4. แสดง Field หลักๆ ของแต่ละ Entity
-5. ใช้สัญลักษณ์แสดงความสัมพันธ์:
-   - ||--o{ : One-to-Many
-   - }|--|| : One-to-One
-   - }o--o{ : Many-to-Many
-
-Diagram นี้จะช่วยให้เห็นภาพรวมของระบบและความสัมพันธ์ระหว่าง Entity ต่างๆ ได้ชัดเจนขึ้นครับ
+พร้อมความสัมพันธ์ระหว่าง Entity ทั้งหมดครับ
