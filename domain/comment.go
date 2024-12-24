@@ -1,21 +1,17 @@
 package domain
 
 import (
-	"time"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Comment struct {
-	ID             primitive.ObjectID   `bson:"id,omitempty" json:"id"`
-	PostID         primitive.ObjectID   `bson:"postId" json:"postId"`
-	UserID         primitive.ObjectID   `bson:"userId" json:"userId"`
-	Content        string               `bson:"content" json:"content"`
-	Media          []Media              `bson:"media,omitempty" json:"media,omitempty"`
-	ReactionCounts map[string]int       `bson:"reactionCounts" json:"reactionCounts"`
-	CreatedAt      time.Time            `bson:"createdAt" json:"createdAt"`
-	UpdatedAt      time.Time            `bson:"updatedAt" json:"updatedAt"`
-	ReplyTo        *primitive.ObjectID  `bson:"replyTo,omitempty" json:"replyTo,omitempty"`
+	BaseModel      `bson:",inline"`
+	PostID         primitive.ObjectID  `bson:"postId" json:"postId"`
+	UserID         primitive.ObjectID  `bson:"userId" json:"userId"`
+	Content        string              `bson:"content" json:"content"`
+	Media          []Media             `bson:"media,omitempty" json:"media,omitempty"`
+	ReactionCounts map[string]int      `bson:"reactionCounts" json:"reactionCounts"`
+	ReplyTo        *primitive.ObjectID `bson:"replyTo,omitempty" json:"replyTo,omitempty"`
 }
 
 // Repository interface

@@ -1,8 +1,6 @@
 package usecase
 
 import (
-	"time"
-
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -58,8 +56,6 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 		PostID:    postID,
 		CommentID: commentID,
 		Type:      reactionType,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
 	}
 
 	// Update reaction counts

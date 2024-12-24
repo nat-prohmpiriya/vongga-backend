@@ -85,6 +85,13 @@ func (u *authUseCase) VerifyTokenFirebase(ctx context.Context, firebaseToken str
 			logger.LogOutput(nil, fmt.Errorf("error creating user: %v", err))
 			return nil, nil, fmt.Errorf("error creating user: %v", err)
 		}
+
+		// Get the created user from database to get the generated ID
+		user, err = u.userRepo.FindByFirebaseUID(token.UID)
+		if err != nil {
+			logger.LogOutput(nil, fmt.Errorf("error getting created user: %v", err))
+			return nil, nil, fmt.Errorf("error getting created user: %v", err)
+		}
 	}
 
 	// Generate token pair

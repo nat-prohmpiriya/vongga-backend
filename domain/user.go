@@ -2,8 +2,6 @@ package domain
 
 import (
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AuthProvider string
@@ -13,15 +11,6 @@ const (
 	Apple  AuthProvider = "apple"
 	Email  AuthProvider = "email"
 )
-
-type BaseModel struct {
-	ID        primitive.ObjectID `bson:"id,omitempty" json:"id"`
-	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
-	UpdatedAt time.Time          `bson:"updatedAt" json:"updatedAt"`
-	DeletedAt *time.Time         `bson:"deletedAt,omitempty" json:"deletedAt,omitempty"`
-	IsActive  bool               `bson:"isActive" json:"isActive"`
-	Version   int                `bson:"version" json:"version"`
-}
 
 type GeoLocation struct {
 	Type        string    `bson:"type" json:"type"`

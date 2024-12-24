@@ -13,8 +13,13 @@
 				"header": [],
 				"url": {
 					"raw": "{{base_url}}/api/health",
-					"host": ["{{base_url}}"],
-					"path": ["api", "health"]
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"health"
+					]
 				},
 				"description": "Check the health status of the server and its services"
 			}
@@ -23,18 +28,18 @@
 			"name": "Authentication",
 			"item": [
 				{
-					"name": "Login",
+					"name": "verifyTokenFirebase",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
 									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.access_token) {",
-									"    pm.environment.set(\"access_token\", jsonData.access_token);",
+									"if (jsonData.accessToken) {",
+									"    pm.environment.set(\"access_token\", jsonData.accessToken);",
 									"}",
-									"if (jsonData.refresh_token) {",
-									"    pm.environment.set(\"refresh_token\", jsonData.refresh_token);",
+									"if (jsonData.refreshToken) {",
+									"    pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
 									"}",
 									"",
 									"pm.test(\"Status code is 200\", function () {",
@@ -42,11 +47,11 @@
 									"});",
 									"",
 									"pm.test(\"Response has access token\", function () {",
-									"    pm.expect(jsonData.access_token).to.exist;",
+									"    pm.expect(jsonData.accessToken).to.exist;",
 									"});",
 									"",
 									"pm.test(\"Response has refresh token\", function () {",
-									"    pm.expect(jsonData.refresh_token).to.exist;",
+									"    pm.expect(jsonData.refreshToken).to.exist;",
 									"});"
 								],
 								"type": "text/javascript"
@@ -63,14 +68,20 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"email\": \"user@example.com\",\n\t\"password\": \"your_password\"\n}"
+							"raw": "{\n\t\"firebaseToken\": \"your_firebase_token\"}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/auth/login",
-							"host": ["{{base_url}}"],
-							"path": ["api", "auth", "login"]
+							"raw": "{{base_url}}/api/auth/verifyTokenFirebase",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"verifyTokenFirebase"
+							]
 						},
-						"description": "Login with email and password"
+						"description": "Login with Firebase token"
 					}
 				},
 				{
@@ -81,11 +92,11 @@
 							"script": {
 								"exec": [
 									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.access_token) {",
-									"    pm.environment.set(\"access_token\", jsonData.access_token);",
+									"if (jsonData.accessToken) {",
+									"    pm.environment.set(\"accessToken\", jsonData.access_token);",
 									"}",
-									"if (jsonData.refresh_token) {",
-									"    pm.environment.set(\"refresh_token\", jsonData.refresh_token);",
+									"if (jsonData.refreshToken) {",
+									"    pm.environment.set(\"refreshToken\", jsonData.refresh_token);",
 									"}",
 									"",
 									"pm.test(\"Status code is 200\", function () {",
@@ -114,8 +125,14 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/auth/refresh",
-							"host": ["{{base_url}}"],
-							"path": ["api", "auth", "refresh"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"refresh"
+							]
 						},
 						"description": "Get a new access token using refresh token"
 					}
@@ -155,8 +172,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/auth/logout",
-							"host": ["{{base_url}}"],
-							"path": ["api", "auth", "logout"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
 						},
 						"description": "Logout and invalidate the current session"
 					}
@@ -186,8 +209,13 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/users",
-							"host": ["{{base_url}}"],
-							"path": ["api", "users"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
 						},
 						"description": "Create or update a user profile based on Firebase user data"
 					}
@@ -204,8 +232,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/users/me",
-							"host": ["{{base_url}}"],
-							"path": ["api", "users", "me"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me"
+							]
 						},
 						"description": "Get the current user's profile"
 					}
@@ -230,8 +264,13 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/users",
-							"host": ["{{base_url}}"],
-							"path": ["api", "users"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
 						},
 						"description": "Update user profile with optional fields"
 					}
@@ -248,8 +287,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/users/username/:username",
-							"host": ["{{base_url}}"],
-							"path": ["api", "users", "username", ":username"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"username",
+								":username"
+							],
 							"variable": [
 								{
 									"key": "username",
@@ -272,8 +318,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/users/check-username/:username",
-							"host": ["{{base_url}}"],
-							"path": ["api", "users", "check-username", ":username"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"check-username",
+								":username"
+							],
 							"variable": [
 								{
 									"key": "username",
@@ -305,12 +358,17 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"content\": \"This is a test post\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"test\", \"example\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\"\n}"
+							"raw": "{\n\t\"content\": \"This is a test post\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"test\", \"example\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\",\n\t\"subPosts\": [\n\t\t{\n\t\t\t\"content\": \"This is subpost 1\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost1.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 1\n\t\t},\n\t\t{\n\t\t\t\"content\": \"This is subpost 2\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost2.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 2\n\t\t}\n\t]\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/posts",
-							"host": ["{{base_url}}"],
-							"path": ["api", "posts"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"posts"
+							]
 						},
 						"description": "Create a new post"
 					}
@@ -335,8 +393,14 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/posts/:id",
-							"host": ["{{base_url}}"],
-							"path": ["api", "posts", ":id"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":id"
+							],
 							"variable": [
 								{
 									"key": "id",
@@ -359,8 +423,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/posts/:id",
-							"host": ["{{base_url}}"],
-							"path": ["api", "posts", ":id"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":id"
+							],
 							"variable": [
 								{
 									"key": "id",
@@ -383,8 +453,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/posts/:id",
-							"host": ["{{base_url}}"],
-							"path": ["api", "posts", ":id"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":id"
+							],
 							"variable": [
 								{
 									"key": "id",
@@ -407,8 +483,13 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/posts?limit=10&offset=0",
-							"host": ["{{base_url}}"],
-							"path": ["api", "posts"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"posts"
+							],
 							"query": [
 								{
 									"key": "limit",
@@ -422,6 +503,219 @@
 						},
 						"description": "List posts with pagination"
 					}
+				},
+				{
+					"name": "SubPosts",
+					"item": [
+						{
+							"name": "Create SubPost",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"content\": \"This is a subpost\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"order\": 1\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/posts/:postId/subposts",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"posts",
+										":postId",
+										"subposts"
+									],
+									"variable": [
+										{
+											"key": "postId",
+											"value": "post_id_here"
+										}
+									]
+								},
+								"description": "Create a new subpost under a post"
+							}
+						},
+						{
+							"name": "Update SubPost",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"content\": \"Updated subpost content\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/updated-image.jpg\"\n\t\t}\n\t]\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/subposts/:id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"subposts",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "subpost_id_here"
+										}
+									]
+								},
+								"description": "Update an existing subpost"
+							}
+						},
+						{
+							"name": "Delete SubPost",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/subposts/:id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"subposts",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "subpost_id_here"
+										}
+									]
+								},
+								"description": "Delete a subpost"
+							}
+						},
+						{
+							"name": "Get SubPost",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/subposts/:id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"subposts",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "subpost_id_here"
+										}
+									]
+								},
+								"description": "Get a specific subpost"
+							}
+						},
+						{
+							"name": "List SubPosts",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/posts/:postId/subposts",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"posts",
+										":postId",
+										"subposts"
+									],
+									"variable": [
+										{
+											"key": "postId",
+											"value": "post_id_here"
+										}
+									]
+								},
+								"description": "List all subposts of a post"
+							}
+						},
+						{
+							"name": "Reorder SubPosts",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"orders\": {\n\t\t\"subpost_id_1\": 1,\n\t\t\"subpost_id_2\": 2,\n\t\t\"subpost_id_3\": 3\n\t}\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/posts/:postId/subposts/reorder",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"posts",
+										":postId",
+										"subposts",
+										"reorder"
+									],
+									"variable": [
+										{
+											"key": "postId",
+											"value": "post_id_here"
+										}
+									]
+								},
+								"description": "Reorder subposts of a post"
+							}
+						}
+					]
 				}
 			]
 		},
@@ -448,8 +742,13 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/comments",
-							"host": ["{{base_url}}"],
-							"path": ["api", "comments"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"comments"
+							]
 						},
 						"description": "Create a new comment"
 					}
@@ -474,8 +773,14 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/comments/:id",
-							"host": ["{{base_url}}"],
-							"path": ["api", "comments", ":id"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"comments",
+								":id"
+							],
 							"variable": [
 								{
 									"key": "id",
@@ -498,8 +803,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/comments/:id",
-							"host": ["{{base_url}}"],
-							"path": ["api", "comments", ":id"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"comments",
+								":id"
+							],
 							"variable": [
 								{
 									"key": "id",
@@ -522,8 +833,13 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/comments?postId=post_id_here&limit=10&offset=0",
-							"host": ["{{base_url}}"],
-							"path": ["api", "comments"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"comments"
+							],
 							"query": [
 								{
 									"key": "postId",
@@ -567,8 +883,13 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/reactions",
-							"host": ["{{base_url}}"],
-							"path": ["api", "reactions"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"reactions"
+							]
 						},
 						"description": "Create or update a reaction on a post"
 					}
@@ -585,8 +906,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/reactions/:postId",
-							"host": ["{{base_url}}"],
-							"path": ["api", "reactions", ":postId"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"reactions",
+								":postId"
+							],
 							"variable": [
 								{
 									"key": "postId",
@@ -609,8 +936,13 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/reactions?postId=post_id_here&limit=10&offset=0",
-							"host": ["{{base_url}}"],
-							"path": ["api", "reactions"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"reactions"
+							],
 							"query": [
 								{
 									"key": "postId",
@@ -674,8 +1006,13 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/upload",
-							"host": ["{{base_url}}"],
-							"path": ["api", "upload"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"upload"
+							]
 						},
 						"description": "Upload a file to Firebase Storage"
 					}

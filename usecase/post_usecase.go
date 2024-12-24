@@ -20,7 +20,7 @@ func NewPostUseCase(postRepo domain.PostRepository, subPostRepo domain.SubPostRe
 	}
 }
 
-func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, media []domain.Media, tags []string, location *domain.Location, visibility string) (*domain.Post, error) {
+func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, media []domain.Media, tags []string, location *domain.Location, visibility string, subPosts []domain.SubPostInput) (*domain.Post, error) {
 	logger := utils.NewLogger("PostUseCase.CreatePost")
 	input := map[string]interface{}{
 		"userID":     userID,
@@ -29,6 +29,7 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 		"tags":       tags,
 		"location":   location,
 		"visibility": visibility,
+		"subPosts":   subPosts,
 	}
 	logger.LogInput(input)
 
@@ -41,9 +42,7 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 		Visibility:     visibility,
 		ReactionCounts: make(map[string]int),
 		CommentCount:   0,
-		SubPostCount:   0,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		SubPostCount:   len(subPosts),
 		IsEdited:       false,
 		EditHistory:    make([]domain.EditLog, 0),
 	}
@@ -52,6 +51,26 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
+	}
+
+	// Create subposts if any
+	if len(subPosts) > 0 {
+		for _, subPostInput := range subPosts {
+			subPost := &domain.SubPost{
+				ParentID:       post.ID,
+				UserID:         userID,
+				Content:        subPostInput.Content,
+				Media:          subPostInput.Media,
+				ReactionCounts: make(map[string]int),
+				CommentCount:   0,
+				Order:          subPostInput.Order,
+			}
+			err := p.subPostRepo.Create(subPost)
+			if err != nil {
+				logger.LogOutput(nil, err)
+				return nil, err
+			}
+		}
 	}
 
 	logger.LogOutput(post, nil)
@@ -78,11 +97,11 @@ func (p *postUseCase) UpdatePost(postID primitive.ObjectID, content string, medi
 
 	// Create edit log
 	editLog := domain.EditLog{
-		Content:   post.Content,
-		Media:     post.Media,
-		Tags:      post.Tags,
-		Location:  post.Location,
-		EditedAt:  time.Now(),
+		Content:  post.Content,
+		Media:    post.Media,
+		Tags:     post.Tags,
+		Location: post.Location,
+		EditedAt: time.Now(),
 	}
 	post.EditHistory = append(post.EditHistory, editLog)
 
@@ -182,10 +201,10 @@ func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, in
 	}
 
 	result := make([]domain.PostWithDetails, len(posts))
-	for i, post := range posts {
-		result[i].Post = &post
+	for i := range posts {
+		result[i].Post = &posts[i]
 		if includeSubPosts {
-			subPosts, err := p.subPostRepo.FindByParentID(post.ID, 0, 0) // Get all subposts
+			subPosts, err := p.subPostRepo.FindByParentID(posts[i].ID, 0, 0) // Get all subposts
 			if err != nil {
 				logger.LogOutput(nil, err)
 				return nil, err

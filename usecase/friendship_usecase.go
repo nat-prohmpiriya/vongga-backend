@@ -64,8 +64,6 @@ func (f *friendshipUseCase) SendFriendRequest(fromID, toID primitive.ObjectID) e
 		UserID2:     toID,
 		Status:      "pending",
 		RequestedBy: fromID,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
 	}
 
 	if err := f.friendshipRepo.Create(friendship); err != nil {
@@ -265,8 +263,6 @@ func (f *friendshipUseCase) BlockFriend(userID, blockedID primitive.ObjectID) er
 			UserID2:     blockedID,
 			Status:      "blocked",
 			RequestedBy: userID,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
 		}
 
 		if err := f.friendshipRepo.Create(friendship); err != nil {

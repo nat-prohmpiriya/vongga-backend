@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"errors"
-	"time"
 
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
@@ -55,7 +54,6 @@ func (f *followUseCase) Follow(followerID, followingID primitive.ObjectID) error
 	follow := &domain.Follow{
 		FollowerID:  followerID,
 		FollowingID: followingID,
-		CreatedAt:   time.Now(),
 		Status:      "active",
 	}
 
@@ -101,7 +99,7 @@ func (f *followUseCase) Unfollow(followerID, followingID primitive.ObjectID) err
 func (f *followUseCase) Block(userID, blockedID primitive.ObjectID) error {
 	logger := utils.NewLogger("FollowUseCase.Block")
 	input := map[string]interface{}{
-		"userID":   userID.Hex(),
+		"userID":    userID.Hex(),
 		"blockedID": blockedID.Hex(),
 	}
 	logger.LogInput(input)
@@ -132,7 +130,6 @@ func (f *followUseCase) Block(userID, blockedID primitive.ObjectID) error {
 	follow := &domain.Follow{
 		FollowerID:  blockedID,
 		FollowingID: userID,
-		CreatedAt:   time.Now(),
 		Status:      "blocked",
 	}
 
@@ -149,7 +146,7 @@ func (f *followUseCase) Block(userID, blockedID primitive.ObjectID) error {
 func (f *followUseCase) Unblock(userID, blockedID primitive.ObjectID) error {
 	logger := utils.NewLogger("FollowUseCase.Unblock")
 	input := map[string]interface{}{
-		"userID":   userID.Hex(),
+		"userID":    userID.Hex(),
 		"blockedID": blockedID.Hex(),
 	}
 	logger.LogInput(input)
@@ -184,9 +181,9 @@ func (f *followUseCase) Unblock(userID, blockedID primitive.ObjectID) error {
 func (f *followUseCase) GetFollowers(userID primitive.ObjectID, limit, offset int) ([]domain.Follow, error) {
 	logger := utils.NewLogger("FollowUseCase.GetFollowers")
 	input := map[string]interface{}{
-		"userID":  userID.Hex(),
-		"limit":   limit,
-		"offset":  offset,
+		"userID": userID.Hex(),
+		"limit":  limit,
+		"offset": offset,
 	}
 	logger.LogInput(input)
 
@@ -204,9 +201,9 @@ func (f *followUseCase) GetFollowers(userID primitive.ObjectID, limit, offset in
 func (f *followUseCase) GetFollowing(userID primitive.ObjectID, limit, offset int) ([]domain.Follow, error) {
 	logger := utils.NewLogger("FollowUseCase.GetFollowing")
 	input := map[string]interface{}{
-		"userID":  userID.Hex(),
-		"limit":   limit,
-		"offset":  offset,
+		"userID": userID.Hex(),
+		"limit":  limit,
+		"offset": offset,
 	}
 	logger.LogInput(input)
 
@@ -248,7 +245,7 @@ func (f *followUseCase) IsFollowing(followerID, followingID primitive.ObjectID) 
 func (f *followUseCase) IsBlocked(userID, blockedID primitive.ObjectID) (bool, error) {
 	logger := utils.NewLogger("FollowUseCase.IsBlocked")
 	input := map[string]interface{}{
-		"userID":   userID.Hex(),
+		"userID":    userID.Hex(),
 		"blockedID": blockedID.Hex(),
 	}
 	logger.LogInput(input)

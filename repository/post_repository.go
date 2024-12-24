@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
@@ -57,14 +58,17 @@ func (r *postRepository) Delete(id primitive.ObjectID) error {
 	logger := utils.NewLogger("PostRepository.Delete")
 	logger.LogInput(id)
 
+	now := time.Now()
 	filter := bson.M{"_id": id}
-	_, err := r.collection.DeleteOne(context.Background(), filter)
+	update := bson.M{"$set": bson.M{"deletedAt": now}}
+
+	_, err := r.collection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
 	}
 
-	logger.LogOutput("Post deleted successfully", nil)
+	logger.LogOutput("Post soft deleted successfully", nil)
 	return nil
 }
 
@@ -72,10 +76,19 @@ func (r *postRepository) FindByID(id primitive.ObjectID) (*domain.Post, error) {
 	logger := utils.NewLogger("PostRepository.FindByID")
 	logger.LogInput(id)
 
+	filter := bson.M{
+		"_id": id,
+		"deletedAt": bson.M{"$exists": false},
+	}
+
 	var post domain.Post
-	filter := bson.M{"_id": id}
 	err := r.collection.FindOne(context.Background(), filter).Decode(&post)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			notFoundErr := domain.NewNotFoundError("post", id.Hex())
+			logger.LogOutput(nil, notFoundErr)
+			return nil, notFoundErr
+		}
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
@@ -86,34 +99,31 @@ func (r *postRepository) FindByID(id primitive.ObjectID) (*domain.Post, error) {
 
 func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset int) ([]domain.Post, error) {
 	logger := utils.NewLogger("PostRepository.FindByUserID")
-	input := map[string]interface{}{
+	logger.LogInput(map[string]interface{}{
 		"userID": userID,
 		"limit":  limit,
 		"offset": offset,
-	}
-	logger.LogInput(input)
+	})
 
-	var posts []domain.Post
-	filter := bson.M{"userId": userID}
-	
-	findOptions := options.Find()
-	if limit > 0 {
-		findOptions.SetLimit(int64(limit))
-	}
-	if offset > 0 {
-		findOptions.SetSkip(int64(offset))
-	}
-	findOptions.SetSort(bson.D{{Key: "createdAt", Value: -1}})
+	opts := options.Find().
+		SetLimit(int64(limit)).
+		SetSkip(int64(offset)).
+		SetSort(bson.D{{Key: "createdAt", Value: -1}})
 
-	cursor, err := r.collection.Find(context.Background(), filter, findOptions)
+	filter := bson.M{
+		"userId": userID,
+		"deletedAt": bson.M{"$exists": false},
+	}
+
+	cursor, err := r.collection.Find(context.Background(), filter, opts)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
 	defer cursor.Close(context.Background())
 
-	err = cursor.All(context.Background(), &posts)
-	if err != nil {
+	var posts []domain.Post
+	if err = cursor.All(context.Background(), &posts); err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}

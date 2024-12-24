@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
@@ -26,6 +28,15 @@ func NewPostHandler(router fiber.Router, pu domain.PostUseCase) *PostHandler {
 }
 
 type CreatePostRequest struct {
+	Content    string          `json:"content"`
+	Media      []domain.Media  `json:"media,omitempty"`
+	Tags       []string        `json:"tags,omitempty"`
+	Location   *domain.Location `json:"location,omitempty"`
+	Visibility string          `json:"visibility"`
+	SubPosts   []domain.SubPostInput  `json:"subPosts,omitempty"`
+}
+
+type UpdatePostRequest struct {
 	Content    string           `json:"content"`
 	Media      []domain.Media   `json:"media,omitempty"`
 	Tags       []string         `json:"tags,omitempty"`
@@ -43,12 +54,24 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 			"error": err.Error(),
 		})
 	}
-	logger.LogInput(req)
 
-	// TODO: Get userID from auth context
-	userID := primitive.NewObjectID()
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
 
-	post, err := h.postUseCase.CreatePost(userID, req.Content, req.Media, req.Tags, req.Location, req.Visibility)
+	post, err := h.postUseCase.CreatePost(
+		userID,
+		req.Content,
+		req.Media,
+		req.Tags,
+		req.Location,
+		req.Visibility,
+		req.SubPosts,
+	)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -58,14 +81,6 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 
 	logger.LogOutput(post, nil)
 	return c.Status(fiber.StatusCreated).JSON(post)
-}
-
-type UpdatePostRequest struct {
-	Content    string           `json:"content"`
-	Media      []domain.Media   `json:"media,omitempty"`
-	Tags       []string         `json:"tags,omitempty"`
-	Location   *domain.Location `json:"location,omitempty"`
-	Visibility string           `json:"visibility"`
 }
 
 func (h *PostHandler) UpdatePost(c *fiber.Ctx) error {
@@ -150,6 +165,11 @@ func (h *PostHandler) GetPost(c *fiber.Ctx) error {
 	post, err := h.postUseCase.GetPost(postID, includeSubPosts)
 	if err != nil {
 		logger.LogOutput(nil, err)
+		if domain.IsNotFoundError(err) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -162,7 +182,15 @@ func (h *PostHandler) GetPost(c *fiber.Ctx) error {
 func (h *PostHandler) ListPosts(c *fiber.Ctx) error {
 	logger := utils.NewLogger("PostHandler.ListPosts")
 
-	userID, err := primitive.ObjectIDFromHex(c.Params("userId"))
+	userIDStr := c.Query("userId")
+	if userIDStr == "" {
+		logger.LogOutput(nil, fmt.Errorf("missing userId query parameter"))
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Missing user ID",
+		})
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{

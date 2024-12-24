@@ -45,8 +45,6 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 		Media:          media,
 		ReplyTo:        replyTo,
 		ReactionCounts: make(map[string]int),
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
 	}
 
 	err = c.commentRepo.Create(comment)

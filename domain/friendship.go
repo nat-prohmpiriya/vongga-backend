@@ -1,20 +1,16 @@
 package domain
 
 import (
-	"time"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Friendship represents a friendship relationship between two users
 type Friendship struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	BaseModel
 	UserID1     primitive.ObjectID `bson:"userId1" json:"userId1"`
 	UserID2     primitive.ObjectID `bson:"userId2" json:"userId2"`
-	Status      string            `bson:"status" json:"status"` // pending, accepted, blocked
+	Status      string             `bson:"status" json:"status"` // pending, accepted, blocked
 	RequestedBy primitive.ObjectID `bson:"requestedBy" json:"requestedBy"`
-	CreatedAt   time.Time         `bson:"createdAt" json:"createdAt"`
-	UpdatedAt   time.Time         `bson:"updatedAt" json:"updatedAt"`
 }
 
 // FriendshipRepository interface defines methods for friendship persistence

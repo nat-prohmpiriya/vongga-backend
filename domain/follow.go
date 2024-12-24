@@ -1,18 +1,15 @@
 package domain
 
 import (
-	"time"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Follow represents a follow relationship between users
 type Follow struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	BaseModel   `bson:",inline"`
 	FollowerID  primitive.ObjectID `bson:"followerId" json:"followerId"`
 	FollowingID primitive.ObjectID `bson:"followingId" json:"followingId"`
-	CreatedAt   time.Time         `bson:"createdAt" json:"createdAt"`
-	Status      string            `bson:"status" json:"status"` // active, blocked
+	Status      string             `bson:"status" json:"status"` // active, blocked
 }
 
 // FollowRepository interface defines methods for follow persistence

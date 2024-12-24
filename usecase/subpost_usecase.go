@@ -45,8 +45,6 @@ func (s *subPostUseCase) CreateSubPost(parentID, userID primitive.ObjectID, cont
 		Media:          media,
 		ReactionCounts: make(map[string]int),
 		CommentCount:   0,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
 		Order:          order,
 	}
 

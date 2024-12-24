@@ -7,35 +7,31 @@ import (
 )
 
 type Post struct {
-	ID             primitive.ObjectID   `bson:"id,omitempty" json:"id"`
-	UserID         primitive.ObjectID   `bson:"userId" json:"userId"`
-	Content        string               `bson:"content" json:"content"`
-	Media          []Media              `bson:"media" json:"media"`
-	ReactionCounts map[string]int       `bson:"reactionCounts" json:"reactionCounts"`
-	CommentCount   int                  `bson:"commentCount" json:"commentCount"`
-	SubPostCount   int                  `bson:"subPostCount" json:"subPostCount"`
-	CreatedAt      time.Time            `bson:"createdAt" json:"createdAt"`
-	UpdatedAt      time.Time            `bson:"updatedAt" json:"updatedAt"`
-	Tags           []string             `bson:"tags" json:"tags"`
-	Location       *Location            `bson:"location,omitempty" json:"location,omitempty"`
-	Visibility     string               `bson:"visibility" json:"visibility"`
-	ShareCount     int                  `bson:"shareCount" json:"shareCount"`
-	ViewCount      int                  `bson:"viewCount" json:"viewCount"`
-	IsEdited       bool                 `bson:"isEdited" json:"isEdited"`
-	EditHistory    []EditLog            `bson:"editHistory" json:"editHistory"`
+	BaseModel
+	UserID         primitive.ObjectID `bson:"userId" json:"userId"`
+	Content        string             `bson:"content" json:"content"`
+	Media          []Media            `bson:"media" json:"media"`
+	ReactionCounts map[string]int     `bson:"reactionCounts" json:"reactionCounts"`
+	CommentCount   int                `bson:"commentCount" json:"commentCount"`
+	SubPostCount   int                `bson:"subPostCount" json:"subPostCount"`
+	Tags           []string           `bson:"tags" json:"tags"`
+	Location       *Location          `bson:"location,omitempty" json:"location,omitempty"`
+	Visibility     string             `bson:"visibility" json:"visibility"`
+	ShareCount     int                `bson:"shareCount" json:"shareCount"`
+	ViewCount      int                `bson:"viewCount" json:"viewCount"`
+	IsEdited       bool               `bson:"isEdited" json:"isEdited"`
+	EditHistory    []EditLog          `bson:"editHistory" json:"editHistory"`
 }
 
 type SubPost struct {
-	ID             primitive.ObjectID   `bson:"id,omitempty" json:"id"`
-	ParentID       primitive.ObjectID   `bson:"parentId" json:"parentId"`
-	UserID         primitive.ObjectID   `bson:"userId" json:"userId"`
-	Content        string               `bson:"content" json:"content"`
-	Media          []Media              `bson:"media" json:"media"`
-	ReactionCounts map[string]int       `bson:"reactionCounts" json:"reactionCounts"`
-	CommentCount   int                  `bson:"commentCount" json:"commentCount"`
-	CreatedAt      time.Time            `bson:"createdAt" json:"createdAt"`
-	UpdatedAt      time.Time            `bson:"updatedAt" json:"updatedAt"`
-	Order          int                  `bson:"order" json:"order"`
+	BaseModel
+	ParentID       primitive.ObjectID `bson:"parentId" json:"parentId"`
+	UserID         primitive.ObjectID `bson:"userId" json:"userId"`
+	Content        string             `bson:"content" json:"content"`
+	Media          []Media            `bson:"media" json:"media"`
+	ReactionCounts map[string]int     `bson:"reactionCounts" json:"reactionCounts"`
+	CommentCount   int                `bson:"commentCount" json:"commentCount"`
+	Order          int                `bson:"order" json:"order"`
 }
 
 type Media struct {
@@ -55,11 +51,17 @@ type Location struct {
 }
 
 type EditLog struct {
-	Content   string    `bson:"content" json:"content"`
-	Media     []Media   `bson:"media" json:"media"`
-	Tags      []string  `bson:"tags" json:"tags"`
-	Location  *Location `bson:"location,omitempty" json:"location,omitempty"`
-	EditedAt  time.Time `bson:"editedAt" json:"editedAt"`
+	Content  string    `bson:"content" json:"content"`
+	Media    []Media   `bson:"media" json:"media"`
+	Tags     []string  `bson:"tags" json:"tags"`
+	Location *Location `bson:"location,omitempty" json:"location,omitempty"`
+	EditedAt time.Time `bson:"editedAt" json:"editedAt"`
+}
+
+type SubPostInput struct {
+	Content string  `json:"content"`
+	Media   []Media `json:"media,omitempty"`
+	Order   int     `json:"order"`
 }
 
 // Repository interface
@@ -82,7 +84,7 @@ type SubPostRepository interface {
 
 // UseCase interface
 type PostUseCase interface {
-	CreatePost(userID primitive.ObjectID, content string, media []Media, tags []string, location *Location, visibility string) (*Post, error)
+	CreatePost(userID primitive.ObjectID, content string, media []Media, tags []string, location *Location, visibility string, subPosts []SubPostInput) (*Post, error)
 	UpdatePost(postID primitive.ObjectID, content string, media []Media, tags []string, location *Location, visibility string) (*Post, error)
 	DeletePost(postID primitive.ObjectID) error
 	GetPost(postID primitive.ObjectID, includeSubPosts bool) (*PostWithDetails, error)
@@ -100,6 +102,6 @@ type SubPostUseCase interface {
 
 // PostWithDetails includes Post and its related data
 type PostWithDetails struct {
-	Post     *Post     `json:"post"`
+	*Post
 	SubPosts []SubPost `json:"subPosts,omitempty"`
 }

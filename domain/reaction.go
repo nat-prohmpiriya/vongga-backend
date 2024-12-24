@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"time"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -14,13 +12,11 @@ type CreateReactionRequest struct {
 }
 
 type Reaction struct {
-	ID        primitive.ObjectID  `bson:"id,omitempty" json:"id"`
+	BaseModel
 	PostID    primitive.ObjectID  `bson:"postId" json:"postId"`
 	CommentID *primitive.ObjectID `bson:"commentId,omitempty" json:"commentId,omitempty"`
 	UserID    primitive.ObjectID  `bson:"userId" json:"userId"`
-	Type      string             `bson:"type" json:"type"`
-	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
-	UpdatedAt time.Time          `bson:"updatedAt" json:"updatedAt"`
+	Type      string              `bson:"type" json:"type"`
 }
 
 // Repository interface
