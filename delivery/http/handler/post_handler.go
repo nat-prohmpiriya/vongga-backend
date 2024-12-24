@@ -11,24 +11,26 @@ type PostHandler struct {
 	postUseCase domain.PostUseCase
 }
 
-func NewPostHandler(router fiber.Router, pu domain.PostUseCase) {
+func NewPostHandler(router fiber.Router, pu domain.PostUseCase) *PostHandler {
 	handler := &PostHandler{
 		postUseCase: pu,
 	}
 
-	router.Post("/posts", handler.CreatePost)
-	router.Put("/posts/:id", handler.UpdatePost)
-	router.Delete("/posts/:id", handler.DeletePost)
-	router.Get("/posts/:id", handler.GetPost)
-	router.Get("/users/:userId/posts", handler.ListPosts)
+	router.Post("/", handler.CreatePost)
+	router.Get("/", handler.ListPosts)
+	router.Get("/:id", handler.GetPost)
+	router.Put("/:id", handler.UpdatePost)
+	router.Delete("/:id", handler.DeletePost)
+
+	return handler
 }
 
 type CreatePostRequest struct {
-	Content    string          `json:"content"`
-	Media      []domain.Media  `json:"media,omitempty"`
-	Tags       []string        `json:"tags,omitempty"`
+	Content    string           `json:"content"`
+	Media      []domain.Media   `json:"media,omitempty"`
+	Tags       []string         `json:"tags,omitempty"`
 	Location   *domain.Location `json:"location,omitempty"`
-	Visibility string          `json:"visibility"`
+	Visibility string           `json:"visibility"`
 }
 
 func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
@@ -59,11 +61,11 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 }
 
 type UpdatePostRequest struct {
-	Content    string          `json:"content"`
-	Media      []domain.Media  `json:"media,omitempty"`
-	Tags       []string        `json:"tags,omitempty"`
+	Content    string           `json:"content"`
+	Media      []domain.Media   `json:"media,omitempty"`
+	Tags       []string         `json:"tags,omitempty"`
 	Location   *domain.Location `json:"location,omitempty"`
-	Visibility string          `json:"visibility"`
+	Visibility string           `json:"visibility"`
 }
 
 func (h *PostHandler) UpdatePost(c *fiber.Ctx) error {

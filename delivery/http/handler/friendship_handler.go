@@ -1,317 +1,141 @@
 package handler
 
 import (
-	"net/http"
-	"strconv"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type friendshipHandler struct {
+type FriendshipHandler struct {
 	friendshipUseCase domain.FriendshipUseCase
 }
 
-// NewFriendshipHandler creates a new instance of FriendshipHandler
-func NewFriendshipHandler(fu domain.FriendshipUseCase) *friendshipHandler {
-	return &friendshipHandler{
+func NewFriendshipHandler(router fiber.Router, fu domain.FriendshipUseCase) *FriendshipHandler {
+	handler := &FriendshipHandler{
 		friendshipUseCase: fu,
 	}
+
+	router.Post("/request/:userId", handler.SendFriendRequest)
+	router.Post("/accept/:userId", handler.AcceptFriendRequest)
+	router.Post("/reject/:userId", handler.RejectFriendRequest)
+	router.Delete("/:userId", handler.RemoveFriend)
+	router.Get("/", handler.ListFriends)
+	router.Get("/requests", handler.ListFriendRequests)
+
+	return handler
 }
 
-// SendFriendRequest handles sending a friend request
-func (h *friendshipHandler) SendFriendRequest(c *fiber.Ctx) error {
+func (h *FriendshipHandler) SendFriendRequest(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.SendFriendRequest")
 
-	userID := c.Locals("userID").(string)
-	friendID := c.Params("id")
-
-	logger.LogInput(map[string]interface{}{
-		"userID":  userID,
-		"friendID": friendID,
-	})
-
-	userObjID, err := primitive.ObjectIDFromHex(userID)
+	userID := c.Locals("userId").(primitive.ObjectID)
+	targetID, err := primitive.ObjectIDFromHex(c.Params("userId"))
 	if err != nil {
 		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
+		return utils.SendError(c, fiber.StatusBadRequest, "Invalid user ID")
 	}
 
-	friendObjID, err := primitive.ObjectIDFromHex(friendID)
-	if err != nil {
+	logger.LogInput(userID, targetID)
+	if err := h.friendshipUseCase.SendFriendRequest(userID, targetID); err != nil {
 		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid friend ID",
-		})
-	}
-
-	err = h.friendshipUseCase.SendFriendRequest(userObjID, friendObjID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return utils.HandleError(c, err)
 	}
 
 	logger.LogOutput("Friend request sent successfully", nil)
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "Friend request sent successfully",
-	})
+	return utils.SendSuccess(c, "Friend request sent successfully")
 }
 
-// AcceptFriendRequest handles accepting a friend request
-func (h *friendshipHandler) AcceptFriendRequest(c *fiber.Ctx) error {
+func (h *FriendshipHandler) AcceptFriendRequest(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.AcceptFriendRequest")
 
-	userID := c.Locals("userID").(string)
-	friendID := c.Params("id")
-
-	logger.LogInput(map[string]interface{}{
-		"userID":  userID,
-		"friendID": friendID,
-	})
-
-	userObjID, err := primitive.ObjectIDFromHex(userID)
+	userID := c.Locals("userId").(primitive.ObjectID)
+	targetID, err := primitive.ObjectIDFromHex(c.Params("userId"))
 	if err != nil {
 		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
+		return utils.SendError(c, fiber.StatusBadRequest, "Invalid user ID")
 	}
 
-	friendObjID, err := primitive.ObjectIDFromHex(friendID)
-	if err != nil {
+	logger.LogInput(userID, targetID)
+	if err := h.friendshipUseCase.AcceptFriendRequest(userID, targetID); err != nil {
 		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid friend ID",
-		})
+		return utils.HandleError(c, err)
 	}
 
-	err = h.friendshipUseCase.AcceptFriendRequest(userObjID, friendObjID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	logger.LogOutput("Friend request accepted", nil)
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "Friend request accepted",
-	})
+	logger.LogOutput("Friend request accepted successfully", nil)
+	return utils.SendSuccess(c, "Friend request accepted successfully")
 }
 
-// RejectFriendRequest handles rejecting a friend request
-func (h *friendshipHandler) RejectFriendRequest(c *fiber.Ctx) error {
+func (h *FriendshipHandler) RejectFriendRequest(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.RejectFriendRequest")
 
-	userID := c.Locals("userID").(string)
-	friendID := c.Params("id")
-
-	logger.LogInput(map[string]interface{}{
-		"userID":  userID,
-		"friendID": friendID,
-	})
-
-	userObjID, err := primitive.ObjectIDFromHex(userID)
+	userID := c.Locals("userId").(primitive.ObjectID)
+	targetID, err := primitive.ObjectIDFromHex(c.Params("userId"))
 	if err != nil {
 		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
+		return utils.SendError(c, fiber.StatusBadRequest, "Invalid user ID")
 	}
 
-	friendObjID, err := primitive.ObjectIDFromHex(friendID)
-	if err != nil {
+	logger.LogInput(userID, targetID)
+	if err := h.friendshipUseCase.RejectFriendRequest(userID, targetID); err != nil {
 		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid friend ID",
-		})
+		return utils.HandleError(c, err)
 	}
 
-	err = h.friendshipUseCase.RejectFriendRequest(userObjID, friendObjID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	logger.LogOutput("Friend request rejected", nil)
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "Friend request rejected",
-	})
+	logger.LogOutput("Friend request rejected successfully", nil)
+	return utils.SendSuccess(c, "Friend request rejected successfully")
 }
 
-// CancelFriendRequest handles canceling a sent friend request
-func (h *friendshipHandler) CancelFriendRequest(c *fiber.Ctx) error {
-	logger := utils.NewLogger("FriendshipHandler.CancelFriendRequest")
+func (h *FriendshipHandler) RemoveFriend(c *fiber.Ctx) error {
+	logger := utils.NewLogger("FriendshipHandler.RemoveFriend")
 
-	userID := c.Locals("userID").(string)
-	friendID := c.Params("id")
-
-	logger.LogInput(map[string]interface{}{
-		"userID":  userID,
-		"friendID": friendID,
-	})
-
-	userObjID, err := primitive.ObjectIDFromHex(userID)
+	userID := c.Locals("userId").(primitive.ObjectID)
+	targetID, err := primitive.ObjectIDFromHex(c.Params("userId"))
 	if err != nil {
 		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
+		return utils.SendError(c, fiber.StatusBadRequest, "Invalid user ID")
 	}
 
-	friendObjID, err := primitive.ObjectIDFromHex(friendID)
-	if err != nil {
+	logger.LogInput(userID, targetID)
+	if err := h.friendshipUseCase.RemoveFriend(userID, targetID); err != nil {
 		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid friend ID",
-		})
+		return utils.HandleError(c, err)
 	}
 
-	err = h.friendshipUseCase.CancelFriendRequest(userObjID, friendObjID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	logger.LogOutput("Friend request canceled", nil)
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "Friend request canceled",
-	})
+	logger.LogOutput("Friend removed successfully", nil)
+	return utils.SendSuccess(c, "Friend removed successfully")
 }
 
-// Unfriend handles removing a friend
-func (h *friendshipHandler) Unfriend(c *fiber.Ctx) error {
-	logger := utils.NewLogger("FriendshipHandler.Unfriend")
+func (h *FriendshipHandler) ListFriends(c *fiber.Ctx) error {
+	logger := utils.NewLogger("FriendshipHandler.ListFriends")
 
-	userID := c.Locals("userID").(string)
-	friendID := c.Params("id")
+	userID := c.Locals("userId").(primitive.ObjectID)
+	limit, offset := utils.GetPaginationParams(c)
+	logger.LogInput(userID, limit, offset)
 
-	logger.LogInput(map[string]interface{}{
-		"userID":  userID,
-		"friendID": friendID,
-	})
-
-	userObjID, err := primitive.ObjectIDFromHex(userID)
+	friends, err := h.friendshipUseCase.ListFriends(userID, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
-	}
-
-	friendObjID, err := primitive.ObjectIDFromHex(friendID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid friend ID",
-		})
-	}
-
-	err = h.friendshipUseCase.Unfriend(userObjID, friendObjID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	logger.LogOutput("Successfully unfriended", nil)
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "Successfully unfriended",
-	})
-}
-
-// GetFriends handles getting a user's friends
-func (h *friendshipHandler) GetFriends(c *fiber.Ctx) error {
-	logger := utils.NewLogger("FriendshipHandler.GetFriends")
-
-	userID := c.Params("id")
-	limit, _ := strconv.Atoi(c.Query("limit", "10"))
-	offset, _ := strconv.Atoi(c.Query("offset", "0"))
-
-	logger.LogInput(map[string]interface{}{
-		"userID": userID,
-		"limit":  limit,
-		"offset": offset,
-	})
-
-	userObjID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
-	}
-
-	friends, err := h.friendshipUseCase.GetFriends(userObjID, limit, offset)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to get friends",
-		})
+		return utils.HandleError(c, err)
 	}
 
 	logger.LogOutput(friends, nil)
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"friends": friends,
-	})
+	return c.JSON(friends)
 }
 
-// GetPendingRequests handles getting pending friend requests
-func (h *friendshipHandler) GetPendingRequests(c *fiber.Ctx) error {
-	logger := utils.NewLogger("FriendshipHandler.GetPendingRequests")
+func (h *FriendshipHandler) ListFriendRequests(c *fiber.Ctx) error {
+	logger := utils.NewLogger("FriendshipHandler.ListFriendRequests")
 
-	userID := c.Locals("userID").(string)
-	limit, _ := strconv.Atoi(c.Query("limit", "10"))
-	offset, _ := strconv.Atoi(c.Query("offset", "0"))
+	userID := c.Locals("userId").(primitive.ObjectID)
+	limit, offset := utils.GetPaginationParams(c)
+	logger.LogInput(userID, limit, offset)
 
-	logger.LogInput(map[string]interface{}{
-		"userID": userID,
-		"limit":  limit,
-		"offset": offset,
-	})
-
-	userObjID, err := primitive.ObjectIDFromHex(userID)
+	requests, err := h.friendshipUseCase.ListFriendRequests(userID, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
-	}
-
-	requests, err := h.friendshipUseCase.GetPendingRequests(userObjID, limit, offset)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to get pending requests",
-		})
+		return utils.HandleError(c, err)
 	}
 
 	logger.LogOutput(requests, nil)
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"requests": requests,
-	})
-}
-
-// RegisterRoutes registers the friendship routes
-func (h *friendshipHandler) RegisterRoutes(app *fiber.App) {
-	friendGroup := app.Group("/api/friends")
-
-	friendGroup.Post("/:id", h.SendFriendRequest)
-	friendGroup.Post("/:id/accept", h.AcceptFriendRequest)
-	friendGroup.Post("/:id/reject", h.RejectFriendRequest)
-	friendGroup.Delete("/:id/cancel", h.CancelFriendRequest)
-	friendGroup.Delete("/:id", h.Unfriend)
-	friendGroup.Get("/:id", h.GetFriends)
-	friendGroup.Get("/requests", h.GetPendingRequests)
+	return c.JSON(requests)
 }

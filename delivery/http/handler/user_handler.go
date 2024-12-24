@@ -13,10 +13,18 @@ type UserHandler struct {
 	userUseCase domain.UserUseCase
 }
 
-func NewUserHandler(userUseCase domain.UserUseCase) *UserHandler {
-	return &UserHandler{
+func NewUserHandler(router fiber.Router, userUseCase domain.UserUseCase) *UserHandler {
+	handler := &UserHandler{
 		userUseCase: userUseCase,
 	}
+
+	router.Post("/", handler.CreateOrUpdateUser)
+	router.Get("/profile", handler.GetProfile)
+	router.Patch("/", handler.UpdateUser)
+	router.Get("/:username", handler.GetUserByUsername)
+	router.Get("/check-username", handler.CheckUsername)
+
+	return handler
 }
 
 func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {

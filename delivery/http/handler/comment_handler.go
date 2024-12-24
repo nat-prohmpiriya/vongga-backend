@@ -11,7 +11,7 @@ type CommentHandler struct {
 	commentUseCase domain.CommentUseCase
 }
 
-func NewCommentHandler(router fiber.Router, cu domain.CommentUseCase) {
+func NewCommentHandler(router fiber.Router, cu domain.CommentUseCase) *CommentHandler {
 	handler := &CommentHandler{
 		commentUseCase: cu,
 	}
@@ -21,12 +21,14 @@ func NewCommentHandler(router fiber.Router, cu domain.CommentUseCase) {
 	router.Delete("/comments/:id", handler.DeleteComment)
 	router.Get("/comments/:id", handler.GetComment)
 	router.Get("/posts/:postId/comments", handler.ListComments)
+
+	return handler
 }
 
 type CreateCommentRequest struct {
 	Content string         `json:"content"`
 	Media   []domain.Media `json:"media,omitempty"`
-	ReplyTo *string       `json:"replyTo,omitempty"`
+	ReplyTo *string        `json:"replyTo,omitempty"`
 }
 
 func (h *CommentHandler) CreateComment(c *fiber.Ctx) error {

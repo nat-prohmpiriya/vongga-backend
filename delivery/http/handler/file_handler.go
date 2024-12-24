@@ -13,14 +13,18 @@ type FileHandler struct {
 	fileRepo domain.FileRepository
 }
 
-func NewFileHandler(fileRepo domain.FileRepository) *FileHandler {
+func NewFileHandler(router fiber.Router, fileRepo domain.FileRepository) *FileHandler {
 	logger := utils.NewLogger("FileHandler.NewFileHandler")
 	logger.LogInput(map[string]interface{}{
 		"fileRepo": fileRepo,
 	})
-	return &FileHandler{
+	handler := &FileHandler{
 		fileRepo: fileRepo,
 	}
+
+	router.Post("/upload", handler.Upload)
+
+	return handler
 }
 
 func (h *FileHandler) Upload(c *fiber.Ctx) error {

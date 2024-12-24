@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
@@ -292,4 +293,89 @@ func (r *friendshipRepository) CountPendingRequests(userID primitive.ObjectID) (
 
 	logger.LogOutput(count, nil)
 	return count, nil
+}
+
+func (r *friendshipRepository) FindByUserAndTarget(userID, targetID primitive.ObjectID) (*domain.Friendship, error) {
+	logger := utils.NewLogger("FriendshipRepository.FindByUserAndTarget")
+	logger.LogInput(userID, targetID)
+
+	filter := bson.M{
+		"$or": []bson.M{
+			{
+				"userId":   userID,
+				"friendId": targetID,
+			},
+			{
+				"userId":   targetID,
+				"friendId": userID,
+			},
+		},
+	}
+
+	var friendship domain.Friendship
+	err := r.collection.FindOne(context.Background(), filter).Decode(&friendship)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			logger.LogOutput(nil, nil)
+			return nil, nil
+		}
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	logger.LogOutput(friendship, nil)
+	return &friendship, nil
+}
+
+func (r *friendshipRepository) FindByID(id primitive.ObjectID) (*domain.Friendship, error) {
+	logger := utils.NewLogger("FriendshipRepository.FindByID")
+	logger.LogInput(id)
+
+	filter := bson.M{"_id": id}
+
+	var friendship domain.Friendship
+	err := r.collection.FindOne(context.Background(), filter).Decode(&friendship)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			logger.LogOutput(nil, nil)
+			return nil, nil
+		}
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	logger.LogOutput(friendship, nil)
+	return &friendship, nil
+}
+
+func (r *friendshipRepository) RemoveFriend(userID, targetID primitive.ObjectID) error {
+	logger := utils.NewLogger("FriendshipRepository.RemoveFriend")
+	logger.LogInput(userID, targetID)
+
+	filter := bson.M{
+		"$or": []bson.M{
+			{
+				"userId":   userID,
+				"friendId": targetID,
+			},
+			{
+				"userId":   targetID,
+				"friendId": userID,
+			},
+		},
+	}
+
+	result, err := r.collection.DeleteOne(context.Background(), filter)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		logger.LogOutput(nil, errors.New("friendship not found"))
+		return errors.New("friendship not found")
+	}
+
+	logger.LogOutput("Friendship removed successfully", nil)
+	return nil
 }

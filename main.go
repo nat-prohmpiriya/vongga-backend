@@ -77,6 +77,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	postRepo := repository.NewPostRepository(db)
+	subPostRepo := repository.NewSubPostRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
+	reactionRepo := repository.NewReactionRepository(db)
+	followRepo := repository.NewFollowRepository(db)
+	friendshipRepo := repository.NewFriendshipRepository(db)
 
 	// Initialize use cases
 	userUseCase := usecase.NewUserUseCase(userRepo)
@@ -89,12 +95,11 @@ func main() {
 		cfg.GetJWTExpiry(),
 		cfg.GetRefreshTokenExpiry(),
 	)
-
-	// Initialize handlers
-	userHandler := handler.NewUserHandler(userUseCase)
-	authHandler := handler.NewAuthHandler(authUseCase)
-	healthHandler := handler.NewHealthHandler(db, redisClient)
-	fileHandler := handler.NewFileHandler(fileRepo)
+	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo)
+	commentUseCase := usecase.NewCommentUseCase(commentRepo, postRepo)
+	reactionUseCase := usecase.NewReactionUseCase(reactionRepo, postRepo, commentRepo)
+	followUseCase := usecase.NewFollowUseCase(followRepo)
+	friendshipUseCase := usecase.NewFriendshipUseCase(friendshipRepo)
 
 	// Initialize Fiber app
 	app := fiber.New()
@@ -113,7 +118,7 @@ func main() {
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	// Health check - public endpoint
-	app.Get("/api", healthHandler.Health)
+	app.Get("/api", handler.NewHealthHandler(db, redisClient).Health)
 
 	// Middleware
 	app.Use(utils.RequestLogger())
@@ -123,24 +128,30 @@ func main() {
 
 	// Public routes
 	auth := api.Group("/auth")
-	auth.Post("/verifyTokenFirebase", authHandler.VerifyTokenFirebase)
-	auth.Post("/refresh", authHandler.RefreshToken)
-	auth.Post("/logout", authHandler.Logout)
+	auth.Post("/verifyTokenFirebase", handler.NewAuthHandler(authUseCase).VerifyTokenFirebase)
+	auth.Post("/refresh", handler.NewAuthHandler(authUseCase).RefreshToken)
+	auth.Post("/logout", handler.NewAuthHandler(authUseCase).Logout)
 
 	// Protected routes (everything under /api except /auth)
 	protectedApi := api.Group("")
 	protectedApi.Use(middleware.JWTAuthMiddleware(cfg.JWTSecret))
 
-	// User routes
+	// Create route groups
 	users := protectedApi.Group("/users")
-	users.Post("/", userHandler.CreateOrUpdateUser)
-	users.Get("/profile", userHandler.GetProfile)
-	users.Patch("/", userHandler.UpdateUser)
-	users.Get("/:username", userHandler.GetUserByUsername)
-	users.Get("/check-username", userHandler.CheckUsername)
+	posts := protectedApi.Group("/posts")
+	comments := protectedApi.Group("/comments")
+	reactions := protectedApi.Group("/reactions")
+	follows := protectedApi.Group("/follows")
+	friendships := protectedApi.Group("/friendships")
 
-	// File upload route
-	protectedApi.Post("/upload", fileHandler.Upload)
+	// Initialize handlers with their respective route groups
+	handler.NewUserHandler(users, userUseCase)
+	handler.NewPostHandler(posts, postUseCase)
+	handler.NewCommentHandler(comments, commentUseCase)
+	handler.NewReactionHandler(reactions, reactionUseCase)
+	handler.NewFollowHandler(follows, followUseCase)
+	handler.NewFriendshipHandler(friendships, friendshipUseCase)
+	handler.NewFileHandler(protectedApi, fileRepo)
 
 	// Start server
 	log.Fatal(app.Listen(cfg.ServerAddress))

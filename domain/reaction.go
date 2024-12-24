@@ -6,6 +6,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// CreateReactionRequest represents the request payload for creating a reaction
+type CreateReactionRequest struct {
+	PostID    string `json:"postId" validate:"required"`
+	CommentID string `json:"commentId,omitempty"`
+	Type      string `json:"type" validate:"required,oneof=like love haha wow sad angry"`
+}
+
 type Reaction struct {
 	ID        primitive.ObjectID  `bson:"id,omitempty"`
 	PostID    primitive.ObjectID  `bson:"postId"`

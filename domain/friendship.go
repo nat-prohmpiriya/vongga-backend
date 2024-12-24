@@ -27,6 +27,8 @@ type FriendshipRepository interface {
 	FindPendingRequests(userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
 	CountFriends(userID primitive.ObjectID) (int64, error)
 	CountPendingRequests(userID primitive.ObjectID) (int64, error)
+	FindByID(id primitive.ObjectID) (*Friendship, error)
+	RemoveFriend(userID, targetID primitive.ObjectID) error
 }
 
 // FriendshipUseCase interface defines business logic for friendships
@@ -42,4 +44,7 @@ type FriendshipUseCase interface {
 	GetPendingRequests(userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
 	IsFriend(userID1, userID2 primitive.ObjectID) (bool, error)
 	GetFriendshipStatus(userID1, userID2 primitive.ObjectID) (string, error)
+	ListFriends(userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
+	ListFriendRequests(userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
+	RemoveFriend(userID, targetID primitive.ObjectID) error
 }

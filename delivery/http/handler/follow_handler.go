@@ -10,23 +10,31 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type followHandler struct {
+type FollowHandler struct {
 	followUseCase domain.FollowUseCase
 }
 
-// NewFollowHandler creates a new instance of FollowHandler
-func NewFollowHandler(fu domain.FollowUseCase) *followHandler {
-	return &followHandler{
+func NewFollowHandler(router fiber.Router, fu domain.FollowUseCase) *FollowHandler {
+	handler := &FollowHandler{
 		followUseCase: fu,
 	}
+
+	router.Post("/:userId", handler.Follow)
+	router.Delete("/:userId", handler.Unfollow)
+	router.Get("/followers", handler.GetFollowers)
+	router.Get("/following", handler.GetFollowing)
+	router.Post("/block/:userId", handler.Block)
+	router.Delete("/block/:userId", handler.Unblock)
+
+	return handler
 }
 
 // Follow handles following a user
-func (h *followHandler) Follow(c *fiber.Ctx) error {
+func (h *FollowHandler) Follow(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.Follow")
 
 	userID := c.Locals("userID").(string)
-	followingID := c.Params("id")
+	followingID := c.Params("userId")
 
 	logger.LogInput(map[string]interface{}{
 		"userID":     userID,
@@ -64,11 +72,11 @@ func (h *followHandler) Follow(c *fiber.Ctx) error {
 }
 
 // Unfollow handles unfollowing a user
-func (h *followHandler) Unfollow(c *fiber.Ctx) error {
+func (h *FollowHandler) Unfollow(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.Unfollow")
 
 	userID := c.Locals("userID").(string)
-	followingID := c.Params("id")
+	followingID := c.Params("userId")
 
 	logger.LogInput(map[string]interface{}{
 		"userID":     userID,
@@ -106,11 +114,11 @@ func (h *followHandler) Unfollow(c *fiber.Ctx) error {
 }
 
 // Block handles blocking a user
-func (h *followHandler) Block(c *fiber.Ctx) error {
+func (h *FollowHandler) Block(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.Block")
 
 	userID := c.Locals("userID").(string)
-	blockedID := c.Params("id")
+	blockedID := c.Params("userId")
 
 	logger.LogInput(map[string]interface{}{
 		"userID":   userID,
@@ -148,11 +156,11 @@ func (h *followHandler) Block(c *fiber.Ctx) error {
 }
 
 // Unblock handles unblocking a user
-func (h *followHandler) Unblock(c *fiber.Ctx) error {
+func (h *FollowHandler) Unblock(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.Unblock")
 
 	userID := c.Locals("userID").(string)
-	blockedID := c.Params("id")
+	blockedID := c.Params("userId")
 
 	logger.LogInput(map[string]interface{}{
 		"userID":   userID,
@@ -190,10 +198,10 @@ func (h *followHandler) Unblock(c *fiber.Ctx) error {
 }
 
 // GetFollowers handles getting a user's followers
-func (h *followHandler) GetFollowers(c *fiber.Ctx) error {
+func (h *FollowHandler) GetFollowers(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.GetFollowers")
 
-	userID := c.Params("id")
+	userID := c.Locals("userID").(string)
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 	offset, _ := strconv.Atoi(c.Query("offset", "0"))
 
@@ -226,10 +234,10 @@ func (h *followHandler) GetFollowers(c *fiber.Ctx) error {
 }
 
 // GetFollowing handles getting users that a user is following
-func (h *followHandler) GetFollowing(c *fiber.Ctx) error {
+func (h *FollowHandler) GetFollowing(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.GetFollowing")
 
-	userID := c.Params("id")
+	userID := c.Locals("userID").(string)
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 	offset, _ := strconv.Atoi(c.Query("offset", "0"))
 
@@ -259,16 +267,4 @@ func (h *followHandler) GetFollowing(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(fiber.Map{
 		"following": following,
 	})
-}
-
-// RegisterRoutes registers the follow routes
-func (h *followHandler) RegisterRoutes(app *fiber.App) {
-	followGroup := app.Group("/api/follows")
-
-	followGroup.Post("/:id", h.Follow)
-	followGroup.Delete("/:id", h.Unfollow)
-	followGroup.Post("/:id/block", h.Block)
-	followGroup.Delete("/:id/block", h.Unblock)
-	followGroup.Get("/:id/followers", h.GetFollowers)
-	followGroup.Get("/:id/following", h.GetFollowing)
 }

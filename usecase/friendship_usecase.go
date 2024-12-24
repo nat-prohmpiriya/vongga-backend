@@ -398,3 +398,17 @@ func (f *friendshipUseCase) GetFriendshipStatus(userID1, userID2 primitive.Objec
 	logger.LogOutput(friendship.Status, nil)
 	return friendship.Status, nil
 }
+
+// ListFriends returns a list of friends
+func (f *friendshipUseCase) ListFriends(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
+	return f.friendshipRepo.FindFriends(userID, limit, offset)
+}
+
+// ListFriendRequests returns a list of friend requests
+func (f *friendshipUseCase) ListFriendRequests(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
+	return f.friendshipRepo.FindPendingRequests(userID, limit, offset)
+}
+
+func (f *friendshipUseCase) RemoveFriend(userID, targetID primitive.ObjectID) error {
+	return f.friendshipRepo.RemoveFriend(userID, targetID)
+}
