@@ -7,59 +7,59 @@ import (
 )
 
 type Post struct {
-	ID             primitive.ObjectID   `bson:"id,omitempty"`
-	UserID         primitive.ObjectID   `bson:"userId"`
-	Content        string               `bson:"content"`
-	Media          []Media              `bson:"media"`
-	ReactionCounts map[string]int       `bson:"reactionCounts"`
-	CommentCount   int                  `bson:"commentCount"`
-	SubPostCount   int                  `bson:"subPostCount"`
-	CreatedAt      time.Time            `bson:"createdAt"`
-	UpdatedAt      time.Time            `bson:"updatedAt"`
-	Tags           []string             `bson:"tags"`
-	Location       *Location            `bson:"location,omitempty"`
-	Visibility     string               `bson:"visibility"`
-	ShareCount     int                  `bson:"shareCount"`
-	ViewCount      int                  `bson:"viewCount"`
-	IsEdited       bool                 `bson:"isEdited"`
-	EditHistory    []EditLog            `bson:"editHistory"`
+	ID             primitive.ObjectID   `bson:"id,omitempty" json:"id"`
+	UserID         primitive.ObjectID   `bson:"userId" json:"userId"`
+	Content        string               `bson:"content" json:"content"`
+	Media          []Media              `bson:"media" json:"media"`
+	ReactionCounts map[string]int       `bson:"reactionCounts" json:"reactionCounts"`
+	CommentCount   int                  `bson:"commentCount" json:"commentCount"`
+	SubPostCount   int                  `bson:"subPostCount" json:"subPostCount"`
+	CreatedAt      time.Time            `bson:"createdAt" json:"createdAt"`
+	UpdatedAt      time.Time            `bson:"updatedAt" json:"updatedAt"`
+	Tags           []string             `bson:"tags" json:"tags"`
+	Location       *Location            `bson:"location,omitempty" json:"location,omitempty"`
+	Visibility     string               `bson:"visibility" json:"visibility"`
+	ShareCount     int                  `bson:"shareCount" json:"shareCount"`
+	ViewCount      int                  `bson:"viewCount" json:"viewCount"`
+	IsEdited       bool                 `bson:"isEdited" json:"isEdited"`
+	EditHistory    []EditLog            `bson:"editHistory" json:"editHistory"`
 }
 
 type SubPost struct {
-	ID             primitive.ObjectID   `bson:"id,omitempty"`
-	ParentID       primitive.ObjectID   `bson:"parentId"`
-	UserID         primitive.ObjectID   `bson:"userId"`
-	Content        string               `bson:"content"`
-	Media          []Media              `bson:"media"`
-	ReactionCounts map[string]int       `bson:"reactionCounts"`
-	CommentCount   int                  `bson:"commentCount"`
-	CreatedAt      time.Time            `bson:"createdAt"`
-	UpdatedAt      time.Time            `bson:"updatedAt"`
-	Order          int                  `bson:"order"`
+	ID             primitive.ObjectID   `bson:"id,omitempty" json:"id"`
+	ParentID       primitive.ObjectID   `bson:"parentId" json:"parentId"`
+	UserID         primitive.ObjectID   `bson:"userId" json:"userId"`
+	Content        string               `bson:"content" json:"content"`
+	Media          []Media              `bson:"media" json:"media"`
+	ReactionCounts map[string]int       `bson:"reactionCounts" json:"reactionCounts"`
+	CommentCount   int                  `bson:"commentCount" json:"commentCount"`
+	CreatedAt      time.Time            `bson:"createdAt" json:"createdAt"`
+	UpdatedAt      time.Time            `bson:"updatedAt" json:"updatedAt"`
+	Order          int                  `bson:"order" json:"order"`
 }
 
 type Media struct {
-	Type         string  `bson:"type"`
-	URL          string  `bson:"url"`
-	ThumbnailURL string  `bson:"thumbnailUrl,omitempty"`
-	Description  string  `bson:"description,omitempty"`
-	Size         int64   `bson:"size"`
-	Duration     float64 `bson:"duration,omitempty"`
+	Type         string  `bson:"type" json:"type"`
+	URL          string  `bson:"url" json:"url"`
+	ThumbnailURL string  `bson:"thumbnailUrl,omitempty" json:"thumbnailUrl,omitempty"`
+	Description  string  `bson:"description,omitempty" json:"description,omitempty"`
+	Size         int64   `bson:"size" json:"size"`
+	Duration     float64 `bson:"duration,omitempty" json:"duration,omitempty"`
 }
 
 type Location struct {
-	Type        string    `bson:"type"`
-	Coordinates []float64 `bson:"coordinates"`
-	PlaceName   string    `bson:"placeName,omitempty"`
-	Address     string    `bson:"address,omitempty"`
+	Type        string    `bson:"type" json:"type"`
+	Coordinates []float64 `bson:"coordinates" json:"coordinates"`
+	PlaceName   string    `bson:"placeName" json:"placeName"`
+	Address     string    `bson:"address,omitempty" json:"address,omitempty"`
 }
 
 type EditLog struct {
-	Content   string    `bson:"content"`
-	Media     []Media   `bson:"media"`
-	Tags      []string  `bson:"tags"`
-	Location  *Location `bson:"location,omitempty"`
-	EditedAt  time.Time `bson:"editedAt"`
+	Content   string    `bson:"content" json:"content"`
+	Media     []Media   `bson:"media" json:"media"`
+	Tags      []string  `bson:"tags" json:"tags"`
+	Location  *Location `bson:"location,omitempty" json:"location,omitempty"`
+	EditedAt  time.Time `bson:"editedAt" json:"editedAt"`
 }
 
 // Repository interface
@@ -100,6 +100,6 @@ type SubPostUseCase interface {
 
 // PostWithDetails includes Post and its related data
 type PostWithDetails struct {
-	Post     *Post      `json:"post"`
-	SubPosts []SubPost  `json:"subPosts,omitempty"`
+	Post     *Post     `json:"post"`
+	SubPosts []SubPost `json:"subPosts,omitempty"`
 }

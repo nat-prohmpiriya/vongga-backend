@@ -7,15 +7,15 @@ import (
 )
 
 type Comment struct {
-	ID             primitive.ObjectID   `bson:"id,omitempty"`
-	PostID         primitive.ObjectID   `bson:"postId"`
-	UserID         primitive.ObjectID   `bson:"userId"`
-	Content        string               `bson:"content"`
-	Media          []Media              `bson:"media,omitempty"`
-	ReactionCounts map[string]int       `bson:"reactionCounts"`
-	CreatedAt      time.Time            `bson:"createdAt"`
-	UpdatedAt      time.Time            `bson:"updatedAt"`
-	ReplyTo        *primitive.ObjectID  `bson:"replyTo,omitempty"`
+	ID             primitive.ObjectID   `bson:"id,omitempty" json:"id"`
+	PostID         primitive.ObjectID   `bson:"postId" json:"postId"`
+	UserID         primitive.ObjectID   `bson:"userId" json:"userId"`
+	Content        string               `bson:"content" json:"content"`
+	Media          []Media              `bson:"media,omitempty" json:"media,omitempty"`
+	ReactionCounts map[string]int       `bson:"reactionCounts" json:"reactionCounts"`
+	CreatedAt      time.Time            `bson:"createdAt" json:"createdAt"`
+	UpdatedAt      time.Time            `bson:"updatedAt" json:"updatedAt"`
+	ReplyTo        *primitive.ObjectID  `bson:"replyTo,omitempty" json:"replyTo,omitempty"`
 }
 
 // Repository interface

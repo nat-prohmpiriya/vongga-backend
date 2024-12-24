@@ -14,13 +14,13 @@ type CreateReactionRequest struct {
 }
 
 type Reaction struct {
-	ID        primitive.ObjectID  `bson:"id,omitempty"`
-	PostID    primitive.ObjectID  `bson:"postId"`
-	CommentID *primitive.ObjectID `bson:"commentId,omitempty"`
-	UserID    primitive.ObjectID  `bson:"userId"`
-	Type      string             `bson:"type"`
-	CreatedAt time.Time          `bson:"createdAt"`
-	UpdatedAt time.Time          `bson:"updatedAt"`
+	ID        primitive.ObjectID  `bson:"id,omitempty" json:"id"`
+	PostID    primitive.ObjectID  `bson:"postId" json:"postId"`
+	CommentID *primitive.ObjectID `bson:"commentId,omitempty" json:"commentId,omitempty"`
+	UserID    primitive.ObjectID  `bson:"userId" json:"userId"`
+	Type      string             `bson:"type" json:"type"`
+	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
+	UpdatedAt time.Time          `bson:"updatedAt" json:"updatedAt"`
 }
 
 // Repository interface
