@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
-	domain "github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain/file"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 )
 
@@ -14,6 +14,10 @@ type FileHandler struct {
 }
 
 func NewFileHandler(fileRepo domain.FileRepository) *FileHandler {
+	logger := utils.NewLogger("FileHandler.NewFileHandler")
+	logger.LogInput(map[string]interface{}{
+		"fileRepo": fileRepo,
+	})
 	return &FileHandler{
 		fileRepo: fileRepo,
 	}
@@ -33,8 +37,8 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 
 	logger.LogInput(map[string]interface{}{
 		"filename":    file.Filename,
-		"size":       file.Size,
-		"header":     file.Header,
+		"size":        file.Size,
+		"header":      file.Header,
 		"contentType": file.Header.Get("Content-Type"),
 	})
 
@@ -74,7 +78,7 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 	}
 
 	// Upload file
-	err = h.fileRepo.Upload(fileModel, fileData)
+	uploadedFile, err := h.fileRepo.Upload(fileModel, fileData)
 	if err != nil {
 		logger.LogOutput(nil, fmt.Errorf("error uploading file: %v", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -83,44 +87,13 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 	}
 
 	logger.LogOutput(map[string]interface{}{
-		"fileURL":  fileModel.FileURL,
-		"fileName": fileModel.FileName,
+		"fileURL":  uploadedFile.FileURL,
+		"fileName": uploadedFile.FileName,
 	}, nil)
 
 	return c.JSON(fiber.Map{
-		"url":      fileModel.FileURL,
-		"fileName": fileModel.FileName,
-	})
-}
-
-func (h *FileHandler) GetURL(c *fiber.Ctx) error {
-	logger := utils.NewLogger("FileHandler.GetURL")
-	
-	fileName := c.Params("fileName")
-	if fileName == "" {
-		err := fmt.Errorf("fileName is required")
-		logger.LogOutput(nil, err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	logger.LogInput(fileName)
-
-	url, err := h.fileRepo.GetURL(fileName)
-	if err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error getting file URL: %v", err))
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "error getting file URL",
-		})
-	}
-
-	logger.LogOutput(map[string]string{
-		"url": url,
-	}, nil)
-
-	return c.JSON(fiber.Map{
-		"url": url,
+		"url":      uploadedFile.FileURL,
+		"fileName": uploadedFile.FileName,
 	})
 }
 

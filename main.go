@@ -101,9 +101,12 @@ func main() {
 
 	// CORS
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		AllowMethods: "GET, POST, PUT, DELETE",
+		AllowOrigins:     "http://localhost:3000",
+		AllowCredentials: true,
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowMethods:     "GET, HEAD, PUT, PATCH, POST, DELETE",
+		ExposeHeaders:    "Content-Length",
+		MaxAge:           12 * 3600,
 	}))
 
 	// Swagger
@@ -114,11 +117,6 @@ func main() {
 
 	// Middleware
 	app.Use(utils.RequestLogger())
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		AllowMethods: "GET, POST, PUT, DELETE",
-	}))
 
 	// Routes
 	api := app.Group("/api")

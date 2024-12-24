@@ -23,7 +23,7 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.CreateOrUpdateUser")
 	
 	// Get Firebase user data from context (set by middleware)
-	firebaseUID := c.Locals("firebase_uid").(string)
+	userID := c.Locals("user_id").(string)
 	email := c.Locals("email").(string)
 
 	var req struct {
@@ -40,9 +40,9 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	logger.LogInput(firebaseUID, email, req)
+	logger.LogInput(userID, email, req)
 	user, err := h.userUseCase.CreateOrUpdateUser(
-		firebaseUID,
+		userID,
 		email,
 		req.FirstName,
 		req.LastName,
@@ -64,10 +64,10 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.GetProfile")
 	
-	firebaseUID := c.Locals("firebase_uid").(string)
-	logger.LogInput(firebaseUID)
+	userID := c.Locals("user_id").(string)
+	logger.LogInput(userID)
 
-	user, err := h.userUseCase.GetUserByFirebaseUID(firebaseUID)
+	user, err := h.userUseCase.GetUserByID(userID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -84,7 +84,7 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.UpdateUser")
 	
-	firebaseUID := c.Locals("firebase_uid").(string)
+	userID := c.Locals("user_id").(string)
 
 	var req struct {
 		FirstName      *string    `json:"firstName"`
@@ -114,8 +114,8 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	logger.LogInput(firebaseUID, req)
-	user, err := h.userUseCase.GetUserByFirebaseUID(firebaseUID)
+	logger.LogInput(userID, req)
+	user, err := h.userUseCase.GetUserByID(userID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
