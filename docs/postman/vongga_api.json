@@ -244,6 +244,296 @@
 			]
 		},
 		{
+			"name": "Posts",
+			"item": [
+				{
+					"name": "Create Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"content\": \"This is a test post\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"test\", \"example\"],\n\t\"location\": {\n\t\t\"latitude\": 13.7563,\n\t\t\"longitude\": 100.5018,\n\t\t\"name\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/posts",
+							"host": ["{{base_url}}"],
+							"path": ["api", "posts"]
+						},
+						"description": "Create a new post"
+					}
+				},
+				{
+					"name": "Update Post",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"content\": \"Updated post content\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/updated-image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"updated\", \"test\"],\n\t\"location\": {\n\t\t\"latitude\": 13.7563,\n\t\t\"longitude\": 100.5018,\n\t\t\"name\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/posts/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "posts", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post_id_here"
+								}
+							]
+						},
+						"description": "Update an existing post"
+					}
+				},
+				{
+					"name": "Delete Post",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/posts/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "posts", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post_id_here"
+								}
+							]
+						},
+						"description": "Delete a post"
+					}
+				},
+				{
+					"name": "Get Post",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/posts/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "posts", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post_id_here"
+								}
+							]
+						},
+						"description": "Get a single post by ID"
+					}
+				},
+				{
+					"name": "List Posts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/posts?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "posts"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "List all posts with pagination"
+					}
+				}
+			]
+		},
+		{
+			"name": "Comments",
+			"item": [
+				{
+					"name": "Create Comment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"content\": \"This is a comment\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"replyTo\": \"comment_id_here\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/posts/:postId/comments",
+							"host": ["{{base_url}}"],
+							"path": ["api", "posts", ":postId", "comments"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "post_id_here"
+								}
+							]
+						},
+						"description": "Create a new comment on a post"
+					}
+				},
+				{
+					"name": "Update Comment",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"content\": \"Updated comment content\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/updated-image.jpg\"\n\t\t}\n\t]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/comments/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "comments", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "comment_id_here"
+								}
+							]
+						},
+						"description": "Update an existing comment"
+					}
+				},
+				{
+					"name": "Delete Comment",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/comments/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "comments", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "comment_id_here"
+								}
+							]
+						},
+						"description": "Delete a comment"
+					}
+				},
+				{
+					"name": "Get Comment",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/comments/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "comments", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "comment_id_here"
+								}
+							]
+						},
+						"description": "Get a single comment by ID"
+					}
+				},
+				{
+					"name": "List Comments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/posts/:postId/comments?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "posts", ":postId", "comments"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "post_id_here"
+								}
+							]
+						},
+						"description": "List all comments on a post with pagination"
+					}
+				}
+			]
+		},
+		{
 			"name": "File Upload",
 			"item": [
 				{
