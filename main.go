@@ -99,6 +99,13 @@ func main() {
 	// Initialize Fiber app
 	app := fiber.New()
 
+	// CORS
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		AllowMethods: "GET, POST, PUT, DELETE",
+	}))
+
 	// Swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
@@ -131,6 +138,7 @@ func main() {
 	users.Post("/", userHandler.CreateOrUpdateUser)
 	users.Get("/profile", userHandler.GetProfile)
 	users.Patch("/", userHandler.UpdateUser)
+	users.Get("/:username", userHandler.GetUserByUsername)
 	users.Get("/check-username", userHandler.CheckUsername)
 
 	// File upload route

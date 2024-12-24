@@ -64,6 +64,12 @@ type User struct {
 	IsVerified     bool          `bson:"is_verified" json:"isVerified"`
 	IsActive       bool          `bson:"is_active" json:"isActive"`
 	PhoneNumber    string        `bson:"phone_number,omitempty" json:"phoneNumber,omitempty"`
+	Live           Live          `bson:"live" json:"live"`
+}
+
+type Live struct {
+	City    string `bson:"city" json:"city"`
+	Country string `bson:"country" json:"country"`
 }
 
 type UserRepository interface {
