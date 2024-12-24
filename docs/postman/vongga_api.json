@@ -168,19 +168,6 @@
 			"item": [
 				{
 					"name": "Create or Update User",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -195,36 +182,18 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"name\": \"John Doe\",\n\t\"email\": \"john@example.com\"\n}"
+							"raw": "{\n\t\"firstName\": \"John\",\n\t\"lastName\": \"Doe\",\n\t\"photoUrl\": \"https://example.com/photo.jpg\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/users",
 							"host": ["{{base_url}}"],
 							"path": ["api", "users"]
 						},
-						"description": "Create or update user profile"
+						"description": "Create or update a user profile based on Firebase user data"
 					}
 				},
 				{
-					"name": "Get User Profile",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Response has user data\", function () {",
-									"    var jsonData = JSON.parse(responseBody);",
-									"    pm.expect(jsonData.user).to.exist;",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
+					"name": "Get Profile",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -234,11 +203,85 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/users/profile",
+							"raw": "{{base_url}}/api/users/me",
 							"host": ["{{base_url}}"],
-							"path": ["api", "users", "profile"]
+							"path": ["api", "users", "me"]
 						},
 						"description": "Get the current user's profile"
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"firstName\": \"John\",\n\t\"lastName\": \"Doe\",\n\t\"username\": \"johndoe\",\n\t\"bio\": \"Software Developer\",\n\t\"avatar\": \"https://example.com/avatar.jpg\",\n\t\"photoProfile\": \"https://example.com/profile.jpg\",\n\t\"photoCover\": \"https://example.com/cover.jpg\",\n\t\"dateOfBirth\": \"1990-01-01T00:00:00Z\",\n\t\"gender\": \"male\",\n\t\"interestedIn\": [\"female\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"relationStatus\": \"single\",\n\t\"height\": 175.5,\n\t\"interests\": [\"coding\", \"reading\"],\n\t\"occupation\": \"Software Engineer\",\n\t\"education\": \"Bachelor's Degree\",\n\t\"phoneNumber\": \"+66123456789\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users"]
+						},
+						"description": "Update user profile with optional fields"
+					}
+				},
+				{
+					"name": "Get User By Username",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/username/:username",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "username", ":username"],
+							"variable": [
+								{
+									"key": "username",
+									"value": "johndoe"
+								}
+							]
+						},
+						"description": "Get a user's profile by username"
+					}
+				},
+				{
+					"name": "Check Username Availability",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/check-username/:username",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "check-username", ":username"],
+							"variable": [
+								{
+									"key": "username",
+									"value": "johndoe"
+								}
+							]
+						},
+						"description": "Check if a username is available"
 					}
 				}
 			]
@@ -262,7 +305,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"content\": \"This is a test post\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"test\", \"example\"],\n\t\"location\": {\n\t\t\"latitude\": 13.7563,\n\t\t\"longitude\": 100.5018,\n\t\t\"name\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\"\n}"
+							"raw": "{\n\t\"content\": \"This is a test post\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"test\", \"example\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/posts",
@@ -288,7 +331,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"content\": \"Updated post content\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/updated-image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"updated\", \"test\"],\n\t\"location\": {\n\t\t\"latitude\": 13.7563,\n\t\t\"longitude\": 100.5018,\n\t\t\"name\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\"\n}"
+							"raw": "{\n\t\"content\": \"Updated post content\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/updated-image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"updated\", \"test\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/posts/:id",
@@ -349,7 +392,7 @@
 								}
 							]
 						},
-						"description": "Get a single post by ID"
+						"description": "Get a post by ID"
 					}
 				},
 				{
@@ -377,7 +420,7 @@
 								}
 							]
 						},
-						"description": "List all posts with pagination"
+						"description": "List posts with pagination"
 					}
 				}
 			]
@@ -401,20 +444,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"content\": \"This is a comment\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"replyTo\": \"comment_id_here\"\n}"
+							"raw": "{\n\t\"content\": \"This is a comment\",\n\t\"postId\": \"post_id_here\"\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/posts/:postId/comments",
+							"raw": "{{base_url}}/api/comments",
 							"host": ["{{base_url}}"],
-							"path": ["api", "posts", ":postId", "comments"],
-							"variable": [
-								{
-									"key": "postId",
-									"value": "post_id_here"
-								}
-							]
+							"path": ["api", "comments"]
 						},
-						"description": "Create a new comment on a post"
+						"description": "Create a new comment"
 					}
 				},
 				{
@@ -433,7 +470,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"content\": \"Updated comment content\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/updated-image.jpg\"\n\t\t}\n\t]\n}"
+							"raw": "{\n\t\"content\": \"Updated comment content\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/comments/:id",
@@ -474,30 +511,6 @@
 					}
 				},
 				{
-					"name": "Get Comment",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/comments/:id",
-							"host": ["{{base_url}}"],
-							"path": ["api", "comments", ":id"],
-							"variable": [
-								{
-									"key": "id",
-									"value": "comment_id_here"
-								}
-							]
-						},
-						"description": "Get a single comment by ID"
-					}
-				},
-				{
 					"name": "List Comments",
 					"request": {
 						"method": "GET",
@@ -508,10 +521,14 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/posts/:postId/comments?limit=10&offset=0",
+							"raw": "{{base_url}}/api/comments?postId=post_id_here&limit=10&offset=0",
 							"host": ["{{base_url}}"],
-							"path": ["api", "posts", ":postId", "comments"],
+							"path": ["api", "comments"],
 							"query": [
+								{
+									"key": "postId",
+									"value": "post_id_here"
+								},
 								{
 									"key": "limit",
 									"value": "10"
@@ -520,7 +537,56 @@
 									"key": "offset",
 									"value": "0"
 								}
-							],
+							]
+						},
+						"description": "List comments for a post with pagination"
+					}
+				}
+			]
+		},
+		{
+			"name": "Reactions",
+			"item": [
+				{
+					"name": "Create or Update Reaction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"like\",\n\t\"postId\": \"post_id_here\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/reactions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reactions"]
+						},
+						"description": "Create or update a reaction on a post"
+					}
+				},
+				{
+					"name": "Delete Reaction",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/reactions/:postId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reactions", ":postId"],
 							"variable": [
 								{
 									"key": "postId",
@@ -528,7 +594,39 @@
 								}
 							]
 						},
-						"description": "List all comments on a post with pagination"
+						"description": "Delete a reaction from a post"
+					}
+				},
+				{
+					"name": "List Reactions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/reactions?postId=post_id_here&limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reactions"],
+							"query": [
+								{
+									"key": "postId",
+									"value": "post_id_here"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "List reactions for a post with pagination"
 					}
 				}
 			]

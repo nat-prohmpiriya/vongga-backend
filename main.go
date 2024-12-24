@@ -113,7 +113,7 @@ func main() {
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	// Health check - public endpoint
-	app.Get("/api/health", healthHandler.Health)
+	app.Get("/api", healthHandler.Health)
 
 	// Middleware
 	app.Use(utils.RequestLogger())
