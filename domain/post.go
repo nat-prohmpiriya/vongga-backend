@@ -21,6 +21,8 @@ type Post struct {
 	ViewCount      int                `bson:"viewCount" json:"viewCount"`
 	IsEdited       bool               `bson:"isEdited" json:"isEdited"`
 	EditHistory    []EditLog          `bson:"editHistory" json:"editHistory"`
+	AllowComments  bool               `bson:"allowComments" json:"allowComments"`
+	AllowReactions bool               `bson:"allowReactions" json:"allowReactions"`
 }
 
 type SubPost struct {
@@ -32,6 +34,8 @@ type SubPost struct {
 	ReactionCounts map[string]int     `bson:"reactionCounts" json:"reactionCounts"`
 	CommentCount   int                `bson:"commentCount" json:"commentCount"`
 	Order          int                `bson:"order" json:"order"`
+	AllowComments  bool               `bson:"allowComments" json:"allowComments"`
+	AllowReactions bool               `bson:"allowReactions" json:"allowReactions"`
 }
 
 type Media struct {

@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"firebase.google.com/go/v4/auth"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 )
 
-func JWTAuthMiddleware(jwtSecret string) fiber.Handler {
+func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		logger := utils.NewLogger("JWTAuthMiddleware")
 		authHeader := c.Get("Authorization")
@@ -59,6 +60,7 @@ func JWTAuthMiddleware(jwtSecret string) fiber.Handler {
 
 		// Store user ID in context
 		c.Locals("user_id", claims["user_id"])
+		c.Locals("firebase_auth", authClient)
 		logger.LogInput(claims["user_id"])
 		return c.Next()
 	}

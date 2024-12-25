@@ -132,7 +132,7 @@ func (r *userRepository) FindByUsername(username string) (*domain.User, error) {
 	logger.LogInput(username)
 
 	var user domain.User
-	err := r.collection.FindOne(context.Background(), bson.M{"username": username}).Decode(&user)
+	err := r.collection.FindOne(context.Background(), bson.M{"username": username, "deletedAt": bson.M{"$exists": false}}).Decode(&user)
 	if err == mongo.ErrNoDocuments {
 		logger.LogOutput(nil, nil)
 		return nil, nil

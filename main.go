@@ -135,7 +135,7 @@ func main() {
 
 	// Protected routes (everything under /api except /auth)
 	protectedApi := api.Group("")
-	protectedApi.Use(middleware.JWTAuthMiddleware(cfg.JWTSecret))
+	protectedApi.Use(middleware.JWTAuthMiddleware(cfg.JWTSecret, authClient))
 
 	// Create route groups
 	users := protectedApi.Group("/users")
