@@ -104,8 +104,19 @@ type SubPostUseCase interface {
 	ReorderSubPosts(parentID primitive.ObjectID, orders map[primitive.ObjectID]int) error
 }
 
+// PostUser represents limited user data for post owner
+type PostUser struct {
+	ID           primitive.ObjectID `json:"userId"`
+	Username     string            `json:"username"`
+	DisplayName  string            `json:"displayName"`
+	PhotoProfile string            `json:"photoProfile"`
+	FirstName    string            `json:"firstName"`
+	LastName     string            `json:"lastName"`
+}
+
 // PostWithDetails includes Post and its related data
 type PostWithDetails struct {
 	*Post
+	User     *PostUser `json:"user"`
 	SubPosts []SubPost `json:"subPosts,omitempty"`
 }

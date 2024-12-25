@@ -11,12 +11,14 @@ import (
 type postUseCase struct {
 	postRepo    domain.PostRepository
 	subPostRepo domain.SubPostRepository
+	userRepo    domain.UserRepository
 }
 
-func NewPostUseCase(postRepo domain.PostRepository, subPostRepo domain.SubPostRepository) domain.PostUseCase {
+func NewPostUseCase(postRepo domain.PostRepository, subPostRepo domain.SubPostRepository, userRepo domain.UserRepository) domain.PostUseCase {
 	return &postUseCase{
 		postRepo:    postRepo,
 		subPostRepo: subPostRepo,
+		userRepo:    userRepo,
 	}
 }
 
@@ -182,8 +184,26 @@ func (p *postUseCase) GetPost(postID primitive.ObjectID, includeSubPosts bool) (
 		return nil, err
 	}
 
+	// Get user data
+	user, err := p.userRepo.FindByID(post.UserID.Hex())
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Map to PostUser with limited fields
+	postUser := &domain.PostUser{
+		ID:           user.ID,
+		Username:     user.Username,
+		DisplayName:  user.DisplayName,
+		PhotoProfile: user.PhotoProfile,
+		FirstName:    user.FirstName,
+		LastName:     user.LastName,
+	}
+
 	result := &domain.PostWithDetails{
 		Post: post,
+		User: postUser,
 	}
 
 	if includeSubPosts {
@@ -217,7 +237,26 @@ func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, in
 
 	result := make([]domain.PostWithDetails, len(posts))
 	for i := range posts {
+		// Get user data for each post
+		user, err := p.userRepo.FindByID(posts[i].UserID.Hex())
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return nil, err
+		}
+
+		// Map to PostUser with limited fields
+		postUser := &domain.PostUser{
+			ID:           user.ID,
+			Username:     user.Username,
+			DisplayName:  user.DisplayName,
+			PhotoProfile: user.PhotoProfile,
+			FirstName:    user.FirstName,
+			LastName:     user.LastName,
+		}
+
 		result[i].Post = &posts[i]
+		result[i].User = postUser
+
 		if includeSubPosts {
 			subPosts, err := p.subPostRepo.FindByParentID(posts[i].ID, 0, 0) // Get all subposts
 			if err != nil {

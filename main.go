@@ -95,7 +95,7 @@ func main() {
 		cfg.GetJWTExpiry(),
 		cfg.GetRefreshTokenExpiry(),
 	)
-	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo)
+	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo, userRepo)
 	subPostUseCase := usecase.NewSubPostUseCase(subPostRepo, postRepo)
 	commentUseCase := usecase.NewCommentUseCase(commentRepo, postRepo)
 	reactionUseCase := usecase.NewReactionUseCase(reactionRepo, postRepo, commentRepo)
