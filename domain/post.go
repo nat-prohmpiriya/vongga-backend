@@ -7,7 +7,7 @@ import (
 )
 
 type Post struct {
-	BaseModel
+	BaseModel      `bson:",inline"`
 	UserID         primitive.ObjectID `bson:"userId" json:"userId"`
 	Content        string             `bson:"content" json:"content"`
 	Media          []Media            `bson:"media" json:"media"`
@@ -24,7 +24,7 @@ type Post struct {
 }
 
 type SubPost struct {
-	BaseModel
+	BaseModel      `bson:",inline"`
 	ParentID       primitive.ObjectID `bson:"parentId" json:"parentId"`
 	UserID         primitive.ObjectID `bson:"userId" json:"userId"`
 	Content        string             `bson:"content" json:"content"`

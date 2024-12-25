@@ -96,6 +96,7 @@ func main() {
 		cfg.GetRefreshTokenExpiry(),
 	)
 	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo)
+	subPostUseCase := usecase.NewSubPostUseCase(subPostRepo, postRepo)
 	commentUseCase := usecase.NewCommentUseCase(commentRepo, postRepo)
 	reactionUseCase := usecase.NewReactionUseCase(reactionRepo, postRepo, commentRepo)
 	followUseCase := usecase.NewFollowUseCase(followRepo)
@@ -147,6 +148,7 @@ func main() {
 	// Initialize handlers with their respective route groups
 	handler.NewUserHandler(users, userUseCase)
 	handler.NewPostHandler(posts, postUseCase)
+	handler.NewSubPostHandler(posts, subPostUseCase)
 	handler.NewCommentHandler(comments, commentUseCase)
 	handler.NewReactionHandler(reactions, reactionUseCase)
 	handler.NewFollowHandler(follows, followUseCase)

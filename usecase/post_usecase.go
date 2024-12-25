@@ -33,7 +33,15 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 	}
 	logger.LogInput(input)
 
+	now := time.Now()
 	post := &domain.Post{
+		BaseModel: domain.BaseModel{
+			ID:        primitive.NewObjectID(),
+			CreatedAt: now,
+			UpdatedAt: now,
+			IsActive:  true,
+			Version:   1,
+		},
 		UserID:         userID,
 		Content:        content,
 		Media:          media,
@@ -57,6 +65,13 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 	if len(subPosts) > 0 {
 		for _, subPostInput := range subPosts {
 			subPost := &domain.SubPost{
+				BaseModel: domain.BaseModel{
+					ID:        primitive.NewObjectID(),
+					CreatedAt: now,
+					UpdatedAt: now,
+					IsActive:  true,
+					Version:   1,
+				},
 				ParentID:       post.ID,
 				UserID:         userID,
 				Content:        subPostInput.Content,

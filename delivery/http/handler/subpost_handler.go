@@ -18,12 +18,12 @@ func NewSubPostHandler(router fiber.Router, su domain.SubPostUseCase) {
 		subPostUseCase: su,
 	}
 
-	router.Post("/posts/:postId/subposts", handler.CreateSubPost)
+	router.Post("/:postId/subposts", handler.CreateSubPost)
 	router.Put("/subposts/:id", handler.UpdateSubPost)
 	router.Delete("/subposts/:id", handler.DeleteSubPost)
 	router.Get("/subposts/:id", handler.GetSubPost)
-	router.Get("/posts/:postId/subposts", handler.ListSubPosts)
-	router.Put("/posts/:postId/subposts/reorder", handler.ReorderSubPosts)
+	router.Get("/:postId/subposts", handler.ListSubPosts)
+	router.Put("/:postId/subposts/reorder", handler.ReorderSubPosts)
 }
 
 type CreateSubPostRequest struct {
