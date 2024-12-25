@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"time"
+
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,6 +25,7 @@ func NewReactionUseCase(reactionRepo domain.ReactionRepository, postRepo domain.
 func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, commentID *primitive.ObjectID, reactionType string) (*domain.Reaction, error) {
 	logger := utils.NewLogger("ReactionUseCase.CreateReaction")
 	input := map[string]interface{}{
+
 		"userID":       userID,
 		"postID":       postID,
 		"commentID":    commentID,
@@ -52,7 +55,15 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 	}
 
 	// Create reaction
+	now := time.Now()
 	reaction := &domain.Reaction{
+		BaseModel: domain.BaseModel{
+			ID:        primitive.NewObjectID(),
+			CreatedAt: now,
+			UpdatedAt: now,
+			IsActive:  true,
+			Version:   1,
+		},
 		UserID:    userID,
 		PostID:    postID,
 		CommentID: commentID,

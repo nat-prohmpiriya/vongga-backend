@@ -88,7 +88,7 @@ func (r *reactionRepository) FindByPostID(postID primitive.ObjectID, limit, offs
 	logger.LogInput(postID, limit, offset)
 
 	opts := options.Find().
-		SetLimit(int64(limit)).
+		// SetLimit(int64(limit)).
 		SetSkip(int64(offset)).
 		SetSort(bson.D{{Key: "createdAt", Value: -1}})
 
@@ -114,7 +114,7 @@ func (r *reactionRepository) FindByCommentID(commentID primitive.ObjectID, limit
 	logger.LogInput(commentID, limit, offset)
 
 	opts := options.Find().
-		SetLimit(int64(limit)).
+		// SetLimit(int64(limit)).
 		SetSkip(int64(offset)).
 		SetSort(bson.D{{Key: "createdAt", Value: -1}})
 

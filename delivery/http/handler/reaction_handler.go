@@ -12,9 +12,16 @@ type ReactionHandler struct {
 }
 
 func NewReactionHandler(router fiber.Router, ru domain.ReactionUseCase) *ReactionHandler {
-	return &ReactionHandler{
+	handler := &ReactionHandler{
 		reactionUseCase: ru,
 	}
+
+	router.Post("/", handler.CreateReaction)
+	router.Delete("/:id", handler.DeleteReaction)
+	router.Get("/post/:postId", handler.ListPostReactions)
+	router.Get("/comment/:commentId", handler.ListCommentReactions)
+
+	return handler
 }
 
 // CreateReaction creates a new reaction
@@ -32,7 +39,13 @@ func NewReactionHandler(router fiber.Router, ru domain.ReactionUseCase) *Reactio
 func (h *ReactionHandler) CreateReaction(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ReactionHandler.CreateReaction")
 
-	userID := c.Locals("userId").(primitive.ObjectID)
+	userID, errr := utils.GetUserIDFromContext(c)
+	if errr != nil {
+		logger.LogOutput(nil, errr)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
 
 	var req domain.CreateReactionRequest
 	if err := c.BodyParser(&req); err != nil {
