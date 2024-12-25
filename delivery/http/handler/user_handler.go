@@ -99,6 +99,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		FirstName      *string    `json:"firstName"`
 		LastName       *string    `json:"lastName"`
 		Username       *string    `json:"username"`
+		DisplayName    *string    `json:"displayName"`
 		Bio            *string    `json:"bio"`
 		Avatar         *string    `json:"avatar"`
 		PhotoProfile   *string    `json:"photoProfile"`
@@ -113,6 +114,10 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		Occupation     *string    `json:"occupation"`
 		Education      *string    `json:"education"`
 		PhoneNumber    *string    `json:"phoneNumber"`
+		DatingPhotos   []domain.DatingPhoto `json:"datingPhotos"`
+		IsVerified     *bool      `json:"isVerified"`
+		IsActive       *bool      `json:"isActive"`
+		Live           *domain.Live `json:"live"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -173,6 +178,9 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	if req.LastName != nil {
 		user.LastName = *req.LastName
 	}
+	if req.DisplayName != nil {
+		user.DisplayName = *req.DisplayName
+	}
 	if req.Bio != nil {
 		user.Bio = *req.Bio
 	}
@@ -214,6 +222,18 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	}
 	if req.PhoneNumber != nil {
 		user.PhoneNumber = *req.PhoneNumber
+	}
+	if req.DatingPhotos != nil {
+		user.DatingPhotos = req.DatingPhotos
+	}
+	if req.IsVerified != nil {
+		user.IsVerified = *req.IsVerified
+	}
+	if req.IsActive != nil {
+		user.IsActive = *req.IsActive
+	}
+	if req.Live != nil {
+		user.Live = *req.Live
 	}
 
 	// Update timestamp and version
