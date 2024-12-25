@@ -23,6 +23,7 @@ func NewUserHandler(router fiber.Router, userUseCase domain.UserUseCase) *UserHa
 	router.Patch("/", handler.UpdateUser)
 	router.Get("/:username", handler.GetUserByUsername)
 	router.Get("/check-username", handler.CheckUsername)
+	router.Delete("/", handler.DeleteAccount)
 
 	return handler
 }
@@ -314,5 +315,26 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 	logger.LogOutput(map[string]bool{"available": user == nil}, nil)
 	return c.JSON(fiber.Map{
 		"available": user == nil,
+	})
+}
+
+func (h *UserHandler) DeleteAccount(c *fiber.Ctx) error {
+	logger := utils.NewLogger("UserHandler.DeleteAccount")
+	
+	userID := c.Locals("user_id").(string)
+	authClient := c.Locals("firebase_auth")
+	logger.LogInput(userID)
+
+	err := h.userUseCase.DeleteAccount(userID, authClient)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	logger.LogOutput("success", nil)
+	return c.JSON(fiber.Map{
+		"message": "Account deleted successfully",
 	})
 }

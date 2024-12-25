@@ -198,3 +198,22 @@ func (r *userRepository) Update(user *domain.User) error {
 	logger.LogOutput(user, nil)
 	return nil
 }
+
+func (r *userRepository) SoftDelete(id string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"deletedAt": time.Now(),
+		},
+	}
+
+	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+	return err
+}

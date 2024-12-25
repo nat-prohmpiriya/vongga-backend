@@ -1,9 +1,11 @@
 package usecase
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"firebase.google.com/go/v4/auth"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 )
@@ -22,10 +24,10 @@ func (u *userUseCase) CreateOrUpdateUser(firebaseUID, email, firstName, lastName
 	logger := utils.NewLogger("UserUseCase.CreateOrUpdateUser")
 	input := map[string]interface{}{
 		"firebaseUID": firebaseUID,
-		"email":      email,
-		"firstName":  firstName,
-		"lastName":   lastName,
-		"photoURL":   photoURL,
+		"email":       email,
+		"firstName":   firstName,
+		"lastName":    lastName,
+		"photoURL":    photoURL,
 	}
 	logger.LogInput(input)
 
@@ -40,10 +42,10 @@ func (u *userUseCase) CreateOrUpdateUser(firebaseUID, email, firstName, lastName
 		// Create new user
 		user = &domain.User{
 			FirebaseUID: firebaseUID,
-			Email:      email,
-			FirstName:  firstName,
-			LastName:   lastName,
-			Avatar:     photoURL,
+			Email:       email,
+			FirstName:   firstName,
+			LastName:    lastName,
+			Avatar:      photoURL,
 		}
 
 		err = u.userRepo.Create(user)
@@ -155,5 +157,40 @@ func (u *userUseCase) UpdateUser(user *domain.User) error {
 	}
 
 	logger.LogOutput(user, nil)
+	return nil
+}
+
+func (u *userUseCase) DeleteAccount(userID string, authClient interface{}) error {
+	logger := utils.NewLogger("UserUseCase.DeleteAccount")
+	logger.LogInput(userID)
+
+	// Get user to get Firebase UID
+	user, err := u.userRepo.FindByID(userID)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+	if user == nil {
+		err = fmt.Errorf("user not found")
+		logger.LogOutput(nil, err)
+		return err
+	}
+
+	// Delete user from Firebase
+	firebaseAuth := authClient.(*auth.Client)
+	err = firebaseAuth.DeleteUser(context.Background(), user.FirebaseUID)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+
+	// Soft delete user in our database
+	err = u.userRepo.SoftDelete(userID)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+
+	logger.LogOutput("success", nil)
 	return nil
 }

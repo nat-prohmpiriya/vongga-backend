@@ -69,6 +69,7 @@ type UserRepository interface {
 	FindByID(id string) (*User, error)
 	FindByUsername(username string) (*User, error)
 	Update(user *User) error
+	SoftDelete(id string) error
 }
 
 type UserUseCase interface {
@@ -77,4 +78,5 @@ type UserUseCase interface {
 	GetUserByFirebaseUID(firebaseUID string) (*User, error)
 	GetUserByUsername(username string) (*User, error)
 	UpdateUser(user *User) error
+	DeleteAccount(userID string, authClient interface{}) error
 }
