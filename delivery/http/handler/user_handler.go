@@ -30,7 +30,7 @@ func NewUserHandler(router fiber.Router, userUseCase domain.UserUseCase) *UserHa
 
 func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.CreateOrUpdateUser")
-	
+
 	// Get Firebase user data from context (set by middleware)
 	userID := c.Locals("user_id").(string)
 	email := c.Locals("email").(string)
@@ -46,6 +46,22 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
+		})
+	}
+
+	// Email validation
+	if email == "" {
+		err := fiber.NewError(fiber.StatusBadRequest, "email is required")
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	if !regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`).MatchString(email) {
+		err := fiber.NewError(fiber.StatusBadRequest, "invalid email format")
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
 		})
 	}
 
@@ -72,7 +88,7 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 
 func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.GetProfile")
-	
+
 	userID := c.Locals("user_id").(string)
 	logger.LogInput(userID)
 
@@ -92,32 +108,32 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.UpdateUser")
-	
+
 	userID := c.Locals("user_id").(string)
 
 	var req struct {
-		FirstName      *string    `json:"firstName"`
-		LastName       *string    `json:"lastName"`
-		Username       *string    `json:"username"`
-		DisplayName    *string    `json:"displayName"`
-		Bio            *string    `json:"bio"`
-		Avatar         *string    `json:"avatar"`
-		PhotoProfile   *string    `json:"photoProfile"`
-		PhotoCover     *string    `json:"photoCover"`
-		DateOfBirth    *time.Time `json:"dateOfBirth"`
-		Gender         *string    `json:"gender"`
-		InterestedIn   []string   `json:"interestedIn"`
-		Location       *domain.GeoLocation `json:"location"`
-		RelationStatus *string    `json:"relationStatus"`
-		Height         *float64   `json:"height"`
-		Interests      []string   `json:"interests"`
-		Occupation     *string    `json:"occupation"`
-		Education      *string    `json:"education"`
-		PhoneNumber    *string    `json:"phoneNumber"`
+		FirstName      *string              `json:"firstName"`
+		LastName       *string              `json:"lastName"`
+		Username       *string              `json:"username"`
+		DisplayName    *string              `json:"displayName"`
+		Bio            *string              `json:"bio"`
+		Avatar         *string              `json:"avatar"`
+		PhotoProfile   *string              `json:"photoProfile"`
+		PhotoCover     *string              `json:"photoCover"`
+		DateOfBirth    *time.Time           `json:"dateOfBirth"`
+		Gender         *string              `json:"gender"`
+		InterestedIn   []string             `json:"interestedIn"`
+		Location       *domain.GeoLocation  `json:"location"`
+		RelationStatus *string              `json:"relationStatus"`
+		Height         *float64             `json:"height"`
+		Interests      []string             `json:"interests"`
+		Occupation     *string              `json:"occupation"`
+		Education      *string              `json:"education"`
+		PhoneNumber    *string              `json:"phoneNumber"`
 		DatingPhotos   []domain.DatingPhoto `json:"datingPhotos"`
-		IsVerified     *bool      `json:"isVerified"`
-		IsActive       *bool      `json:"isActive"`
-		Live           *domain.Live `json:"live"`
+		IsVerified     *bool                `json:"isVerified"`
+		IsActive       *bool                `json:"isActive"`
+		Live           *domain.Live         `json:"live"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -139,6 +155,13 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 
 	// Username validation if provided
 	if req.Username != nil {
+		if *req.Username == "" {
+			err := fiber.NewError(fiber.StatusBadRequest, "username is required")
+			logger.LogOutput(nil, err)
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
 		if !regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString(*req.Username) {
 			err := fiber.NewError(fiber.StatusBadRequest, "username can only contain letters and numbers")
 			logger.LogOutput(nil, err)
@@ -146,8 +169,8 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 				"error": err.Error(),
 			})
 		}
-		if len(*req.Username) < 3 || len(*req.Username) > 15 {
-			err := fiber.NewError(fiber.StatusBadRequest, "username must be between 3 and 15 characters")
+		if len(*req.Username) < 3 || len(*req.Username) > 20 {
+			err := fiber.NewError(fiber.StatusBadRequest, "username must be between 3 and 20 characters")
 			logger.LogOutput(nil, err)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": err.Error(),
@@ -256,7 +279,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 
 func (h *UserHandler) GetUserByUsername(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.GetUserByUsername")
-	
+
 	username := c.Params("username")
 	if username == "" {
 		err := fiber.NewError(fiber.StatusBadRequest, "username is required")
@@ -292,7 +315,7 @@ func (h *UserHandler) GetUserByUsername(c *fiber.Ctx) error {
 
 func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.CheckUsername")
-	
+
 	username := c.Query("username")
 	if username == "" {
 		err := fiber.NewError(fiber.StatusBadRequest, "username is required")
@@ -308,7 +331,7 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 		err := fiber.NewError(fiber.StatusBadRequest, "username can only contain letters and numbers")
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
+			"error":     err.Error(),
 			"available": false,
 		})
 	}
@@ -318,7 +341,7 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 		err := fiber.NewError(fiber.StatusBadRequest, "username must be between 3 and 15 characters")
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
+			"error":     err.Error(),
 			"available": false,
 		})
 	}
@@ -340,7 +363,7 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 
 func (h *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.DeleteAccount")
-	
+
 	userID := c.Locals("user_id").(string)
 	authClient := c.Locals("firebase_auth")
 	logger.LogInput(userID)

@@ -136,20 +136,6 @@ func (u *userUseCase) UpdateUser(user *domain.User) error {
 	logger := utils.NewLogger("UserUseCase.UpdateUser")
 	logger.LogInput(user)
 
-	// Validate user data
-	if user.Username == "" {
-		err := fmt.Errorf("username is required")
-		logger.LogOutput(nil, err)
-		return err
-	}
-
-	// Check if email is valid
-	if user.Email == "" {
-		err := fmt.Errorf("email is required")
-		logger.LogOutput(nil, err)
-		return err
-	}
-
 	err := u.userRepo.Update(user)
 	if err != nil {
 		logger.LogOutput(nil, err)
