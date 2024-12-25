@@ -27,6 +27,7 @@ type User struct {
 	BaseModel      `bson:",inline"`
 	FirebaseUID    string        `bson:"firebaseUid" json:"-"`
 	Username       string        `bson:"username" json:"username"`
+	DisplayName    string        `bson:"displayName" json:"displayName"`
 	Email          string        `bson:"email" json:"email"`
 	Password       string        `bson:"password,omitempty" json:"-"`
 	FirstName      string        `bson:"firstName" json:"firstName"`

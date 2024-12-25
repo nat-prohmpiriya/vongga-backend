@@ -1,34 +1,17 @@
 {
 	"info": {
-		"_postman_id": "b5b9b9b0-5b5b-4b5b-9b5b-b9b0b9b0b9b0",
-		"name": "Vongga Platform API",
+		"_postman_id": "e5ca7a86-a5c4-4d9a-82ef-9f01e2e48cc5",
+		"name": "Vongga Platform Copy",
 		"description": "API collection for Vongga Platform",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "21232087"
 	},
 	"item": [
-		{
-			"name": "Health Check",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{base_url}}/api/health",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"api",
-						"health"
-					]
-				},
-				"description": "Check the health status of the server and its services"
-			}
-		},
 		{
 			"name": "Authentication",
 			"item": [
 				{
-					"name": "verifyTokenFirebase",
+					"name": "Verify Token Firebase",
 					"event": [
 						{
 							"listen": "test",
@@ -54,7 +37,8 @@
 									"    pm.expect(jsonData.refreshToken).to.exist;",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -82,7 +66,8 @@
 							]
 						},
 						"description": "Login with Firebase token"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Refresh Token",
@@ -135,7 +120,8 @@
 							]
 						},
 						"description": "Get a new access token using refresh token"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Logout",
@@ -182,7 +168,8 @@
 							]
 						},
 						"description": "Logout and invalidate the current session"
-					}
+					},
+					"response": []
 				}
 			]
 		},
@@ -190,7 +177,7 @@
 			"name": "User",
 			"item": [
 				{
-					"name": "Create or Update User",
+					"name": "Create",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -218,7 +205,8 @@
 							]
 						},
 						"description": "Create or update a user profile based on Firebase user data"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Get Profile",
@@ -242,7 +230,8 @@
 							]
 						},
 						"description": "Get the current user's profile"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Update User",
@@ -273,7 +262,8 @@
 							]
 						},
 						"description": "Update user profile with optional fields"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Get User By Username",
@@ -304,7 +294,8 @@
 							]
 						},
 						"description": "Get a user's profile by username"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Check Username Availability",
@@ -335,175 +326,378 @@
 							]
 						},
 						"description": "Check if a username is available"
-					}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Follow",
+			"item": [
+				{
+					"name": "Follow User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/follow/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"follow",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "",
+									"description": "ID of user to follow"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unfollow User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/follow/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"follow",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "",
+									"description": "ID of user to unfollow"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Followers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/follow/followers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"follow",
+								"followers"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Following",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/follow/following",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"follow",
+								"following"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Block User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/follow/block/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"follow",
+								"block",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "",
+									"description": "ID of user to block"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unblock User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/follow/block/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"follow",
+								"block",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "",
+									"description": "ID of user to unblock"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Friendship",
+			"item": [
+				{
+					"name": "Send Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/friendship/request/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"friendship",
+								"request",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "",
+									"description": "ID of user to send friend request"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Accept Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/friendship/accept/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"friendship",
+								"accept",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "",
+									"description": "ID of user whose friend request to accept"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/friendship/reject/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"friendship",
+								"reject",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "",
+									"description": "ID of user whose friend request to reject"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Friend",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/friendship/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"friendship",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "",
+									"description": "ID of friend to remove"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Friends",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/friendship",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"friendship"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Friend Requests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/friendship/requests",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"friendship",
+								"requests"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
 		{
 			"name": "Posts",
 			"item": [
-				{
-					"name": "Create Post",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"content\": \"This is a test post\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"test\", \"example\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\",\n\t\"subPosts\": [\n\t\t{\n\t\t\t\"content\": \"This is subpost 1\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost1.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 1\n\t\t},\n\t\t{\n\t\t\t\"content\": \"This is subpost 2\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost2.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 2\n\t\t}\n\t]\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/posts",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"posts"
-							]
-						},
-						"description": "Create a new post"
-					}
-				},
-				{
-					"name": "Update Post",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"content\": \"Updated post content\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/updated-image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"updated\", \"test\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/posts/:id",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"posts",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "post_id_here"
-								}
-							]
-						},
-						"description": "Update an existing post"
-					}
-				},
-				{
-					"name": "Delete Post",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/posts/:id",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"posts",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "post_id_here"
-								}
-							]
-						},
-						"description": "Delete a post"
-					}
-				},
-				{
-					"name": "Get Post",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/posts/:id",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"posts",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "post_id_here"
-								}
-							]
-						},
-						"description": "Get a post by ID"
-					}
-				},
-				{
-					"name": "List Posts",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/posts?limit=10&offset=0",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"posts"
-							],
-							"query": [
-								{
-									"key": "limit",
-									"value": "10"
-								},
-								{
-									"key": "offset",
-									"value": "0"
-								}
-							]
-						},
-						"description": "List posts with pagination"
-					}
-				},
 				{
 					"name": "SubPosts",
 					"item": [
@@ -544,7 +738,8 @@
 									]
 								},
 								"description": "Create a new subpost under a post"
-							}
+							},
+							"response": []
 						},
 						{
 							"name": "Update SubPost",
@@ -565,12 +760,13 @@
 									"raw": "{\n\t\"content\": \"Updated subpost content\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/updated-image.jpg\"\n\t\t}\n\t]\n}"
 								},
 								"url": {
-									"raw": "{{base_url}}/api/subposts/:id",
+									"raw": "{{base_url}}/api/posts/subposts/:id",
 									"host": [
 										"{{base_url}}"
 									],
 									"path": [
 										"api",
+										"posts",
 										"subposts",
 										":id"
 									],
@@ -582,7 +778,8 @@
 									]
 								},
 								"description": "Update an existing subpost"
-							}
+							},
+							"response": []
 						},
 						{
 							"name": "Delete SubPost",
@@ -595,12 +792,13 @@
 									}
 								],
 								"url": {
-									"raw": "{{base_url}}/api/subposts/:id",
+									"raw": "{{base_url}}/api/posts/subposts/:id",
 									"host": [
 										"{{base_url}}"
 									],
 									"path": [
 										"api",
+										"posts",
 										"subposts",
 										":id"
 									],
@@ -612,7 +810,8 @@
 									]
 								},
 								"description": "Delete a subpost"
-							}
+							},
+							"response": []
 						},
 						{
 							"name": "Get SubPost",
@@ -625,12 +824,13 @@
 									}
 								],
 								"url": {
-									"raw": "{{base_url}}/api/subposts/:id",
+									"raw": "{{base_url}}/api/posts/subposts/:id",
 									"host": [
 										"{{base_url}}"
 									],
 									"path": [
 										"api",
+										"posts",
 										"subposts",
 										":id"
 									],
@@ -642,7 +842,8 @@
 									]
 								},
 								"description": "Get a specific subpost"
-							}
+							},
+							"response": []
 						},
 						{
 							"name": "List SubPosts",
@@ -673,7 +874,8 @@
 									]
 								},
 								"description": "List all subposts of a post"
-							}
+							},
+							"response": []
 						},
 						{
 							"name": "Reorder SubPosts",
@@ -713,7 +915,312 @@
 									]
 								},
 								"description": "Reorder subposts of a post"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Create Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
 							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"content\": \"This is a test post\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"test\", \"example\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\",\n\t\"subPosts\": [\n\t\t{\n\t\t\t\"content\": \"This is subpost 1\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost1.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 1\n\t\t},\n\t\t{\n\t\t\t\"content\": \"This is subpost 2\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost2.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 2\n\t\t}\n\t]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/posts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"posts"
+							]
+						},
+						"description": "Create a new post"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Post",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"content\": \"Updated post content\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/updated-image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"updated\", \"test\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/posts/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post_id_here"
+								}
+							]
+						},
+						"description": "Update an existing post"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Post",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/posts/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "post_id_here"
+								}
+							]
+						},
+						"description": "Delete a post"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Post",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/posts/:id?includeSubPosts=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":id"
+							],
+							"query": [
+								{
+									"key": "includeSubPosts",
+									"value": "true"
+								}
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "676b463df8e64d3ff04d8615"
+								}
+							]
+						},
+						"description": "Get a post by ID"
+					},
+					"response": [
+						{
+							"name": "Get Post",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/posts/:id?includeSubPosts=true",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"posts",
+										":id"
+									],
+									"query": [
+										{
+											"key": "includeSubPosts",
+											"value": "true"
+										}
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "676b463df8e64d3ff04d8615"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 25 Dec 2024 00:18:40 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "1279"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"676b463df8e64d3ff04d8615\",\n    \"createdAt\": \"2024-12-24T23:39:41.281Z\",\n    \"updatedAt\": \"2024-12-24T23:39:41.281Z\",\n    \"isActive\": true,\n    \"version\": 1,\n    \"userId\": \"67694aaeec1886f9f9ba85ed\",\n    \"content\": \"This is a test post5\",\n    \"media\": [\n        {\n            \"type\": \"image\",\n            \"url\": \"https://example.com/image.jpg\",\n            \"size\": 0\n        }\n    ],\n    \"reactionCounts\": {},\n    \"commentCount\": 0,\n    \"subPostCount\": 2,\n    \"tags\": [\n        \"test\",\n        \"example\"\n    ],\n    \"location\": {\n        \"type\": \"Point\",\n        \"coordinates\": [\n            100.5018,\n            13.7563\n        ],\n        \"placeName\": \"Bangkok\"\n    },\n    \"visibility\": \"public\",\n    \"shareCount\": 0,\n    \"viewCount\": 0,\n    \"isEdited\": false,\n    \"editHistory\": [],\n    \"subPosts\": [\n        {\n            \"id\": \"676b463df8e64d3ff04d8617\",\n            \"createdAt\": \"2024-12-24T23:39:41.281Z\",\n            \"updatedAt\": \"2024-12-24T23:39:41.281Z\",\n            \"isActive\": true,\n            \"version\": 1,\n            \"parentId\": \"676b463df8e64d3ff04d8615\",\n            \"userId\": \"67694aaeec1886f9f9ba85ed\",\n            \"content\": \"This is subpost 1\",\n            \"media\": [\n                {\n                    \"type\": \"image\",\n                    \"url\": \"https://example.com/subpost1.jpg\",\n                    \"size\": 0\n                }\n            ],\n            \"reactionCounts\": {},\n            \"commentCount\": 0,\n            \"order\": 1\n        },\n        {\n            \"id\": \"676b463df8e64d3ff04d8619\",\n            \"createdAt\": \"2024-12-24T23:39:41.281Z\",\n            \"updatedAt\": \"2024-12-24T23:39:41.281Z\",\n            \"isActive\": true,\n            \"version\": 1,\n            \"parentId\": \"676b463df8e64d3ff04d8615\",\n            \"userId\": \"67694aaeec1886f9f9ba85ed\",\n            \"content\": \"This is subpost 2\",\n            \"media\": [\n                {\n                    \"type\": \"image\",\n                    \"url\": \"https://example.com/subpost2.jpg\",\n                    \"size\": 0\n                }\n            ],\n            \"reactionCounts\": {},\n            \"commentCount\": 0,\n            \"order\": 2\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "List Posts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/posts?limit=10&offset=0&userId=67694aaeec1886f9f9ba85ed&includeSubPosts=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"posts"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "userId",
+									"value": "67694aaeec1886f9f9ba85ed"
+								},
+								{
+									"key": "includeSubPosts",
+									"value": "true"
+								}
+							]
+						},
+						"description": "List posts with pagination"
+					},
+					"response": [
+						{
+							"name": "List Posts",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/posts?limit=10&offset=0&userId=67694aaeec1886f9f9ba85ed&includeSubPosts=true",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"posts"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "offset",
+											"value": "0"
+										},
+										{
+											"key": "userId",
+											"value": "67694aaeec1886f9f9ba85ed"
+										},
+										{
+											"key": "includeSubPosts",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 25 Dec 2024 00:20:52 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "6398"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": \"676b463df8e64d3ff04d8615\",\n        \"createdAt\": \"2024-12-24T23:39:41.281Z\",\n        \"updatedAt\": \"2024-12-24T23:39:41.281Z\",\n        \"isActive\": true,\n        \"version\": 1,\n        \"userId\": \"67694aaeec1886f9f9ba85ed\",\n        \"content\": \"This is a test post5\",\n        \"media\": [\n            {\n                \"type\": \"image\",\n                \"url\": \"https://example.com/image.jpg\",\n                \"size\": 0\n            }\n        ],\n        \"reactionCounts\": {},\n        \"commentCount\": 0,\n        \"subPostCount\": 2,\n        \"tags\": [\n            \"test\",\n            \"example\"\n        ],\n        \"location\": {\n            \"type\": \"Point\",\n            \"coordinates\": [\n                100.5018,\n                13.7563\n            ],\n            \"placeName\": \"Bangkok\"\n        },\n        \"visibility\": \"public\",\n        \"shareCount\": 0,\n        \"viewCount\": 0,\n        \"isEdited\": false,\n        \"editHistory\": [],\n        \"subPosts\": [\n            {\n                \"id\": \"676b463df8e64d3ff04d8617\",\n                \"createdAt\": \"2024-12-24T23:39:41.281Z\",\n                \"updatedAt\": \"2024-12-24T23:39:41.281Z\",\n                \"isActive\": true,\n                \"version\": 1,\n                \"parentId\": \"676b463df8e64d3ff04d8615\",\n                \"userId\": \"67694aaeec1886f9f9ba85ed\",\n                \"content\": \"This is subpost 1\",\n                \"media\": [\n                    {\n                        \"type\": \"image\",\n                        \"url\": \"https://example.com/subpost1.jpg\",\n                        \"size\": 0\n                    }\n                ],\n                \"reactionCounts\": {},\n                \"commentCount\": 0,\n                \"order\": 1\n            },\n            {\n                \"id\": \"676b463df8e64d3ff04d8619\",\n                \"createdAt\": \"2024-12-24T23:39:41.281Z\",\n                \"updatedAt\": \"2024-12-24T23:39:41.281Z\",\n                \"isActive\": true,\n                \"version\": 1,\n                \"parentId\": \"676b463df8e64d3ff04d8615\",\n                \"userId\": \"67694aaeec1886f9f9ba85ed\",\n                \"content\": \"This is subpost 2\",\n                \"media\": [\n                    {\n                        \"type\": \"image\",\n                        \"url\": \"https://example.com/subpost2.jpg\",\n                        \"size\": 0\n                    }\n                ],\n                \"reactionCounts\": {},\n                \"commentCount\": 0,\n                \"order\": 2\n            }\n        ]\n    },\n    {\n        \"id\": \"676b4630f8e64d3ff04d860f\",\n        \"createdAt\": \"2024-12-24T23:39:28.343Z\",\n        \"updatedAt\": \"2024-12-24T23:39:28.343Z\",\n        \"isActive\": true,\n        \"version\": 1,\n        \"userId\": \"67694aaeec1886f9f9ba85ed\",\n        \"content\": \"This is a test post5\",\n        \"media\": [\n            {\n                \"type\": \"image\",\n                \"url\": \"https://example.com/image.jpg\",\n                \"size\": 0\n            }\n        ],\n        \"reactionCounts\": {},\n        \"commentCount\": 0,\n        \"subPostCount\": 2,\n        \"tags\": [\n            \"test\",\n            \"example\"\n        ],\n        \"location\": {\n            \"type\": \"Point\",\n            \"coordinates\": [\n                100.5018,\n                13.7563\n            ],\n            \"placeName\": \"Bangkok\"\n        },\n        \"visibility\": \"public\",\n        \"shareCount\": 0,\n        \"viewCount\": 0,\n        \"isEdited\": false,\n        \"editHistory\": [],\n        \"subPosts\": [\n            {\n                \"id\": \"676b4630f8e64d3ff04d8611\",\n                \"createdAt\": \"2024-12-24T23:39:28.343Z\",\n                \"updatedAt\": \"2024-12-24T23:39:28.343Z\",\n                \"isActive\": true,\n                \"version\": 1,\n                \"parentId\": \"676b4630f8e64d3ff04d860f\",\n                \"userId\": \"67694aaeec1886f9f9ba85ed\",\n                \"content\": \"This is subpost 1\",\n                \"media\": [\n                    {\n                        \"type\": \"image\",\n                        \"url\": \"https://example.com/subpost1.jpg\",\n                        \"size\": 0\n                    }\n                ],\n                \"reactionCounts\": {},\n                \"commentCount\": 0,\n                \"order\": 1\n            },\n            {\n                \"id\": \"676b4630f8e64d3ff04d8613\",\n                \"createdAt\": \"2024-12-24T23:39:28.343Z\",\n                \"updatedAt\": \"2024-12-24T23:39:28.343Z\",\n                \"isActive\": true,\n                \"version\": 1,\n                \"parentId\": \"676b4630f8e64d3ff04d860f\",\n                \"userId\": \"67694aaeec1886f9f9ba85ed\",\n                \"content\": \"This is subpost 2\",\n                \"media\": [\n                    {\n                        \"type\": \"image\",\n                        \"url\": \"https://example.com/subpost2.jpg\",\n                        \"size\": 0\n                    }\n                ],\n                \"reactionCounts\": {},\n                \"commentCount\": 0,\n                \"order\": 2\n            }\n        ]\n    },\n    {\n        \"id\": \"676b462bf8e64d3ff04d8609\",\n        \"createdAt\": \"2024-12-24T23:39:23.417Z\",\n        \"updatedAt\": \"2024-12-24T23:39:23.417Z\",\n        \"isActive\": true,\n        \"version\": 1,\n        \"userId\": \"67694aaeec1886f9f9ba85ed\",\n        \"content\": \"This is a test post\",\n        \"media\": [\n            {\n                \"type\": \"image\",\n                \"url\": \"https://example.com/image.jpg\",\n                \"size\": 0\n            }\n        ],\n        \"reactionCounts\": {},\n        \"commentCount\": 0,\n        \"subPostCount\": 2,\n        \"tags\": [\n            \"test\",\n            \"example\"\n        ],\n        \"location\": {\n            \"type\": \"Point\",\n            \"coordinates\": [\n                100.5018,\n                13.7563\n            ],\n            \"placeName\": \"Bangkok\"\n        },\n        \"visibility\": \"public\",\n        \"shareCount\": 0,\n        \"viewCount\": 0,\n        \"isEdited\": false,\n        \"editHistory\": [],\n        \"subPosts\": [\n            {\n                \"id\": \"676b462bf8e64d3ff04d860b\",\n                \"createdAt\": \"2024-12-24T23:39:23.417Z\",\n                \"updatedAt\": \"2024-12-24T23:39:23.417Z\",\n                \"isActive\": true,\n                \"version\": 1,\n                \"parentId\": \"676b462bf8e64d3ff04d8609\",\n                \"userId\": \"67694aaeec1886f9f9ba85ed\",\n                \"content\": \"This is subpost 1\",\n                \"media\": [\n                    {\n                        \"type\": \"image\",\n                        \"url\": \"https://example.com/subpost1.jpg\",\n                        \"size\": 0\n                    }\n                ],\n                \"reactionCounts\": {},\n                \"commentCount\": 0,\n                \"order\": 1\n            },\n            {\n                \"id\": \"676b462bf8e64d3ff04d860d\",\n                \"createdAt\": \"2024-12-24T23:39:23.417Z\",\n                \"updatedAt\": \"2024-12-24T23:39:23.417Z\",\n                \"isActive\": true,\n                \"version\": 1,\n                \"parentId\": \"676b462bf8e64d3ff04d8609\",\n                \"userId\": \"67694aaeec1886f9f9ba85ed\",\n                \"content\": \"This is subpost 2\",\n                \"media\": [\n                    {\n                        \"type\": \"image\",\n                        \"url\": \"https://example.com/subpost2.jpg\",\n                        \"size\": 0\n                    }\n                ],\n                \"reactionCounts\": {},\n                \"commentCount\": 0,\n                \"order\": 2\n            }\n        ]\n    },\n    {\n        \"id\": \"676b45eff8e64d3ff04d8603\",\n        \"createdAt\": \"2024-12-24T23:38:23.996Z\",\n        \"updatedAt\": \"2024-12-24T23:38:23.996Z\",\n        \"isActive\": true,\n        \"version\": 1,\n        \"userId\": \"67694aaeec1886f9f9ba85ed\",\n        \"content\": \"This is a test post\",\n        \"media\": [\n            {\n                \"type\": \"image\",\n                \"url\": \"https://example.com/image.jpg\",\n                \"size\": 0\n            }\n        ],\n        \"reactionCounts\": {},\n        \"commentCount\": 0,\n        \"subPostCount\": 2,\n        \"tags\": [\n            \"test\",\n            \"example\"\n        ],\n        \"location\": {\n            \"type\": \"Point\",\n            \"coordinates\": [\n                100.5018,\n                13.7563\n            ],\n            \"placeName\": \"Bangkok\"\n        },\n        \"visibility\": \"public\",\n        \"shareCount\": 0,\n        \"viewCount\": 0,\n        \"isEdited\": false,\n        \"editHistory\": [],\n        \"subPosts\": [\n            {\n                \"id\": \"676b45f0f8e64d3ff04d8605\",\n                \"createdAt\": \"2024-12-24T23:38:23.996Z\",\n                \"updatedAt\": \"2024-12-24T23:38:23.996Z\",\n                \"isActive\": true,\n                \"version\": 1,\n                \"parentId\": \"676b45eff8e64d3ff04d8603\",\n                \"userId\": \"67694aaeec1886f9f9ba85ed\",\n                \"content\": \"This is subpost 1\",\n                \"media\": [\n                    {\n                        \"type\": \"image\",\n                        \"url\": \"https://example.com/subpost1.jpg\",\n                        \"size\": 0\n                    }\n                ],\n                \"reactionCounts\": {},\n                \"commentCount\": 0,\n                \"order\": 1\n            },\n            {\n                \"id\": \"676b45f0f8e64d3ff04d8607\",\n                \"createdAt\": \"2024-12-24T23:38:23.996Z\",\n                \"updatedAt\": \"2024-12-24T23:38:23.996Z\",\n                \"isActive\": true,\n                \"version\": 1,\n                \"parentId\": \"676b45eff8e64d3ff04d8603\",\n                \"userId\": \"67694aaeec1886f9f9ba85ed\",\n                \"content\": \"This is subpost 2\",\n                \"media\": [\n                    {\n                        \"type\": \"image\",\n                        \"url\": \"https://example.com/subpost2.jpg\",\n                        \"size\": 0\n                    }\n                ],\n                \"reactionCounts\": {},\n                \"commentCount\": 0,\n                \"order\": 2\n            }\n        ]\n    },\n    {\n        \"id\": \"676b42852d236c3cc8cef8e2\",\n        \"createdAt\": \"2024-12-24T23:23:49.139Z\",\n        \"updatedAt\": \"2024-12-24T23:23:49.139Z\",\n        \"isActive\": true,\n        \"version\": 1,\n        \"userId\": \"67694aaeec1886f9f9ba85ed\",\n        \"content\": \"This is a test post\",\n        \"media\": [\n            {\n                \"type\": \"image\",\n                \"url\": \"https://example.com/image.jpg\",\n                \"size\": 0\n            }\n        ],\n        \"reactionCounts\": {},\n        \"commentCount\": 0,\n        \"subPostCount\": 2,\n        \"tags\": [\n            \"test\",\n            \"example\"\n        ],\n        \"location\": {\n            \"type\": \"Point\",\n            \"coordinates\": [\n                100.5018,\n                13.7563\n            ],\n            \"placeName\": \"Bangkok\"\n        },\n        \"visibility\": \"public\",\n        \"shareCount\": 0,\n        \"viewCount\": 0,\n        \"isEdited\": false,\n        \"editHistory\": [],\n        \"subPosts\": [\n            {\n                \"id\": \"676b42852d236c3cc8cef8e4\",\n                \"createdAt\": \"2024-12-24T23:23:49.139Z\",\n                \"updatedAt\": \"2024-12-24T23:23:49.139Z\",\n                \"isActive\": true,\n                \"version\": 1,\n                \"parentId\": \"676b42852d236c3cc8cef8e2\",\n                \"userId\": \"67694aaeec1886f9f9ba85ed\",\n                \"content\": \"This is subpost 1\",\n                \"media\": [\n                    {\n                        \"type\": \"image\",\n                        \"url\": \"https://example.com/subpost1.jpg\",\n                        \"size\": 0\n                    }\n                ],\n                \"reactionCounts\": {},\n                \"commentCount\": 0,\n                \"order\": 1\n            },\n            {\n                \"id\": \"676b42852d236c3cc8cef8e6\",\n                \"createdAt\": \"2024-12-24T23:23:49.139Z\",\n                \"updatedAt\": \"2024-12-24T23:23:49.139Z\",\n                \"isActive\": true,\n                \"version\": 1,\n                \"parentId\": \"676b42852d236c3cc8cef8e2\",\n                \"userId\": \"67694aaeec1886f9f9ba85ed\",\n                \"content\": \"This is subpost 2\",\n                \"media\": [\n                    {\n                        \"type\": \"image\",\n                        \"url\": \"https://example.com/subpost2.jpg\",\n                        \"size\": 0\n                    }\n                ],\n                \"reactionCounts\": {},\n                \"commentCount\": 0,\n                \"order\": 2\n            }\n        ]\n    }\n]"
 						}
 					]
 				}
@@ -751,7 +1258,8 @@
 							]
 						},
 						"description": "Create a new comment"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Update Comment",
@@ -789,7 +1297,8 @@
 							]
 						},
 						"description": "Update an existing comment"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Delete Comment",
@@ -819,7 +1328,8 @@
 							]
 						},
 						"description": "Delete a comment"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "List Comments",
@@ -856,7 +1366,8 @@
 							]
 						},
 						"description": "List comments for a post with pagination"
-					}
+					},
+					"response": []
 				}
 			]
 		},
@@ -892,7 +1403,8 @@
 							]
 						},
 						"description": "Create or update a reaction on a post"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Delete Reaction",
@@ -922,7 +1434,8 @@
 							]
 						},
 						"description": "Delete a reaction from a post"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "List Reactions",
@@ -959,7 +1472,8 @@
 							]
 						},
 						"description": "List reactions for a post with pagination"
-					}
+					},
+					"response": []
 				}
 			]
 		},
@@ -1015,9 +1529,28 @@
 							]
 						},
 						"description": "Upload a file to Firebase Storage"
-					}
+					},
+					"response": []
 				}
 			]
+		},
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api"
+					]
+				},
+				"description": "Check the health status of the server and its services"
+			},
+			"response": []
 		}
 	],
 	"event": [

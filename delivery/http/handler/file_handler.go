@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
@@ -110,17 +109,4 @@ func isValidFileType(contentType string) bool {
 	}
 
 	return validTypes[contentType]
-}
-
-func isValidFileExtension(filename string) bool {
-	validExtensions := map[string]bool{
-		".jpg":  true,
-		".jpeg": true,
-		".png":  true,
-		".gif":  true,
-		".webp": true,
-	}
-
-	ext := filepath.Ext(filename)
-	return validExtensions[ext]
 }
