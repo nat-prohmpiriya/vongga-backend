@@ -31,3 +31,19 @@ type CommentUseCase interface {
 	GetComment(commentID primitive.ObjectID) (*Comment, error)
 	ListComments(postID primitive.ObjectID, limit, offset int) ([]Comment, error)
 }
+
+// CommentUser represents limited user data for comment owner
+type CommentUser struct {
+	ID           primitive.ObjectID `json:"userId"`
+	Username     string            `json:"username"`
+	DisplayName  string            `json:"displayName"`
+	PhotoProfile string            `json:"photoProfile"`
+	FirstName    string            `json:"firstName"`
+	LastName     string            `json:"lastName"`
+}
+
+// CommentWithUser includes Comment and its related user data
+type CommentWithUser struct {
+	*Comment
+	User *CommentUser `json:"user"`
+}

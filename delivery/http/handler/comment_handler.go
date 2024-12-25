@@ -9,18 +9,20 @@ import (
 
 type CommentHandler struct {
 	commentUseCase domain.CommentUseCase
+	userUseCase    domain.UserUseCase
 }
 
-func NewCommentHandler(router fiber.Router, cu domain.CommentUseCase) *CommentHandler {
+func NewCommentHandler(router fiber.Router, cu domain.CommentUseCase, uu domain.UserUseCase) *CommentHandler {
 	handler := &CommentHandler{
 		commentUseCase: cu,
+		userUseCase:    uu,
 	}
 
-	router.Post("/posts/:postId/comments", handler.CreateComment)
-	router.Put("/comments/:id", handler.UpdateComment)
-	router.Delete("/comments/:id", handler.DeleteComment)
-	router.Get("/comments/:id", handler.GetComment)
-	router.Get("/posts/:postId/comments", handler.ListComments)
+	router.Post("/posts/:postId", handler.CreateComment)
+	router.Put("/:id", handler.UpdateComment)
+	router.Delete("/:id", handler.DeleteComment)
+	router.Get("/posts/:postId", handler.ListComments)
+	router.Get("/:id", handler.GetComment)
 
 	return handler
 }
@@ -50,8 +52,14 @@ func (h *CommentHandler) CreateComment(c *fiber.Ctx) error {
 		})
 	}
 
-	// TODO: Get userID from auth context
-	userID := primitive.NewObjectID()
+	// Get userID from auth context
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
 
 	var replyTo *primitive.ObjectID
 	if req.ReplyTo != nil {
@@ -193,16 +201,43 @@ func (h *CommentHandler) ListComments(c *fiber.Ctx) error {
 		"limit":  limit,
 		"offset": offset,
 	}
-	logger.LogInput(input)
 
 	comments, err := h.commentUseCase.ListComments(postID, limit, offset)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.LogOutput(input, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(comments, nil)
-	return c.JSON(comments)
+	// Create a slice to store comments with user information
+	commentsWithUsers := make([]domain.CommentWithUser, 0, len(comments))
+
+	// Fetch user information for each comment
+	for _, comment := range comments {
+		user, err := h.userUseCase.GetUserByID(comment.UserID.Hex())
+		if err != nil {
+			logger.LogOutput(input, err)
+			continue
+		}
+
+		// Create a copy of the comment
+		commentCopy := comment
+
+		commentWithUser := domain.CommentWithUser{
+			Comment: &commentCopy,
+			User: &domain.CommentUser{
+				ID:           user.ID,
+				Username:     user.Username,
+				DisplayName:  user.DisplayName,
+				PhotoProfile: user.PhotoProfile,
+				FirstName:    user.FirstName,
+				LastName:     user.LastName,
+			},
+		}
+		commentsWithUsers = append(commentsWithUsers, commentWithUser)
+	}
+
+	logger.LogOutput(commentsWithUsers, nil)
+	return c.JSON(commentsWithUsers)
 }

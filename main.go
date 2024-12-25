@@ -149,7 +149,7 @@ func main() {
 	handler.NewUserHandler(users, userUseCase)
 	handler.NewPostHandler(posts, postUseCase)
 	handler.NewSubPostHandler(posts, subPostUseCase)
-	handler.NewCommentHandler(comments, commentUseCase)
+	handler.NewCommentHandler(comments, commentUseCase, userUseCase)
 	handler.NewReactionHandler(reactions, reactionUseCase)
 	handler.NewFollowHandler(follows, followUseCase)
 	handler.NewFriendshipHandler(friendships, friendshipUseCase)

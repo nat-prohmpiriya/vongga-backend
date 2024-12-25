@@ -38,7 +38,15 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 		return nil, err
 	}
 
+	now := time.Now()
 	comment := &domain.Comment{
+		BaseModel: domain.BaseModel{
+			ID:        primitive.NewObjectID(),
+			CreatedAt: now,
+			UpdatedAt: now,
+			IsActive:  true,
+			Version:   1,
+		},
 		PostID:         postID,
 		UserID:         userID,
 		Content:        content,
