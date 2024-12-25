@@ -43,6 +43,9 @@ func (h *ReactionHandler) CreateReaction(c *fiber.Ctx) error {
 	logger.LogInput(userID, req)
 
 	var commentID *primitive.ObjectID
+	var postID primitive.ObjectID
+	var err error
+
 	if req.CommentID != "" {
 		id, err := primitive.ObjectIDFromHex(req.CommentID)
 		if err != nil {
@@ -52,10 +55,12 @@ func (h *ReactionHandler) CreateReaction(c *fiber.Ctx) error {
 		commentID = &id
 	}
 
-	postID, err := primitive.ObjectIDFromHex(req.PostID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid post ID")
+	if req.PostID != "" {
+		postID, err = primitive.ObjectIDFromHex(req.PostID)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return utils.SendError(c, fiber.StatusBadRequest, "Invalid post ID")
+		}
 	}
 
 	reaction, err := h.reactionUseCase.CreateReaction(userID, postID, commentID, req.Type)

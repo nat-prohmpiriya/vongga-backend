@@ -30,24 +30,25 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 	}
 	logger.LogInput(input)
 
-	// Get post
-	post, err := r.postRepo.FindByID(postID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return nil, err
-	}
-
-	// Check if reaction already exists and update target
 	var target interface{}
-	if commentID == nil {
-		target = post
-	} else {
+	var err error
+
+	if commentID != nil {
+		// If commentID is provided, get the comment
 		comment, err := r.commentRepo.FindByID(*commentID)
 		if err != nil {
 			logger.LogOutput(nil, err)
 			return nil, err
 		}
 		target = comment
+	} else {
+		// If only postID is provided, get the post
+		post, err := r.postRepo.FindByID(postID)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return nil, err
+		}
+		target = post
 	}
 
 	// Create reaction
@@ -58,8 +59,20 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 		Type:      reactionType,
 	}
 
+	// Save reaction
+	err = r.reactionRepo.Create(reaction)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
 	// Update reaction counts
 	if commentID == nil {
+		post, ok := target.(*domain.Post)
+		if !ok {
+			logger.LogOutput(nil, err)
+			return nil, err
+		}
 		if post.ReactionCounts == nil {
 			post.ReactionCounts = make(map[string]int)
 		}

@@ -6,8 +6,8 @@ import (
 
 // CreateReactionRequest represents the request payload for creating a reaction
 type CreateReactionRequest struct {
-	PostID    string `json:"postId" validate:"required"`
-	CommentID string `json:"commentId,omitempty"`
+	PostID    string `json:"postId" validate:"required_without=CommentID"`
+	CommentID string `json:"commentId" validate:"required_without=PostID"`
 	Type      string `json:"type" validate:"required,oneof=like love haha wow sad angry"`
 }
 
