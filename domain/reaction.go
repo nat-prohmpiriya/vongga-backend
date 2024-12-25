@@ -12,7 +12,7 @@ type CreateReactionRequest struct {
 }
 
 type Reaction struct {
-	BaseModel
+	BaseModel `bson:",inline"`
 	PostID    primitive.ObjectID  `bson:"postId" json:"postId"`
 	CommentID *primitive.ObjectID `bson:"commentId,omitempty" json:"commentId,omitempty"`
 	UserID    primitive.ObjectID  `bson:"userId" json:"userId"`

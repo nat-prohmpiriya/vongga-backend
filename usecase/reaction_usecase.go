@@ -25,7 +25,6 @@ func NewReactionUseCase(reactionRepo domain.ReactionRepository, postRepo domain.
 func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, commentID *primitive.ObjectID, reactionType string) (*domain.Reaction, error) {
 	logger := utils.NewLogger("ReactionUseCase.CreateReaction")
 	input := map[string]interface{}{
-
 		"userID":       userID,
 		"postID":       postID,
 		"commentID":    commentID,
@@ -155,6 +154,13 @@ func (r *reactionUseCase) DeleteReaction(reactionID primitive.ObjectID) error {
 				return err
 			}
 		}
+	}
+
+	// Delete reaction
+	err = r.reactionRepo.Delete(reactionID)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
 	}
 
 	logger.LogOutput("Reaction deleted successfully", nil)
