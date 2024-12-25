@@ -69,7 +69,7 @@ func (r *userRepository) FindByFirebaseUID(firebaseUID string) (*domain.User, er
 	logger.LogInput(firebaseUID)
 
 	var user domain.User
-	err := r.collection.FindOne(context.Background(), bson.M{"firebase_uid": firebaseUID}).Decode(&user)
+	err := r.collection.FindOne(context.Background(), bson.M{"firebaseUid": firebaseUID}).Decode(&user)
 	if err == mongo.ErrNoDocuments {
 		logger.LogOutput(nil, nil)
 		return nil, nil
@@ -152,31 +152,31 @@ func (r *userRepository) Update(user *domain.User) error {
 
 	update := bson.M{
 		"$set": bson.M{
-			"username":         user.Username,
-			"email":           user.Email,
-			"first_name":      user.FirstName,
-			"last_name":       user.LastName,
-			"display_name":    user.DisplayName,
-			"bio":             user.Bio,
-			"avatar":          user.Avatar,
-			"photo_profile":   user.PhotoProfile,
-			"photo_cover":     user.PhotoCover,
-			"date_of_birth":   user.DateOfBirth,
-			"gender":          user.Gender,
-			"interested_in":   user.InterestedIn,
-			"location":        user.Location,
-			"relation_status": user.RelationStatus,
-			"height":          user.Height,
-			"interests":       user.Interests,
-			"occupation":      user.Occupation,
-			"education":       user.Education,
-			"phone_number":    user.PhoneNumber,
-			"dating_photos":   user.DatingPhotos,
-			"is_verified":     user.IsVerified,
-			"is_active":       user.IsActive,
-			"live":            user.Live,
-			"updated_at":      user.UpdatedAt,
-			"version":         user.Version,
+			"username":       user.Username,
+			"email":          user.Email,
+			"firstName":      user.FirstName,
+			"lastName":       user.LastName,
+			"displayName":    user.DisplayName,
+			"bio":            user.Bio,
+			"avatar":         user.Avatar,
+			"photoProfile":   user.PhotoProfile,
+			"photoCover":     user.PhotoCover,
+			"dateOfBirth":    user.DateOfBirth,
+			"gender":         user.Gender,
+			"interestedIn":   user.InterestedIn,
+			"location":       user.Location,
+			"relationStatus": user.RelationStatus,
+			"height":         user.Height,
+			"interests":      user.Interests,
+			"occupation":     user.Occupation,
+			"education":      user.Education,
+			"phoneNumber":    user.PhoneNumber,
+			"datingPhotos":   user.DatingPhotos,
+			"isVerified":     user.IsVerified,
+			"isActive":       user.IsActive,
+			"live":           user.Live,
+			"updatedAt":      user.UpdatedAt,
+			"version":        user.Version,
 		},
 	}
 

@@ -19,11 +19,11 @@ func NewUserHandler(router fiber.Router, userUseCase domain.UserUseCase) *UserHa
 	}
 
 	router.Post("/", handler.CreateOrUpdateUser)
-	router.Get("/profile", handler.GetProfile)
+	router.Get("/me", handler.GetProfile)
 	router.Patch("/", handler.UpdateUser)
-	router.Get("/:username", handler.GetUserByUsername)
 	router.Get("/check-username", handler.CheckUsername)
 	router.Delete("/", handler.DeleteAccount)
+	router.Get("/:username", handler.GetUserByUsername)
 
 	return handler
 }
