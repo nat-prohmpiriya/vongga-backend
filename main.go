@@ -77,12 +77,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	followRepo := repository.NewFollowRepository(db)
+	friendshipRepo := repository.NewFriendshipRepository(db)
 	postRepo := repository.NewPostRepository(db)
 	subPostRepo := repository.NewSubPostRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
 	reactionRepo := repository.NewReactionRepository(db)
-	followRepo := repository.NewFollowRepository(db)
-	friendshipRepo := repository.NewFriendshipRepository(db)
+	notificationRepo := repository.NewNotificationRepository(db)
 
 	// Initialize use cases
 	userUseCase := usecase.NewUserUseCase(userRepo)
@@ -95,12 +96,13 @@ func main() {
 		cfg.GetJWTExpiry(),
 		cfg.GetRefreshTokenExpiry(),
 	)
+	followUseCase := usecase.NewFollowUseCase(followRepo)
+	friendshipUseCase := usecase.NewFriendshipUseCase(friendshipRepo)
 	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo, userRepo)
 	subPostUseCase := usecase.NewSubPostUseCase(subPostRepo, postRepo)
 	commentUseCase := usecase.NewCommentUseCase(commentRepo, postRepo)
 	reactionUseCase := usecase.NewReactionUseCase(reactionRepo, postRepo, commentRepo)
-	followUseCase := usecase.NewFollowUseCase(followRepo)
-	friendshipUseCase := usecase.NewFriendshipUseCase(friendshipRepo)
+	notificationUseCase := usecase.NewNotificationUseCase(notificationRepo)
 
 	// Initialize Fiber app
 	app := fiber.New()
@@ -144,15 +146,17 @@ func main() {
 	reactions := protectedApi.Group("/reactions")
 	follows := protectedApi.Group("/follows")
 	friendships := protectedApi.Group("/friendships")
+	notifications := protectedApi.Group("/notifications")
 
 	// Initialize handlers with their respective route groups
 	handler.NewUserHandler(users, userUseCase)
+	handler.NewFollowHandler(follows, followUseCase)
+	handler.NewFriendshipHandler(friendships, friendshipUseCase)
 	handler.NewPostHandler(posts, postUseCase)
 	handler.NewSubPostHandler(posts, subPostUseCase)
 	handler.NewCommentHandler(comments, commentUseCase, userUseCase)
 	handler.NewReactionHandler(reactions, reactionUseCase)
-	handler.NewFollowHandler(follows, followUseCase)
-	handler.NewFriendshipHandler(friendships, friendshipUseCase)
+	handler.NewNotificationHandler(notifications, notificationUseCase)
 	handler.NewFileHandler(protectedApi, fileRepo)
 
 	// Start server

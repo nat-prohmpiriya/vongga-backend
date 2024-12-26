@@ -1,9 +1,8 @@
 package utils
 
 import (
-	"errors"
-
 	"github.com/gofiber/fiber/v2"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 )
 
 // ErrorResponse represents the structure of error responses
@@ -32,18 +31,18 @@ func HandleError(c *fiber.Ctx, err error) error {
 	var message string
 
 	switch {
-	case errors.Is(err, fiber.ErrNotFound):
+	case err == domain.ErrNotFound:
 		status = fiber.StatusNotFound
-		message = "Resource not found"
-	case errors.Is(err, fiber.ErrBadRequest):
-		status = fiber.StatusBadRequest
-		message = "Bad request"
-	case errors.Is(err, fiber.ErrUnauthorized):
+		message = err.Error()
+	case err == domain.ErrUnauthorized:
 		status = fiber.StatusUnauthorized
-		message = "Unauthorized"
-	case errors.Is(err, fiber.ErrForbidden):
-		status = fiber.StatusForbidden
-		message = "Forbidden"
+		message = err.Error()
+	case err == domain.ErrInvalidInput:
+		status = fiber.StatusBadRequest
+		message = err.Error()
+	case err == domain.ErrInternalError:
+		status = fiber.StatusInternalServerError
+		message = err.Error()
 	default:
 		status = fiber.StatusInternalServerError
 		message = "Internal server error"

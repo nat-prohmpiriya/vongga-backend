@@ -23,6 +23,7 @@ type Post struct {
 	EditHistory    []EditLog          `bson:"editHistory" json:"editHistory"`
 	AllowComments  bool               `bson:"allowComments" json:"allowComments"`
 	AllowReactions bool               `bson:"allowReactions" json:"allowReactions"`
+	PostType       string             `bson:"postType" json:"postType"`
 }
 
 type SubPost struct {
@@ -107,11 +108,11 @@ type SubPostUseCase interface {
 // PostUser represents limited user data for post owner
 type PostUser struct {
 	ID           primitive.ObjectID `json:"userId"`
-	Username     string            `json:"username"`
-	DisplayName  string            `json:"displayName"`
-	PhotoProfile string            `json:"photoProfile"`
-	FirstName    string            `json:"firstName"`
-	LastName     string            `json:"lastName"`
+	Username     string             `json:"username"`
+	DisplayName  string             `json:"displayName"`
+	PhotoProfile string             `json:"photoProfile"`
+	FirstName    string             `json:"firstName"`
+	LastName     string             `json:"lastName"`
 }
 
 // PostWithDetails includes Post and its related data

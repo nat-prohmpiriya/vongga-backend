@@ -28,10 +28,13 @@ func (l *Logger) LogInput(params ...interface{}) {
 
 // LogOutput logs the output of a function
 func (l *Logger) LogOutput(output interface{}, err error) {
-	fmt.Printf("\n#### %s OUTPUT #### ", l.FunctionName)
 	if err != nil {
+		// กรณีเกิด error เพิ่ม ERROR ในชื่อ
+		fmt.Printf("\n#### %s ERROR OUTPUT #### ", l.FunctionName)
 		fmt.Printf("Error: %v\n", err)
 	} else if output != nil {
+		// กรณีปกติ
+		fmt.Printf("\n#### %s OUTPUT #### ", l.FunctionName)
 		jsonBytes, _ := json.Marshal(output)
 		fmt.Printf("%s\n", string(jsonBytes))
 	}
