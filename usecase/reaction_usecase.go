@@ -123,15 +123,14 @@ func (r *reactionUseCase) DeleteReaction(reactionID primitive.ObjectID) error {
 		return err
 	}
 
-	// Get post
-	post, err := r.postRepo.FindByID(reaction.PostID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return err
-	}
-
 	// Update reaction counts
 	if reaction.CommentID == nil {
+		// Get post and update reaction count
+		post, err := r.postRepo.FindByID(reaction.PostID)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return err
+		}
 		if count := post.ReactionCounts[reaction.Type]; count > 0 {
 			post.ReactionCounts[reaction.Type]--
 			err = r.postRepo.Update(post)
@@ -141,6 +140,7 @@ func (r *reactionUseCase) DeleteReaction(reactionID primitive.ObjectID) error {
 			}
 		}
 	} else {
+		// Get comment and update reaction count
 		comment, err := r.commentRepo.FindByID(*reaction.CommentID)
 		if err != nil {
 			logger.LogOutput(nil, err)
