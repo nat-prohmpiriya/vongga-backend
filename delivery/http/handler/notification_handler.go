@@ -40,7 +40,7 @@ func NewNotificationHandler(router fiber.Router, notificationUseCase domain.Noti
 // @Router /notifications [get]
 // @Security BearerAuth
 func (h *NotificationHandler) ListNotifications(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(primitive.ObjectID)
+	userID := c.Locals("userId").(primitive.ObjectID)
 	limit := utils.GetQueryInt(c, "limit", 10)
 	offset := utils.GetQueryInt(c, "offset", 0)
 
@@ -77,7 +77,7 @@ func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
 	}
 
 	// Verify that the user owns this notification
-	userID := c.Locals("userID").(primitive.ObjectID)
+	userID := c.Locals("userId").(primitive.ObjectID)
 	if notification.RecipientID != userID {
 		return utils.HandleError(c, domain.ErrUnauthorized)
 	}
@@ -110,7 +110,7 @@ func (h *NotificationHandler) MarkAsRead(c *fiber.Ctx) error {
 		return utils.HandleError(c, err)
 	}
 
-	userID := c.Locals("userID").(primitive.ObjectID)
+	userID := c.Locals("userId").(primitive.ObjectID)
 	if notification.RecipientID != userID {
 		return utils.HandleError(c, domain.ErrUnauthorized)
 	}
@@ -136,7 +136,7 @@ func (h *NotificationHandler) MarkAsRead(c *fiber.Ctx) error {
 // @Router /notifications/read-all [post]
 // @Security BearerAuth
 func (h *NotificationHandler) MarkAllAsRead(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(primitive.ObjectID)
+	userID := c.Locals("userId").(primitive.ObjectID)
 
 	err := h.notificationUseCase.MarkAllAsRead(userID)
 	if err != nil {
@@ -173,7 +173,7 @@ func (h *NotificationHandler) DeleteNotification(c *fiber.Ctx) error {
 		return utils.HandleError(c, err)
 	}
 
-	userID := c.Locals("userID").(primitive.ObjectID)
+	userID := c.Locals("userId").(primitive.ObjectID)
 	if notification.RecipientID != userID {
 		return utils.HandleError(c, domain.ErrUnauthorized)
 	}
@@ -199,7 +199,7 @@ func (h *NotificationHandler) DeleteNotification(c *fiber.Ctx) error {
 // @Router /notifications/unread-count [get]
 // @Security BearerAuth
 func (h *NotificationHandler) GetUnreadCount(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(primitive.ObjectID)
+	userID := c.Locals("userId").(primitive.ObjectID)
 
 	count, err := h.notificationUseCase.GetUnreadCount(userID)
 	if err != nil {
