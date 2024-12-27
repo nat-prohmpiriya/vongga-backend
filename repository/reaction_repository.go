@@ -79,8 +79,8 @@ func (r *reactionRepository) FindByID(id primitive.ObjectID) (*domain.Reaction, 
 	err := r.db.Collection("reactions").FindOne(context.Background(), bson.M{"_id": id, "deletedAt": bson.M{"$exists": false}}).Decode(&reaction)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			logger.LogOutput(nil, nil)
-			return nil, nil
+			logger.LogOutput(nil, domain.ErrNotFound)
+			return nil, domain.ErrNotFound
 		}
 		logger.LogOutput(nil, err)
 		return nil, err

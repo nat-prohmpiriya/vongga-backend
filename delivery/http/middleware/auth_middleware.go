@@ -36,8 +36,21 @@ func AuthMiddleware(jwtSecret string) fiber.Handler {
 		}
 
 		claims := token.Claims.(jwt.MapClaims)
-		c.Locals("userId", claims["userId"])
-		logger.LogOutput(claims["userId"], nil)
+		logger.LogInput(map[string]interface{}{
+			"claims":        claims,
+			"userIdValue":   claims["userId"],
+			"userIdType":    fmt.Sprintf("%T", claims["userId"]),
+		}, nil)
+		// Convert userId to string before setting in context
+		userID, ok := claims["userId"].(string)
+		if !ok {
+			logger.LogOutput(nil, fmt.Errorf("invalid userId type in token"))
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "invalid token format",
+			})
+		}
+		c.Locals("userId", userID)
+		logger.LogOutput(userID, nil)
 		return c.Next()
 	}
 }

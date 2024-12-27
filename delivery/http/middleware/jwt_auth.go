@@ -60,9 +60,25 @@ func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler 
 		}
 
 		// Store user ID in context
-		userIDStr, ok := claims["userId"].(string)
-		if !ok {
-			logger.LogOutput(nil, fmt.Errorf("userId is not a string"))
+		userIDValue := claims["userId"]
+		var userIDStr string
+
+		// Try to convert userId to string based on its type
+		switch v := userIDValue.(type) {
+		case string:
+			userIDStr = v
+		case interface{}:
+			// Try to convert to string directly
+			if str, ok := v.(string); ok {
+				userIDStr = str
+			} else {
+				logger.LogOutput(nil, fmt.Errorf("userId is not a valid string: %T", v))
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"error": "invalid user ID format in token",
+				})
+			}
+		default:
+			logger.LogOutput(nil, fmt.Errorf("userId is not a valid format: %T", v))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid user ID format in token",
 			})
