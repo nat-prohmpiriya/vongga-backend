@@ -2346,6 +2346,645 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Stories",
+			"item": [
+				{
+					"name": "Create Story",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mediaUrl\": \"https://example.com/image.jpg\",\n    \"mediaType\": \"image\",\n    \"mediaDuration\": 0,\n    \"thumbnail\": \"https://example.com/thumbnail.jpg\",\n    \"caption\": \"My story caption\",\n    \"location\": \"Bangkok, Thailand\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/stories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"stories"
+							]
+						},
+						"description": "Create a new story"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Stories",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/stories/active",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"stories",
+								"active"
+							]
+						},
+						"description": "Get all active stories"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Stories",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/stories/user/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"stories",
+								"user",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "",
+									"description": "ID of the user"
+								}
+							]
+						},
+						"description": "Get all stories for a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Story",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/stories/:storyId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"stories",
+								":storyId"
+							],
+							"variable": [
+								{
+									"key": "storyId",
+									"value": "",
+									"description": "ID of the story"
+								}
+							]
+						},
+						"description": "Get details of a specific story"
+					},
+					"response": []
+				},
+				{
+					"name": "View Story",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/stories/:storyId/view",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"stories",
+								":storyId",
+								"view"
+							],
+							"variable": [
+								{
+									"key": "storyId",
+									"value": "",
+									"description": "ID of the story"
+								}
+							]
+						},
+						"description": "Mark a story as viewed by the current user"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Story",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/stories/:storyId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"stories",
+								":storyId"
+							],
+							"variable": [
+								{
+									"key": "storyId",
+									"value": "",
+									"description": "ID of the story"
+								}
+							]
+						},
+						"description": "Delete a specific story"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Chat",
+			"item": [
+				{
+					"name": "Create Private Chat",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id_1\": \"user1_id\",\n    \"user_id_2\": \"user2_id\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/rooms/private",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"rooms",
+								"private"
+							]
+						},
+						"description": "Create a private chat room between two users"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Group Chat",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Group Chat Name\",\n    \"member_ids\": [\"user1_id\", \"user2_id\", \"user3_id\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/rooms/group",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"rooms",
+								"group"
+							]
+						},
+						"description": "Create a group chat room"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Chats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/chat/rooms",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"rooms"
+							]
+						},
+						"description": "Get all chat rooms for the current user"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Member to Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"user_id_to_add\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/rooms/:roomId/members",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"rooms",
+								":roomId",
+								"members"
+							],
+							"variable": [
+								{
+									"key": "roomId",
+									"value": "",
+									"description": "ID of the chat room"
+								}
+							]
+						},
+						"description": "Add a member to a group chat"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Member from Group",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/chat/rooms/:roomId/members/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"rooms",
+								":roomId",
+								"members",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "roomId",
+									"value": "",
+									"description": "ID of the chat room"
+								},
+								{
+									"key": "userId",
+									"value": "",
+									"description": "ID of the user to remove"
+								}
+							]
+						},
+						"description": "Remove a member from a group chat"
+					},
+					"response": []
+				},
+				{
+					"name": "Send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"room_id\": \"room_id\",\n    \"content\": \"Hello, World!\",\n    \"type\": \"text\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/messages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"messages"
+							]
+						},
+						"description": "Send a message to a chat room"
+					},
+					"response": []
+				},
+				{
+					"name": "Send File Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "room_id",
+									"value": "room_id",
+									"type": "text"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/messages/file",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"messages",
+								"file"
+							]
+						},
+						"description": "Send a file message to a chat room"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Chat Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/chat/rooms/:roomId/messages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"rooms",
+								":roomId",
+								"messages"
+							],
+							"variable": [
+								{
+									"key": "roomId",
+									"value": "",
+									"description": "ID of the chat room"
+								}
+							]
+						},
+						"description": "Get messages from a chat room"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Message Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/chat/messages/:messageId/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"messages",
+								":messageId",
+								"read"
+							],
+							"variable": [
+								{
+									"key": "messageId",
+									"value": "",
+									"description": "ID of the message"
+								}
+							]
+						},
+						"description": "Mark a message as read"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"online\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"status"
+							]
+						},
+						"description": "Update user's chat status"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/chat/status/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"status",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "",
+									"description": "ID of the user"
+								}
+							]
+						},
+						"description": "Get user's chat status"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Notifications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/chat/notifications",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"notifications"
+							]
+						},
+						"description": "Get user's chat notifications"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Notification Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/chat/notifications/:notificationId/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"notifications",
+								":notificationId",
+								"read"
+							],
+							"variable": [
+								{
+									"key": "notificationId",
+									"value": "",
+									"description": "ID of the notification"
+								}
+							]
+						},
+						"description": "Mark a chat notification as read"
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [
