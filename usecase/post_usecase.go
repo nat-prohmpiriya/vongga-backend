@@ -12,13 +12,20 @@ type postUseCase struct {
 	postRepo    domain.PostRepository
 	subPostRepo domain.SubPostRepository
 	userRepo    domain.UserRepository
+	notificationUseCase domain.NotificationUseCase
 }
 
-func NewPostUseCase(postRepo domain.PostRepository, subPostRepo domain.SubPostRepository, userRepo domain.UserRepository) domain.PostUseCase {
+func NewPostUseCase(
+	postRepo domain.PostRepository, 
+	subPostRepo domain.SubPostRepository, 
+	userRepo domain.UserRepository,
+	notificationUseCase domain.NotificationUseCase,
+) domain.PostUseCase {
 	return &postUseCase{
 		postRepo:    postRepo,
 		subPostRepo: subPostRepo,
 		userRepo:    userRepo,
+		notificationUseCase: notificationUseCase,
 	}
 }
 
@@ -90,6 +97,36 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 		}
 	}
 
+	// Check for mentions in content
+	mentions := utils.ExtractMentions(content)
+	for _, username := range mentions {
+		// Find user by username
+		mentionedUser, err := p.userRepo.FindByUsername(username)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			continue // Skip if user not found
+		}
+
+		// Don't notify if user mentions themselves
+		if mentionedUser.ID == userID {
+			continue
+		}
+
+		// Create mention notification
+		_, err = p.notificationUseCase.CreateNotification(
+			mentionedUser.ID,     // recipientID (mentioned user)
+			userID,               // senderID (user who mentioned)
+			post.ID,              // refID (reference to the post)
+			domain.NotificationTypeMention,
+			"post",               // refType
+			"mentioned you in a post", // message
+		)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			// Don't return error here as the post was created successfully
+		}
+	}
+
 	logger.LogOutput(post, nil)
 	return post, nil
 }
@@ -135,6 +172,36 @@ func (p *postUseCase) UpdatePost(postID primitive.ObjectID, content string, medi
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
+	}
+
+	// Check for mentions in content
+	mentions := utils.ExtractMentions(content)
+	for _, username := range mentions {
+		// Find user by username
+		mentionedUser, err := p.userRepo.FindByUsername(username)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			continue // Skip if user not found
+		}
+
+		// Don't notify if user mentions themselves
+		if mentionedUser.ID == post.UserID {
+			continue
+		}
+
+		// Create mention notification
+		_, err = p.notificationUseCase.CreateNotification(
+			mentionedUser.ID,     // recipientID (mentioned user)
+			post.UserID,          // senderID (user who mentioned)
+			post.ID,              // refID (reference to the post)
+			domain.NotificationTypeMention,
+			"post",               // refType
+			"mentioned you in a post", // message
+		)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			// Don't return error here as the post was updated successfully
+		}
 	}
 
 	logger.LogOutput(post, nil)

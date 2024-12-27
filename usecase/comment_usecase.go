@@ -12,17 +12,20 @@ type commentUseCase struct {
 	commentRepo        domain.CommentRepository
 	postRepo          domain.PostRepository
 	notificationUseCase domain.NotificationUseCase
+	userRepo           domain.UserRepository
 }
 
 func NewCommentUseCase(
 	commentRepo domain.CommentRepository,
 	postRepo domain.PostRepository,
 	notificationUseCase domain.NotificationUseCase,
+	userRepo domain.UserRepository,
 ) domain.CommentUseCase {
 	return &commentUseCase{
 		commentRepo:        commentRepo,
 		postRepo:          postRepo,
 		notificationUseCase: notificationUseCase,
+		userRepo:           userRepo,
 	}
 }
 
@@ -65,6 +68,36 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
+	}
+
+	// Check for mentions in content
+	mentions := utils.ExtractMentions(content)
+	for _, username := range mentions {
+		// Find user by username
+		mentionedUser, err := c.userRepo.FindByUsername(username)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			continue // Skip if user not found
+		}
+
+		// Don't notify if user mentions themselves
+		if mentionedUser.ID == userID {
+			continue
+		}
+
+		// Create mention notification
+		_, err = c.notificationUseCase.CreateNotification(
+			mentionedUser.ID,     // recipientID (mentioned user)
+			userID,               // senderID (user who mentioned)
+			comment.ID,           // refID (reference to the comment)
+			domain.NotificationTypeMention,
+			"comment",            // refType
+			"mentioned you in a comment", // message
+		)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			// Don't return error here as the comment was created successfully
+		}
 	}
 
 	// If this is a reply to another comment, notify the original comment owner

@@ -87,8 +87,8 @@ func main() {
 
 	// Initialize use cases
 	userUseCase := usecase.NewUserUseCase(userRepo)
-	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo, userRepo)
 	notificationUseCase := usecase.NewNotificationUseCase(notificationRepo)
+	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo, userRepo, notificationUseCase)
 	authUseCase := usecase.NewAuthUseCase(
 		userRepo,
 		authClient,
@@ -100,7 +100,7 @@ func main() {
 	)
 	followUseCase := usecase.NewFollowUseCase(followRepo, notificationUseCase)
 	friendshipUseCase := usecase.NewFriendshipUseCase(friendshipRepo, notificationUseCase)
-	commentUseCase := usecase.NewCommentUseCase(commentRepo, postRepo, notificationUseCase)
+	commentUseCase := usecase.NewCommentUseCase(commentRepo, postRepo, notificationUseCase, userRepo)
 	reactionUseCase := usecase.NewReactionUseCase(reactionRepo, postRepo, commentRepo, notificationUseCase)
 	subPostUseCase := usecase.NewSubPostUseCase(subPostRepo, postRepo)
 
