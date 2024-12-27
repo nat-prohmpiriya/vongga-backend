@@ -88,7 +88,7 @@ func main() {
 
 	// Initialize use cases
 	userUseCase := usecase.NewUserUseCase(userRepo)
-	notificationUseCase := usecase.NewNotificationUseCase(notificationRepo)
+	notificationUseCase := usecase.NewNotificationUseCase(notificationRepo, userRepo)
 	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo, userRepo, notificationUseCase)
 	storyUseCase := usecase.NewStoryUseCase(storyRepo, userRepo)
 	authUseCase := usecase.NewAuthUseCase(

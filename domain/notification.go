@@ -27,6 +27,19 @@ type Notification struct {
 	IsRead       bool               `bson:"isRead" json:"isRead"`
 }
 
+// NotificationResponse represents a notification with sender information
+type NotificationResponse struct {
+	Notification `bson:",inline"`
+	Sender       struct {
+		UserID       string `json:"userId"`
+		Username     string `json:"username"`
+		DisplayName  string `json:"displayName"`
+		PhotoProfile string `json:"photoProfile"`
+		FirstName    string `json:"firstName"`
+		LastName     string `json:"lastName"`
+	} `json:"sender"`
+}
+
 // NotificationRepository interface
 type NotificationRepository interface {
 	Create(notification *Notification) error
@@ -42,8 +55,8 @@ type NotificationRepository interface {
 // NotificationUseCase interface
 type NotificationUseCase interface {
 	CreateNotification(recipientID, senderID, refID primitive.ObjectID, nType NotificationType, refType, message string) (*Notification, error)
-	GetNotification(notificationID primitive.ObjectID) (*Notification, error)
-	ListNotifications(recipientID primitive.ObjectID, limit, offset int) ([]Notification, error)
+	GetNotification(notificationID primitive.ObjectID) (*NotificationResponse, error)
+	ListNotifications(recipientID primitive.ObjectID, limit, offset int) ([]NotificationResponse, error)
 	MarkAsRead(notificationID primitive.ObjectID) error
 	MarkAllAsRead(recipientID primitive.ObjectID) error
 	DeleteNotification(notificationID primitive.ObjectID) error

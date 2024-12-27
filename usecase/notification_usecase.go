@@ -8,11 +8,13 @@ import (
 
 type notificationUseCase struct {
 	notificationRepo domain.NotificationRepository
+	userRepo        domain.UserRepository
 }
 
-func NewNotificationUseCase(notificationRepo domain.NotificationRepository) domain.NotificationUseCase {
+func NewNotificationUseCase(notificationRepo domain.NotificationRepository, userRepo domain.UserRepository) domain.NotificationUseCase {
 	return &notificationUseCase{
 		notificationRepo: notificationRepo,
+		userRepo:        userRepo,
 	}
 }
 
@@ -48,12 +50,9 @@ func (n *notificationUseCase) CreateNotification(recipientID, senderID, refID pr
 	return notification, nil
 }
 
-func (n *notificationUseCase) GetNotification(notificationID primitive.ObjectID) (*domain.Notification, error) {
+func (n *notificationUseCase) GetNotification(notificationID primitive.ObjectID) (*domain.NotificationResponse, error) {
 	logger := utils.NewLogger("NotificationUseCase.GetNotification")
-	input := map[string]interface{}{
-		"notificationID": notificationID.Hex(),
-	}
-	logger.LogInput(input)
+	logger.LogInput(notificationID)
 
 	notification, err := n.notificationRepo.FindByID(notificationID)
 	if err != nil {
@@ -61,11 +60,28 @@ func (n *notificationUseCase) GetNotification(notificationID primitive.ObjectID)
 		return nil, err
 	}
 
-	logger.LogOutput(notification, nil)
-	return notification, nil
+	// Get sender information
+	sender, err := n.userRepo.FindByID(notification.SenderID.Hex())
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	response := &domain.NotificationResponse{
+		Notification: *notification,
+	}
+	response.Sender.UserID = sender.ID.Hex()
+	response.Sender.Username = sender.Username
+	response.Sender.DisplayName = sender.DisplayName
+	response.Sender.PhotoProfile = sender.PhotoProfile
+	response.Sender.FirstName = sender.FirstName
+	response.Sender.LastName = sender.LastName
+
+	logger.LogOutput(response, nil)
+	return response, nil
 }
 
-func (n *notificationUseCase) ListNotifications(recipientID primitive.ObjectID, limit, offset int) ([]domain.Notification, error) {
+func (n *notificationUseCase) ListNotifications(recipientID primitive.ObjectID, limit, offset int) ([]domain.NotificationResponse, error) {
 	logger := utils.NewLogger("NotificationUseCase.ListNotifications")
 	input := map[string]interface{}{
 		"recipientID": recipientID.Hex(),
@@ -80,8 +96,28 @@ func (n *notificationUseCase) ListNotifications(recipientID primitive.ObjectID, 
 		return nil, err
 	}
 
-	logger.LogOutput(notifications, nil)
-	return notifications, nil
+	// Create response with user information
+	response := make([]domain.NotificationResponse, len(notifications))
+	for i, notification := range notifications {
+		sender, err := n.userRepo.FindByID(notification.SenderID.Hex())
+		if err != nil {
+			logger.LogOutput(nil, err)
+			continue
+		}
+
+		response[i] = domain.NotificationResponse{
+			Notification: notification,
+		}
+		response[i].Sender.UserID = sender.ID.Hex()
+		response[i].Sender.Username = sender.Username
+		response[i].Sender.DisplayName = sender.DisplayName
+		response[i].Sender.PhotoProfile = sender.PhotoProfile
+		response[i].Sender.FirstName = sender.FirstName
+		response[i].Sender.LastName = sender.LastName
+	}
+
+	logger.LogOutput(response, nil)
+	return response, nil
 }
 
 func (n *notificationUseCase) MarkAsRead(notificationID primitive.ObjectID) error {
