@@ -73,20 +73,22 @@ func main() {
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
+	postRepo := repository.NewPostRepository(db)
+	followRepo := repository.NewFollowRepository(db)
+	friendshipRepo := repository.NewFriendshipRepository(db)
+	notificationRepo := repository.NewNotificationRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
+	reactionRepo := repository.NewReactionRepository(db)
+	subPostRepo := repository.NewSubPostRepository(db)
 	fileRepo, err := repository.NewFileStorage("firebase-credentials.json", cfg.FirebaseStorageBucket)
 	if err != nil {
 		log.Fatal(err)
 	}
-	followRepo := repository.NewFollowRepository(db)
-	friendshipRepo := repository.NewFriendshipRepository(db)
-	postRepo := repository.NewPostRepository(db)
-	subPostRepo := repository.NewSubPostRepository(db)
-	commentRepo := repository.NewCommentRepository(db)
-	reactionRepo := repository.NewReactionRepository(db)
-	notificationRepo := repository.NewNotificationRepository(db)
 
 	// Initialize use cases
 	userUseCase := usecase.NewUserUseCase(userRepo)
+	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo, userRepo)
+	notificationUseCase := usecase.NewNotificationUseCase(notificationRepo)
 	authUseCase := usecase.NewAuthUseCase(
 		userRepo,
 		authClient,
@@ -96,13 +98,11 @@ func main() {
 		cfg.GetJWTExpiry(),
 		cfg.GetRefreshTokenExpiry(),
 	)
-	followUseCase := usecase.NewFollowUseCase(followRepo)
-	friendshipUseCase := usecase.NewFriendshipUseCase(friendshipRepo)
-	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo, userRepo)
+	followUseCase := usecase.NewFollowUseCase(followRepo, notificationUseCase)
+	friendshipUseCase := usecase.NewFriendshipUseCase(friendshipRepo, notificationUseCase)
+	commentUseCase := usecase.NewCommentUseCase(commentRepo, postRepo, notificationUseCase)
+	reactionUseCase := usecase.NewReactionUseCase(reactionRepo, postRepo, commentRepo, notificationUseCase)
 	subPostUseCase := usecase.NewSubPostUseCase(subPostRepo, postRepo)
-	commentUseCase := usecase.NewCommentUseCase(commentRepo, postRepo)
-	reactionUseCase := usecase.NewReactionUseCase(reactionRepo, postRepo, commentRepo)
-	notificationUseCase := usecase.NewNotificationUseCase(notificationRepo)
 
 	// Initialize Fiber app
 	app := fiber.New()

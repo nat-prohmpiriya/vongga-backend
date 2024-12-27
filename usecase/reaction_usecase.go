@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"errors"
 	"time"
 
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
@@ -41,7 +42,7 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 
 	// Check if reaction already exists
 	existing, err := r.reactionRepo.FindByUserAndTarget(userID, postID, commentID)
-	if err != nil && !domain.IsErrNotFound(err) {
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
@@ -70,11 +71,10 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 			CreatedAt: now,
 			UpdatedAt: now,
 			IsActive:  true,
-			Version:   1,
 		},
-		UserID:    userID,
 		PostID:    postID,
 		CommentID: commentID,
+		UserID:    userID,
 		Type:      reactionType,
 	}
 
@@ -86,30 +86,34 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 
 	// Update reaction counts
 	if commentID == nil {
-		post, ok := r.postRepo.FindByID(postID)
+		post, err := r.postRepo.FindByID(postID)
 		if err != nil {
 			logger.LogOutput(nil, err)
 			return nil, err
 		}
+
 		if post.ReactionCounts == nil {
 			post.ReactionCounts = make(map[string]int)
 		}
 		post.ReactionCounts[reactionType]++
+
 		err = r.postRepo.Update(post)
 		if err != nil {
 			logger.LogOutput(nil, err)
 			return nil, err
 		}
 	} else {
-		comment, ok := r.commentRepo.FindByID(*commentID)
+		comment, err := r.commentRepo.FindByID(*commentID)
 		if err != nil {
 			logger.LogOutput(nil, err)
 			return nil, err
 		}
+
 		if comment.ReactionCounts == nil {
 			comment.ReactionCounts = make(map[string]int)
 		}
 		comment.ReactionCounts[reactionType]++
+
 		err = r.commentRepo.Update(comment)
 		if err != nil {
 			logger.LogOutput(nil, err)
