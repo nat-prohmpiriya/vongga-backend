@@ -62,6 +62,37 @@ type Live struct {
 	Country string `bson:"country" json:"country"`
 }
 
+type UserListItem struct {
+	ID             string `json:"id"`
+	Username       string `json:"username"`
+	DisplayName    string `json:"displayName"`
+	Email          string `json:"email"`
+	FirstName      string `json:"firstName"`
+	LastName       string `json:"lastName"`
+	Avatar         string `json:"avatar"`
+	PhotoProfile   string `json:"photoProfile"`
+	PhotoCover     string `json:"photoCover"`
+	FollowersCount int    `json:"followersCount"`
+	FollowingCount int    `json:"followingCount"`
+	FriendsCount   int    `json:"friendsCount"`
+}
+
+type UserListRequest struct {
+	Page     int    `json:"page" query:"page"`
+	PageSize int    `json:"pageSize" query:"pageSize"`
+	Search   string `json:"search" query:"search"`
+	SortBy   string `json:"sortBy" query:"sortBy"`
+	SortDir  string `json:"sortDir" query:"sortDir"`
+	Status   string `json:"status" query:"status"`
+}
+
+type UserListResponse struct {
+	Users      []UserListItem `json:"users"`
+	TotalCount int64         `json:"totalCount"`
+	Page       int           `json:"page"`
+	PageSize   int          `json:"pageSize"`
+}
+
 type UserRepository interface {
 	Create(user *User) error
 	FindByFirebaseUID(firebaseUID string) (*User, error)
@@ -70,6 +101,7 @@ type UserRepository interface {
 	FindByUsername(username string) (*User, error)
 	Update(user *User) error
 	SoftDelete(id string) error
+	GetUserList(req *UserListRequest) ([]User, int64, error)
 }
 
 type UserUseCase interface {
@@ -79,4 +111,5 @@ type UserUseCase interface {
 	GetUserByUsername(username string) (*User, error)
 	UpdateUser(user *User) error
 	DeleteAccount(userID string, authClient interface{}) error
+	GetUserList(req *UserListRequest) (*UserListResponse, error)
 }

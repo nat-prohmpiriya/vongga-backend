@@ -23,6 +23,7 @@ func NewUserHandler(router fiber.Router, userUseCase domain.UserUseCase) *UserHa
 	router.Post("/", handler.CreateOrUpdateUser)
 	router.Get("/me", handler.GetProfile)
 	router.Get("/check-username", handler.CheckUsername)
+	router.Get("/list", handler.GetUserList)
 	router.Get("/:username", handler.GetUserByUsername)
 
 	return handler
@@ -311,6 +312,34 @@ func (h *UserHandler) GetUserByUsername(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"user": user,
 	})
+}
+
+func (h *UserHandler) GetUserList(c *fiber.Ctx) error {
+	logger := utils.NewLogger("UserHandler.GetUserList")
+
+	// Parse query parameters
+	req := &domain.UserListRequest{
+		Page:     c.QueryInt("page", 1),
+		PageSize: c.QueryInt("pageSize", 10),
+		Search:   c.Query("search"),
+		SortBy:   c.Query("sortBy"),
+		SortDir:  c.Query("sortDir"),
+		Status:   c.Query("status"),
+	}
+
+	logger.LogInput(req)
+
+	// Get user list from use case
+	response, err := h.userUseCase.GetUserList(req)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	logger.LogOutput(response, nil)
+	return c.JSON(response)
 }
 
 func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {

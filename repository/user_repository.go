@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type userRepository struct {
@@ -72,7 +73,7 @@ func (r *userRepository) Create(user *domain.User) error {
 	}
 
 	pipe := r.rdb.Pipeline()
-	
+
 	// Cache by ID
 	idKey := fmt.Sprintf("user:id:%s", user.ID.Hex())
 	pipe.Set(context.Background(), idKey, string(userBytes), 24*time.Hour)
@@ -466,4 +467,99 @@ func (r *userRepository) SoftDelete(id string) error {
 
 	logger.LogOutput(map[string]interface{}{"deleted": true}, nil)
 	return nil
+}
+
+func (r *userRepository) GetUserList(req *domain.UserListRequest) ([]domain.User, int64, error) {
+	logger := utils.NewLogger("UserRepository.GetUserList")
+
+	// Try to get from Redis first
+	cacheKey := fmt.Sprintf("user_list:%d:%d:%s:%s:%s:%s",
+		req.Page, req.PageSize, req.Search, req.SortBy, req.SortDir, req.Status)
+
+	var users []domain.User
+	var totalCount int64
+
+	// Try to get from cache
+	cachedData, err := r.rdb.Get(context.Background(), cacheKey).Result()
+	if err == nil {
+		var cachedResponse struct {
+			Users      []domain.User `json:"users"`
+			TotalCount int64         `json:"totalCount"`
+		}
+		if err := json.Unmarshal([]byte(cachedData), &cachedResponse); err == nil {
+			logger.LogOutput("Retrieved user list from cache", nil)
+			return cachedResponse.Users, cachedResponse.TotalCount, nil
+		}
+	}
+
+	// If not in cache, query from MongoDB
+	collection := r.collection
+	ctx := context.Background()
+
+	// Build filter
+	filter := bson.M{"deletedAt": nil}
+	if req.Status != "" {
+		filter["status"] = req.Status
+	}
+	if req.Search != "" {
+		filter["$or"] = []bson.M{
+			{"firstName": bson.M{"$regex": req.Search, "$options": "i"}},
+			{"lastName": bson.M{"$regex": req.Search, "$options": "i"}},
+			{"username": bson.M{"$regex": req.Search, "$options": "i"}},
+		}
+	}
+
+	// Get total count
+	totalCount, err = collection.CountDocuments(ctx, filter)
+	if err != nil {
+		logger.LogOutput("Error counting documents:", err)
+		return nil, 0, err
+	}
+
+	// Build sort
+	sort := bson.D{{Key: "createdAt", Value: -1}} // default sort
+	if req.SortBy != "" {
+		sortDir := 1
+		if req.SortDir == "desc" {
+			sortDir = -1
+		}
+		sort = bson.D{{Key: req.SortBy, Value: sortDir}}
+	}
+
+	// Calculate skip
+	skip := (req.Page - 1) * req.PageSize
+
+	// Execute query
+	opts := options.Find().
+		SetSort(sort).
+		SetSkip(int64(skip)).
+		SetLimit(int64(req.PageSize))
+
+	cursor, err := collection.Find(ctx, filter, opts)
+	if err != nil {
+		logger.LogOutput("Error finding users:", err)
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	if err = cursor.All(ctx, &users); err != nil {
+		logger.LogOutput("Error decoding users:", err)
+		return nil, 0, err
+	}
+
+	// Cache the results
+	cacheData := struct {
+		Users      []domain.User `json:"users"`
+		TotalCount int64         `json:"totalCount"`
+	}{
+		Users:      users,
+		TotalCount: totalCount,
+	}
+
+	if cacheBytes, err := json.Marshal(cacheData); err == nil {
+		// Cache for 5 minutes
+		r.rdb.Set(context.Background(), cacheKey, string(cacheBytes), 5*time.Minute)
+	}
+
+	return users, totalCount, nil
 }

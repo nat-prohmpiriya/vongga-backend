@@ -180,3 +180,69 @@ func (u *userUseCase) DeleteAccount(userID string, authClient interface{}) error
 	logger.LogOutput("success", nil)
 	return nil
 }
+
+func (u *userUseCase) GetUserList(req *domain.UserListRequest) (*domain.UserListResponse, error) {
+	logger := utils.NewLogger("UserUseCase.GetUserList")
+	logger.LogInput(req)
+
+	// Validate request
+	if req.Page < 1 {
+		req.Page = 1
+	}
+	if req.PageSize < 1 {
+		req.PageSize = 10
+	}
+	if req.PageSize > 100 {
+		req.PageSize = 100
+	}
+
+	// Validate sort parameters
+	validSortFields := map[string]bool{
+		"createdAt": true,
+		"firstName": true,
+		"lastName":  true,
+		"username":  true,
+	}
+	if req.SortBy != "" && !validSortFields[req.SortBy] {
+		req.SortBy = "createdAt"
+	}
+	if req.SortDir != "asc" && req.SortDir != "desc" {
+		req.SortDir = "desc"
+	}
+
+	// Get users from repository
+	users, totalCount, err := u.userRepo.GetUserList(req)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Convert User to UserListItem
+	userItems := make([]domain.UserListItem, len(users))
+	for i, user := range users {
+		userItems[i] = domain.UserListItem{
+			ID:             user.ID.Hex(),
+			Username:       user.Username,
+			DisplayName:    user.DisplayName,
+			Email:          user.Email,
+			FirstName:      user.FirstName,
+			LastName:       user.LastName,
+			Avatar:         user.Avatar,
+			PhotoProfile:   user.PhotoProfile,
+			PhotoCover:     user.PhotoCover,
+			FollowersCount: user.FollowersCount,
+			FollowingCount: user.FollowingCount,
+			FriendsCount:   user.FriendsCount,
+		}
+	}
+
+	response := &domain.UserListResponse{
+		Users:      userItems,
+		TotalCount: totalCount,
+		Page:       req.Page,
+		PageSize:   req.PageSize,
+	}
+
+	logger.LogOutput(response, nil)
+	return response, nil
+}
