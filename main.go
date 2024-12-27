@@ -81,6 +81,10 @@ func main() {
 	reactionRepo := repository.NewReactionRepository(db)
 	subPostRepo := repository.NewSubPostRepository(db, redisClient)
 	storyRepo := repository.NewStoryRepository(db, redisClient)
+	fileRepo, err := repository.NewFileStorage(cfg.FirebaseCredentialsPath, cfg.FirebaseStorageBucket)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize use cases
 	userUseCase := usecase.NewUserUseCase(userRepo)
@@ -158,6 +162,7 @@ func main() {
 	handler.NewReactionHandler(reactions, reactionUseCase)
 	handler.NewNotificationHandler(notifications, notificationUseCase)
 	handler.NewStoryHandler(stories, storyUseCase)
+	handler.NewFileHandler(protectedApi, fileRepo)
 
 	// Start server
 	log.Fatal(app.Listen(cfg.ServerAddress))
