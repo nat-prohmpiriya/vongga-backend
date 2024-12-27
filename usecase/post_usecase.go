@@ -312,7 +312,7 @@ func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, in
 		}
 
 		// Get user details
-		user, err := p.userRepo.FindByID(post.UserID)
+		user, err := p.userRepo.FindByID(post.UserID.Hex())
 		if err != nil {
 			logger.LogOutput(nil, err)
 			continue
