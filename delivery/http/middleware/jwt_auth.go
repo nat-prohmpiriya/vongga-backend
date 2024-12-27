@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler {
@@ -59,9 +60,25 @@ func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler 
 		}
 
 		// Store user ID in context
-		c.Locals("user_id", claims["user_id"])
+		userIDStr, ok := claims["userId"].(string)
+		if !ok {
+			logger.LogOutput(nil, fmt.Errorf("userId is not a string"))
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "invalid user ID format in token",
+			})
+		}
+
+		userID, err := primitive.ObjectIDFromHex(userIDStr)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "invalid user ID format",
+			})
+		}
+
+		c.Locals("userId", userID)
 		c.Locals("firebase_auth", authClient)
-		logger.LogInput(claims["user_id"])
+		logger.LogInput(userID)
 		return c.Next()
 	}
 }

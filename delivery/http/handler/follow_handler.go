@@ -33,21 +33,20 @@ func NewFollowHandler(router fiber.Router, fu domain.FollowUseCase) *FollowHandl
 func (h *FollowHandler) Follow(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.Follow")
 
-	userID := c.Locals("userID").(string)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
 	followingID := c.Params("userId")
 
 	logger.LogInput(map[string]interface{}{
-		"userID":     userID,
+		"userID":      userID,
 		"followingID": followingID,
 	})
-
-	userObjID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
-	}
 
 	followingObjID, err := primitive.ObjectIDFromHex(followingID)
 	if err != nil {
@@ -57,7 +56,7 @@ func (h *FollowHandler) Follow(c *fiber.Ctx) error {
 		})
 	}
 
-	err = h.followUseCase.Follow(userObjID, followingObjID)
+	err = h.followUseCase.Follow(userID, followingObjID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -75,21 +74,20 @@ func (h *FollowHandler) Follow(c *fiber.Ctx) error {
 func (h *FollowHandler) Unfollow(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.Unfollow")
 
-	userID := c.Locals("userID").(string)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
 	followingID := c.Params("userId")
 
 	logger.LogInput(map[string]interface{}{
-		"userID":     userID,
+		"userID":      userID,
 		"followingID": followingID,
 	})
-
-	userObjID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
-	}
 
 	followingObjID, err := primitive.ObjectIDFromHex(followingID)
 	if err != nil {
@@ -99,7 +97,7 @@ func (h *FollowHandler) Unfollow(c *fiber.Ctx) error {
 		})
 	}
 
-	err = h.followUseCase.Unfollow(userObjID, followingObjID)
+	err = h.followUseCase.Unfollow(userID, followingObjID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -117,11 +115,26 @@ func (h *FollowHandler) Unfollow(c *fiber.Ctx) error {
 func (h *FollowHandler) Block(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.Block")
 
-	userID := c.Locals("userID").(string)
+	userIDInterface := c.Locals("userId")
+	if userIDInterface == nil {
+		logger.LogOutput(nil, fiber.ErrUnauthorized)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "User not authenticated",
+		})
+	}
+
+	userID, ok := userIDInterface.(string)
+	if !ok {
+		logger.LogOutput(nil, fiber.ErrUnauthorized)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid user authentication",
+		})
+	}
+
 	blockedID := c.Params("userId")
 
 	logger.LogInput(map[string]interface{}{
-		"userID":   userID,
+		"userID":    userID,
 		"blockedID": blockedID,
 	})
 
@@ -159,21 +172,20 @@ func (h *FollowHandler) Block(c *fiber.Ctx) error {
 func (h *FollowHandler) Unblock(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.Unblock")
 
-	userID := c.Locals("userID").(string)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
 	blockedID := c.Params("userId")
 
 	logger.LogInput(map[string]interface{}{
-		"userID":   userID,
+		"userID":    userID,
 		"blockedID": blockedID,
 	})
-
-	userObjID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
-	}
 
 	blockedObjID, err := primitive.ObjectIDFromHex(blockedID)
 	if err != nil {
@@ -183,7 +195,7 @@ func (h *FollowHandler) Unblock(c *fiber.Ctx) error {
 		})
 	}
 
-	err = h.followUseCase.Unblock(userObjID, blockedObjID)
+	err = h.followUseCase.Unblock(userID, blockedObjID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -201,7 +213,14 @@ func (h *FollowHandler) Unblock(c *fiber.Ctx) error {
 func (h *FollowHandler) GetFollowers(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.GetFollowers")
 
-	userID := c.Locals("userID").(string)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 	offset, _ := strconv.Atoi(c.Query("offset", "0"))
 
@@ -211,15 +230,7 @@ func (h *FollowHandler) GetFollowers(c *fiber.Ctx) error {
 		"offset": offset,
 	})
 
-	userObjID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
-	}
-
-	followers, err := h.followUseCase.GetFollowers(userObjID, limit, offset)
+	followers, err := h.followUseCase.GetFollowers(userID, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
@@ -237,7 +248,14 @@ func (h *FollowHandler) GetFollowers(c *fiber.Ctx) error {
 func (h *FollowHandler) GetFollowing(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.GetFollowing")
 
-	userID := c.Locals("userID").(string)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 	offset, _ := strconv.Atoi(c.Query("offset", "0"))
 
@@ -247,15 +265,7 @@ func (h *FollowHandler) GetFollowing(c *fiber.Ctx) error {
 		"offset": offset,
 	})
 
-	userObjID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
-	}
-
-	following, err := h.followUseCase.GetFollowing(userObjID, limit, offset)
+	following, err := h.followUseCase.GetFollowing(userID, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{

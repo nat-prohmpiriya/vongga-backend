@@ -1,12 +1,13 @@
 package handler
 
 import (
+	"strconv"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	ws "github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/websocket"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
-	"strconv"
 )
 
 type ChatHandler struct {
@@ -54,8 +55,8 @@ func NewChatHandler(router fiber.Router, chatUsecase domain.ChatUsecase) {
 // Room handlers
 func (h *ChatHandler) CreatePrivateChat(c *fiber.Ctx) error {
 	var req struct {
-		UserID1 string `json:"user_id_1" binding:"required"`
-		UserID2 string `json:"user_id_2" binding:"required"`
+		UserID1 string `json:"userId_1" binding:"required"`
+		UserID2 string `json:"userId_2" binding:"required"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -114,7 +115,7 @@ func (h *ChatHandler) CreateGroupChat(c *fiber.Ctx) error {
 
 func (h *ChatHandler) GetUserChats(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.GetUserChats")
-	userID := c.Locals("user_id").(string)
+	userID := c.Locals("userId").(string)
 	logger.LogInput(userID)
 
 	rooms, err := h.chatUsecase.GetUserChats(userID)
@@ -134,7 +135,7 @@ func (h *ChatHandler) AddMemberToGroup(c *fiber.Ctx) error {
 	roomID := c.Params("roomId")
 
 	var req struct {
-		UserID string `json:"user_id" binding:"required"`
+		UserID string `json:"userId" binding:"required"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -197,7 +198,7 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 		})
 	}
 
-	senderID := c.Locals("user_id").(string)
+	senderID := c.Locals("userId").(string)
 	logger.LogInput(map[string]string{
 		"roomID":   req.RoomID,
 		"senderID": senderID,
@@ -233,7 +234,7 @@ func (h *ChatHandler) SendFileMessage(c *fiber.Ctx) error {
 		})
 	}
 
-	senderID := c.Locals("user_id").(string)
+	senderID := c.Locals("userId").(string)
 	logger.LogInput(map[string]interface{}{
 		"roomID":   req.RoomID,
 		"senderID": senderID,
@@ -281,7 +282,7 @@ func (h *ChatHandler) GetChatMessages(c *fiber.Ctx) error {
 func (h *ChatHandler) MarkMessageRead(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.MarkMessageRead")
 	messageID := c.Params("messageId")
-	userID := c.Locals("user_id").(string)
+	userID := c.Locals("userId").(string)
 
 	logger.LogInput(map[string]string{
 		"messageID": messageID,
@@ -313,7 +314,7 @@ func (h *ChatHandler) UpdateUserStatus(c *fiber.Ctx) error {
 		})
 	}
 
-	userID := c.Locals("user_id").(string)
+	userID := c.Locals("userId").(string)
 	logger.LogInput(map[string]interface{}{
 		"userID":   userID,
 		"isOnline": req.IsOnline,
@@ -350,7 +351,7 @@ func (h *ChatHandler) GetUserStatus(c *fiber.Ctx) error {
 // Notification handlers
 func (h *ChatHandler) GetUserNotifications(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.GetUserNotifications")
-	userID := c.Locals("user_id").(string)
+	userID := c.Locals("userId").(string)
 	logger.LogInput(userID)
 
 	notifications, err := h.chatUsecase.GetUserNotifications(userID)
@@ -383,7 +384,7 @@ func (h *ChatHandler) MarkNotificationRead(c *fiber.Ctx) error {
 
 func (h *ChatHandler) handleWebSocket(c *websocket.Conn) {
 	// Get user ID from context
-	userID := c.Locals("user_id").(string)
+	userID := c.Locals("userId").(string)
 
 	// Create new client
 	client := &ws.Client{

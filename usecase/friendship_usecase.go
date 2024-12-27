@@ -32,7 +32,7 @@ func (f *friendshipUseCase) SendFriendRequest(fromID, toID primitive.ObjectID) e
 	logger.LogInput(input)
 
 	if fromID == toID {
-		err := errors.New("cannot send friend request to yourself")
+		err := domain.ErrInvalidInput
 		logger.LogOutput(nil, err)
 		return err
 	}
@@ -41,21 +41,21 @@ func (f *friendshipUseCase) SendFriendRequest(fromID, toID primitive.ObjectID) e
 	existing, err := f.friendshipRepo.FindByUsers(fromID, toID)
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		logger.LogOutput(nil, err)
-		return err
+		return domain.ErrInternalError
 	}
 	if existing != nil {
 		if existing.Status == "blocked" {
-			err := errors.New("cannot send friend request to blocked user")
+			err := domain.ErrInvalidInput
 			logger.LogOutput(nil, err)
 			return err
 		}
 		if existing.Status == "pending" {
-			err := errors.New("friend request already sent")
+			err := domain.ErrFriendRequestAlreadySent
 			logger.LogOutput(nil, err)
 			return err
 		}
 		if existing.Status == "accepted" {
-			err := errors.New("already friends with this user")
+			err := domain.ErrAlreadyFriends
 			logger.LogOutput(nil, err)
 			return err
 		}
@@ -72,7 +72,7 @@ func (f *friendshipUseCase) SendFriendRequest(fromID, toID primitive.ObjectID) e
 	err = f.friendshipRepo.Create(friendship)
 	if err != nil {
 		logger.LogOutput(nil, err)
-		return err
+		return domain.ErrInternalError
 	}
 
 	// Create notification for friend request
@@ -107,20 +107,20 @@ func (f *friendshipUseCase) AcceptFriendRequest(userID, friendID primitive.Objec
 	friendship, err := f.friendshipRepo.FindByUsers(friendID, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			err = errors.New("friend request not found")
+			err = domain.ErrFriendRequestNotFound
 		}
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if friendship.Status != "pending" {
-		err = errors.New("no pending friend request")
+		err = domain.ErrInvalidInput
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if friendship.RequestedBy == userID {
-		err = errors.New("cannot accept your own friend request")
+		err = domain.ErrInvalidInput
 		logger.LogOutput(nil, err)
 		return err
 	}
@@ -130,7 +130,7 @@ func (f *friendshipUseCase) AcceptFriendRequest(userID, friendID primitive.Objec
 
 	if err := f.friendshipRepo.Update(friendship); err != nil {
 		logger.LogOutput(nil, err)
-		return err
+		return domain.ErrInternalError
 	}
 
 	// Create notification for the user who sent the request
@@ -164,27 +164,27 @@ func (f *friendshipUseCase) RejectFriendRequest(userID, friendID primitive.Objec
 	friendship, err := f.friendshipRepo.FindByUsers(friendID, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			err = errors.New("friend request not found")
+			err = domain.ErrFriendRequestNotFound
 		}
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if friendship.Status != "pending" {
-		err = errors.New("no pending friend request")
+		err = domain.ErrInvalidInput
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if friendship.RequestedBy == userID {
-		err = errors.New("cannot reject your own friend request")
+		err = domain.ErrInvalidInput
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if err := f.friendshipRepo.Delete(friendID, userID); err != nil {
 		logger.LogOutput(nil, err)
-		return err
+		return domain.ErrInternalError
 	}
 
 	logger.LogOutput(nil, nil)
@@ -203,27 +203,27 @@ func (f *friendshipUseCase) CancelFriendRequest(userID, friendID primitive.Objec
 	friendship, err := f.friendshipRepo.FindByUsers(userID, friendID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			err = errors.New("friend request not found")
+			err = domain.ErrFriendRequestNotFound
 		}
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if friendship.Status != "pending" {
-		err = errors.New("no pending friend request")
+		err = domain.ErrInvalidInput
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if friendship.RequestedBy != userID {
-		err = errors.New("cannot cancel friend request sent by another user")
+		err = domain.ErrInvalidInput
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if err := f.friendshipRepo.Delete(userID, friendID); err != nil {
 		logger.LogOutput(nil, err)
-		return err
+		return domain.ErrInternalError
 	}
 
 	logger.LogOutput(nil, nil)
@@ -242,21 +242,21 @@ func (f *friendshipUseCase) Unfriend(userID1, userID2 primitive.ObjectID) error 
 	friendship, err := f.friendshipRepo.FindByUsers(userID1, userID2)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			err = errors.New("not friends with this user")
+			err = domain.ErrFriendshipNotFound
 		}
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if friendship.Status != "accepted" {
-		err = errors.New("not friends with this user")
+		err = domain.ErrInvalidInput
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if err := f.friendshipRepo.Delete(userID1, userID2); err != nil {
 		logger.LogOutput(nil, err)
-		return err
+		return domain.ErrInternalError
 	}
 
 	logger.LogOutput(nil, nil)
@@ -273,7 +273,7 @@ func (f *friendshipUseCase) BlockFriend(userID, blockedID primitive.ObjectID) er
 	logger.LogInput(input)
 
 	if userID == blockedID {
-		err := errors.New("cannot block yourself")
+		err := domain.ErrInvalidInput
 		logger.LogOutput(nil, err)
 		return err
 	}
@@ -281,7 +281,7 @@ func (f *friendshipUseCase) BlockFriend(userID, blockedID primitive.ObjectID) er
 	friendship, err := f.friendshipRepo.FindByUsers(userID, blockedID)
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		logger.LogOutput(nil, err)
-		return err
+		return domain.ErrInternalError
 	}
 
 	if friendship != nil {
@@ -289,7 +289,7 @@ func (f *friendshipUseCase) BlockFriend(userID, blockedID primitive.ObjectID) er
 		friendship.UpdatedAt = time.Now()
 		if err := f.friendshipRepo.Update(friendship); err != nil {
 			logger.LogOutput(nil, err)
-			return err
+			return domain.ErrInternalError
 		}
 	} else {
 		// Create new blocked relationship
@@ -302,7 +302,7 @@ func (f *friendshipUseCase) BlockFriend(userID, blockedID primitive.ObjectID) er
 
 		if err := f.friendshipRepo.Create(friendship); err != nil {
 			logger.LogOutput(nil, err)
-			return err
+			return domain.ErrInternalError
 		}
 	}
 
@@ -322,21 +322,21 @@ func (f *friendshipUseCase) UnblockFriend(userID, blockedID primitive.ObjectID) 
 	friendship, err := f.friendshipRepo.FindByUsers(userID, blockedID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			err = errors.New("user is not blocked")
+			err = domain.ErrFriendshipNotFound
 		}
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if friendship.Status != "blocked" {
-		err = errors.New("user is not blocked")
+		err = domain.ErrInvalidInput
 		logger.LogOutput(nil, err)
 		return err
 	}
 
 	if err := f.friendshipRepo.Delete(userID, blockedID); err != nil {
 		logger.LogOutput(nil, err)
-		return err
+		return domain.ErrInternalError
 	}
 
 	logger.LogOutput(nil, nil)
@@ -356,7 +356,7 @@ func (f *friendshipUseCase) GetFriends(userID primitive.ObjectID, limit, offset 
 	friends, err := f.friendshipRepo.FindFriends(userID, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
-		return nil, err
+		return nil, domain.ErrInternalError
 	}
 
 	logger.LogOutput(friends, nil)
@@ -376,7 +376,7 @@ func (f *friendshipUseCase) GetPendingRequests(userID primitive.ObjectID, limit,
 	requests, err := f.friendshipRepo.FindPendingRequests(userID, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
-		return nil, err
+		return nil, domain.ErrInternalError
 	}
 
 	logger.LogOutput(requests, nil)
@@ -399,7 +399,7 @@ func (f *friendshipUseCase) IsFriend(userID1, userID2 primitive.ObjectID) (bool,
 			return false, nil
 		}
 		logger.LogOutput(nil, err)
-		return false, err
+		return false, domain.ErrInternalError
 	}
 
 	isFriend := friendship.Status == "accepted"
@@ -423,7 +423,7 @@ func (f *friendshipUseCase) GetFriendshipStatus(userID1, userID2 primitive.Objec
 			return "none", nil
 		}
 		logger.LogOutput(nil, err)
-		return "", err
+		return "", domain.ErrInternalError
 	}
 
 	logger.LogOutput(friendship.Status, nil)

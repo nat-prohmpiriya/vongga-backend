@@ -28,15 +28,15 @@ func NewStoryHandler(router fiber.Router, storyUseCase domain.StoryUseCase) *Sto
 func (h *StoryHandler) CreateStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.CreateStory")
 
-	userID := c.Locals("user_id").(string)
+	userID := c.Locals("userId").(string)
 
 	var req struct {
-		MediaURL     string       `json:"mediaUrl"`
-		MediaType    domain.StoryType `json:"mediaType"`
-		MediaDuration int         `json:"mediaDuration,omitempty"`
-		Thumbnail    string       `json:"thumbnail,omitempty"`
-		Caption      string       `json:"caption,omitempty"`
-		Location     string       `json:"location,omitempty"`
+		MediaURL      string           `json:"mediaUrl"`
+		MediaType     domain.StoryType `json:"mediaType"`
+		MediaDuration int              `json:"mediaDuration,omitempty"`
+		Thumbnail     string           `json:"thumbnail,omitempty"`
+		Caption       string           `json:"caption,omitempty"`
+		Location      string           `json:"location,omitempty"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -147,7 +147,7 @@ func (h *StoryHandler) ViewStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.ViewStory")
 
 	storyID := c.Params("storyId")
-	viewerID := c.Locals("user_id").(string)
+	viewerID := c.Locals("userId").(string)
 
 	input := map[string]interface{}{
 		"storyId":  storyID,
@@ -171,7 +171,7 @@ func (h *StoryHandler) DeleteStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.DeleteStory")
 
 	storyID := c.Params("storyId")
-	userID := c.Locals("user_id").(string)
+	userID := c.Locals("userId").(string)
 
 	input := map[string]interface{}{
 		"storyId": storyID,

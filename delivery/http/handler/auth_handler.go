@@ -28,7 +28,7 @@ func NewAuthHandler(authUseCase domain.AuthUseCase) *AuthHandler {
 // @Router /auth/createTestToken [post]
 func (h *AuthHandler) CreateTestToken(c *fiber.Ctx) error {
 	logger := utils.NewLogger("AuthHandler.CreateTestToken")
-	
+
 	var req CreateTestTokenRequest
 	if err := c.BodyParser(&req); err != nil {
 		logger.LogInput(req)
@@ -59,7 +59,7 @@ func (h *AuthHandler) CreateTestToken(c *fiber.Ctx) error {
 // VerifyTokenFirebase verifies Firebase ID token and returns user data with JWT tokens
 func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
 	logger := utils.NewLogger("AuthHandler.VerifyTokenFirebase")
-	
+
 	var req struct {
 		FirebaseToken string `json:"firebaseToken"`
 	}
@@ -94,7 +94,7 @@ func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
 // RefreshToken refreshes the access token using a refresh token
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	logger := utils.NewLogger("AuthHandler.RefreshToken")
-	
+
 	var req RefreshTokenRequest
 	if err := c.BodyParser(&req); err != nil {
 		logger.LogInput(req)
@@ -125,7 +125,7 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 // Logout revokes the refresh token
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	logger := utils.NewLogger("AuthHandler.Logout")
-	
+
 	var req LogoutRequest
 	if err := c.BodyParser(&req); err != nil {
 		logger.LogInput(req)
@@ -162,7 +162,7 @@ type LogoutRequest struct {
 }
 
 type CreateTestTokenRequest struct {
-	UserID string `json:"userId" example:"user_id_here"`
+	UserID string `json:"userId" example:"userId_here"`
 }
 
 type LoginResponse struct {

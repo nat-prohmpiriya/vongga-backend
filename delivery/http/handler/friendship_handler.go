@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
@@ -29,11 +31,27 @@ func NewFriendshipHandler(router fiber.Router, fu domain.FriendshipUseCase) *Fri
 func (h *FriendshipHandler) SendFriendRequest(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.SendFriendRequest")
 
-	userID := c.Locals("userId").(primitive.ObjectID)
+	userIDInterface := c.Locals("userId")
+	if userIDInterface == nil {
+		logger.LogOutput(nil, fmt.Errorf("user ID not found in context"))
+		return utils.SendError(c, fiber.StatusUnauthorized, "User not authenticated")
+	}
+
+	userID, ok := userIDInterface.(primitive.ObjectID)
+	if !ok {
+		logger.LogOutput(nil, fmt.Errorf("invalid user ID type in context"))
+		return utils.SendError(c, fiber.StatusUnauthorized, "Invalid user authentication")
+	}
+
 	targetID, err := primitive.ObjectIDFromHex(c.Params("userId"))
 	if err != nil {
 		logger.LogOutput(nil, err)
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid user ID")
+		return utils.SendError(c, fiber.StatusBadRequest, "Invalid target user ID")
+	}
+
+	if targetID == userID {
+		logger.LogOutput(nil, fmt.Errorf("cannot send friend request to self"))
+		return utils.SendError(c, fiber.StatusBadRequest, "Cannot send friend request to yourself")
 	}
 
 	logger.LogInput(userID, targetID)

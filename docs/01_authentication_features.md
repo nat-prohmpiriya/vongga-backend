@@ -88,7 +88,7 @@ sequenceDiagram
 
 ```json
 {
-  "user_id": "user_id_here",
+  "userId": "userId_here",
   "exp": 1640995200,
   "type": "access"
 }
@@ -103,7 +103,7 @@ sequenceDiagram
 
 ```json
 {
-  "user_id": "user_id_here",
+  "userId": "userId_here",
   "exp": 1643673600,
   "type": "refresh",
   "jti": "unique_token_id"
@@ -154,7 +154,7 @@ Request:
 Response:
 {
     "user": {
-        "id": "user_id",
+        "id": "userId",
         "email": "user@example.com",
         "firstName": "John",
         "lastName": "Doe",

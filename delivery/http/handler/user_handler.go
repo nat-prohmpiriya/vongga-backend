@@ -33,7 +33,7 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.CreateOrUpdateUser")
 
 	// Get Firebase user data from context (set by middleware)
-	userID := c.Locals("user_id").(string)
+	userID := c.Locals("userId").(string)
 	email := c.Locals("email").(string)
 
 	var req struct {
@@ -90,7 +90,7 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.GetProfile")
 
-	userID := c.Locals("user_id").(string)
+	userID := c.Locals("userId").(string)
 	logger.LogInput(userID)
 
 	user, err := h.userUseCase.GetUserByID(userID)
@@ -110,7 +110,7 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.UpdateUser")
 
-	userID := c.Locals("user_id").(string)
+	userID := c.Locals("userId").(string)
 
 	var req struct {
 		FirstName      *string              `json:"firstName"`
@@ -393,7 +393,7 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 func (h *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.DeleteAccount")
 
-	userID := c.Locals("user_id").(string)
+	userID := c.Locals("userId").(string)
 	authClient := c.Locals("firebase_auth")
 	logger.LogInput(userID)
 

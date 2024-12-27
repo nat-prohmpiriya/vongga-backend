@@ -426,7 +426,7 @@ func (r *chatRepository) UpdateUserStatus(status *domain.ChatUserStatus) error {
 	// Update in Redis first
 	ctx := context.Background()
 	key := fmt.Sprintf("user_status:%s", status.UserID)
-	
+
 	// Marshal status to JSON
 	statusBytes, err := json.Marshal(status)
 	if err != nil {
@@ -560,7 +560,7 @@ func (r *chatRepository) GetUserNotifications(userID string) ([]*domain.ChatNoti
 
 	cursor, err := r.notificationsColl.Find(
 		context.Background(),
-		bson.M{"user_id": userID},
+		bson.M{"userId": userID},
 	)
 	if err != nil {
 		logger.LogOutput(nil, err)

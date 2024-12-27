@@ -24,6 +24,13 @@ var (
 	
 	// ErrDuplicate represents a duplicate resource error
 	ErrDuplicate = errors.New("duplicate resource")
+
+	// Friendship errors
+	ErrFriendRequestAlreadySent = errors.New("friend request already sent")
+	ErrAlreadyFriends          = errors.New("already friends")
+	ErrFriendRequestNotFound   = errors.New("friend request not found")
+	ErrFriendshipNotFound      = errors.New("friendship not found")
+	ErrNotFriends             = errors.New("not friends")
 )
 
 // NotFoundError represents a not found error with context

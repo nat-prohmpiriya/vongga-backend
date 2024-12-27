@@ -55,7 +55,7 @@ func LoadConfig() *Config {
 
 		// JWT
 		JWTSecret:          getEnv("JWT_SECRET", "your-secret-key"),
-		JWTExpiryHours:     24,
+		JWTExpiryHours:     1,
 		RefreshTokenSecret: getEnv("REFRESH_TOKEN_SECRET", "your-refresh-secret-key"),
 		RefreshTokenExpiry: 30,
 	}

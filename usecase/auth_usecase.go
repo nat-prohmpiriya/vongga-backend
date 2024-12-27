@@ -138,7 +138,18 @@ func (u *authUseCase) RefreshToken(ctx context.Context, refreshToken string) (*d
 	}
 
 	// Check if refresh token is in Redis
-	userID := claims["user_id"].(string)
+	userIDInterface := claims["userId"]
+	if userIDInterface == nil {
+		logger.LogOutput(nil, fmt.Errorf("userId not found in claims"))
+		return nil, fmt.Errorf("invalid refresh token: userId not found")
+	}
+
+	userID, ok := userIDInterface.(string)
+	if !ok {
+		logger.LogOutput(nil, fmt.Errorf("userId is not a string"))
+		return nil, fmt.Errorf("invalid refresh token: invalid userId format")
+	}
+
 	key := fmt.Sprintf("refresh_token:%s:%s", userID, refreshToken)
 	exists, err := u.redisClient.Exists(ctx, key).Result()
 	if err != nil {
@@ -187,7 +198,18 @@ func (u *authUseCase) RevokeRefreshToken(ctx context.Context, refreshToken strin
 	}
 
 	// Remove refresh token from Redis
-	userID := claims["user_id"].(string)
+	userIDInterface := claims["userId"]
+	if userIDInterface == nil {
+		logger.LogOutput(nil, fmt.Errorf("userId not found in claims"))
+		return fmt.Errorf("invalid refresh token: userId not found")
+	}
+
+	userID, ok := userIDInterface.(string)
+	if !ok {
+		logger.LogOutput(nil, fmt.Errorf("userId is not a string"))
+		return fmt.Errorf("invalid refresh token: invalid userId format")
+	}
+
 	key := fmt.Sprintf("refresh_token:%s:%s", userID, refreshToken)
 	err = u.redisClient.Del(ctx, key).Err()
 	if err != nil {
@@ -259,9 +281,9 @@ func (u *authUseCase) generateTokenPair(ctx context.Context, userID string) (*do
 
 	// Generate access token
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(u.tokenExpiry).Unix(),
-		"type":    "access",
+		"userId": userID,
+		"exp":    time.Now().Add(u.tokenExpiry).Unix(),
+		"type":   "access",
 	})
 
 	accessTokenString, err := accessToken.SignedString([]byte(u.jwtSecret))
@@ -272,10 +294,10 @@ func (u *authUseCase) generateTokenPair(ctx context.Context, userID string) (*do
 
 	// Generate refresh token
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(u.refreshTokenExpiry).Unix(),
-		"type":    "refresh",
-		"jti":     generateRandomString(32),
+		"userId": userID,
+		"exp":    time.Now().Add(u.refreshTokenExpiry).Unix(),
+		"type":   "refresh",
+		"jti":    generateRandomString(32),
 	})
 
 	refreshTokenString, err := refreshToken.SignedString([]byte(u.refreshTokenSecret))

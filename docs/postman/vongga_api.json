@@ -1658,7 +1658,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/posts?userId={{user_id}}&limit=10&offset=0&includeSubPosts=true&hasMedia=true&mediaType=image",
+							"raw": "{{base_url}}/api/posts?userId={{userId}}&limit=10&offset=0&includeSubPosts=true&hasMedia=true&mediaType=image",
 							"host": [
 								"{{base_url}}"
 							],
@@ -1669,7 +1669,7 @@
 							"query": [
 								{
 									"key": "userId",
-									"value": "{{user_id}}",
+									"value": "{{userId}}",
 									"description": "ID of the user whose posts to retrieve"
 								},
 								{
@@ -1713,7 +1713,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{base_url}}/api/posts?userId={{user_id}}&limit=10&offset=0&includeSubPosts=true&hasMedia=true&mediaType=image",
+									"raw": "{{base_url}}/api/posts?userId={{userId}}&limit=10&offset=0&includeSubPosts=true&hasMedia=true&mediaType=image",
 									"host": [
 										"{{base_url}}"
 									],
@@ -1724,7 +1724,7 @@
 									"query": [
 										{
 											"key": "userId",
-											"value": "{{user_id}}",
+											"value": "{{userId}}",
 											"description": "ID of the user whose posts to retrieve"
 										},
 										{
@@ -2586,7 +2586,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"user_id_1\": \"user1_id\",\n    \"user_id_2\": \"user2_id\"\n}"
+							"raw": "{\n    \"userId_1\": \"user1_id\",\n    \"userId_2\": \"user2_id\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/chat/rooms/private",
@@ -2679,7 +2679,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"user_id\": \"user_id_to_add\"\n}"
+							"raw": "{\n    \"userId\": \"userId_to_add\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/chat/rooms/:roomId/members",

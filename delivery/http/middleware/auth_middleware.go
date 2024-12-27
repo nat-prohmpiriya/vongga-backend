@@ -36,8 +36,8 @@ func AuthMiddleware(jwtSecret string) fiber.Handler {
 		}
 
 		claims := token.Claims.(jwt.MapClaims)
-		c.Locals("user_id", claims["user_id"])
-		logger.LogOutput(claims["user_id"], nil)
+		c.Locals("userId", claims["userId"])
+		logger.LogOutput(claims["userId"], nil)
 		return c.Next()
 	}
 }

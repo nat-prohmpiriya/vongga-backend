@@ -9,21 +9,21 @@ import (
 
 // GetUserIDFromContext retrieves the user ID from the Fiber context
 func GetUserIDFromContext(c *fiber.Ctx) (primitive.ObjectID, error) {
-	userIDStr := c.Locals("user_id")
+	userIDStr := c.Locals("userId")
 	if userIDStr == nil {
-		return primitive.NilObjectID, errors.New("user_id not found in context")
+		return primitive.NilObjectID, errors.New("userId not found in context")
 	}
 
 	// Convert to string
 	userIDString, ok := userIDStr.(string)
 	if !ok {
-		return primitive.NilObjectID, errors.New("user_id in context is not a string")
+		return primitive.NilObjectID, errors.New("userId in context is not a string")
 	}
 
 	// Convert string to ObjectID
 	userID, err := primitive.ObjectIDFromHex(userIDString)
 	if err != nil {
-		return primitive.NilObjectID, errors.New("invalid user_id format")
+		return primitive.NilObjectID, errors.New("invalid userId format")
 	}
 
 	return userID, nil
