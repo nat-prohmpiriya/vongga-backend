@@ -132,6 +132,7 @@ func main() {
 	auth.Post("/verifyTokenFirebase", handler.NewAuthHandler(authUseCase).VerifyTokenFirebase)
 	auth.Post("/refresh", handler.NewAuthHandler(authUseCase).RefreshToken)
 	auth.Post("/logout", handler.NewAuthHandler(authUseCase).Logout)
+	auth.Post("/createTestToken", handler.NewAuthHandler(authUseCase).CreateTestToken)
 
 	// Protected routes (everything under /api except /auth)
 	protectedApi := api.Group("")

@@ -52,7 +52,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"firebaseToken\": \"your_firebase_token\"}"
+							"raw": "{\n\t\"firebaseToken\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6ImE3MWI1MTU1MmI0ODA5OWNkMGFkN2Y5YmZlNGViODZiMDM5NmUxZDEiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiUHJvaG1waXJpeWEgUGhvbnVtbnVhaXN1ayIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NKaWgxT0ZPZlJWT2R0SGY1dmRmX1JQQjVPYzF0MUxSZG9oMzlfbHdnY29NaDJRQUlaQz1zOTYtYyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9zYWJhaW1haS0xNzRlNCIsImF1ZCI6InNhYmFpbWFpLTE3NGU0IiwiYXV0aF90aW1lIjoxNzM1MTIxNDEwLCJ1c2VyX2lkIjoidGNDVHAxRUlxOFMyNFJQcVlpMHc1akZIb1ZRMiIsInN1YiI6InRjQ1RwMUVJcThTMjRSUHFZaTB3NWpGSG9WUTIiLCJpYXQiOjE3MzUxMjE0MTAsImV4cCI6MTczNTEyNTAxMCwiZW1haWwiOiJudXQucHJvaG1waXJpeWFAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZ29vZ2xlLmNvbSI6WyIxMTQxMjE5NjkwOTM0NDAwMzA2OTYiXSwiZW1haWwiOlsibnV0LnByb2htcGlyaXlhQGdtYWlsLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6Imdvb2dsZS5jb20ifX0.XJipCM-RLTjvdGAhqrYrQ7qAU1lx3Z4uvA6ydsYYaZ89PkGdX5pCZEGAokKaqTLT0Q1TQnGA2gM1Dol6VlpAPOYjscOOBupLLsdx4YPuNd33L_mh2-KOieerkM3TSZblU1yQ_8TTHXKh7fOb3Gnh1TCL05JtVnUy4JW_CC6qfmd2LxZSEitrEKOpmJ1J0yoYHHeK8x34HIPcsiH6uuuVYoVYp0PnM5PzDDERx5NPBG1LaM-cz2jxILoxrjbKHVMQc4hDLIB0EuLIj5JU0FBo9W_dVG7Ks12tIbZ1Af16aGZGczamEedrE9ZZmg7dMbUNVmYTlJOP_xnBpjlidJ6WaQ\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/auth/verifyTokenFirebase",
@@ -67,7 +67,58 @@
 						},
 						"description": "Login with Firebase token"
 					},
-					"response": []
+					"response": [
+						{
+							"name": "Verify Token Firebase",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"firebaseToken\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6ImE3MWI1MTU1MmI0ODA5OWNkMGFkN2Y5YmZlNGViODZiMDM5NmUxZDEiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiUHJvaG1waXJpeWEgUGhvbnVtbnVhaXN1ayIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NKaWgxT0ZPZlJWT2R0SGY1dmRmX1JQQjVPYzF0MUxSZG9oMzlfbHdnY29NaDJRQUlaQz1zOTYtYyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9zYWJhaW1haS0xNzRlNCIsImF1ZCI6InNhYmFpbWFpLTE3NGU0IiwiYXV0aF90aW1lIjoxNzM1MDkyNTM1LCJ1c2VyX2lkIjoidzNIcUVhQTFkOE5qZUd5bm00ZnhGNUdnR1k3MiIsInN1YiI6InczSHFFYUExZDhOamVHeW5tNGZ4RjVHZ0dZNzIiLCJpYXQiOjE3MzUwOTI1MzUsImV4cCI6MTczNTA5NjEzNSwiZW1haWwiOiJudXQucHJvaG1waXJpeWFAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZ29vZ2xlLmNvbSI6WyIxMTQxMjE5NjkwOTM0NDAwMzA2OTYiXSwiZW1haWwiOlsibnV0LnByb2htcGlyaXlhQGdtYWlsLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6Imdvb2dsZS5jb20ifX0.TqI5z6rUEbUAJVVxbIF7kEI8j13If8j-D7Wh0S0BJ1DyzkYdWsxyNaea3bXohFHQj6VAkUjGtDK7G7sSrlUKRpt44H1UV4DTUNL9hJggOQp7gZGzVGlWzaPqbg_5ek1gT2ESbx1Fe1xMHtz2YLaRrLHePdFt7n2IceN-g-_u4KV3o9ApZRnuHQPU3FQ0EZRDxbshFqRGiLRqQNCzJu3thaDPpB3LAC6nyRCtrafOKKzuXfiMHmMM5aD1U255FTjIRKzOX-wPxhcGuvizggHRqeBg4IfN4aY1NjPTywk2RUHxzZRKZW9Uv3Pn-JjFjsI4hmBEz9lGbNjuRqixqe6xaw\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/verifyTokenFirebase",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"verifyTokenFirebase"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 25 Dec 2024 02:16:03 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "1134"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"user\": {\n        \"id\": \"676b69395dd03b0b5c951c0b\",\n        \"createdAt\": \"2024-12-25T02:08:57.073Z\",\n        \"updatedAt\": \"2024-12-25T02:08:57.073Z\",\n        \"version\": 1,\n        \"username\": \"nutprohmpiriya1928\",\n        \"displayName\": \"\",\n        \"email\": \"nut.prohmpiriya@gmail.com\",\n        \"firstName\": \"\",\n        \"lastName\": \"\",\n        \"avatar\": \"\",\n        \"bio\": \"\",\n        \"photoProfile\": \"\",\n        \"photoCover\": \"\",\n        \"followersCount\": 0,\n        \"followingCount\": 0,\n        \"friendsCount\": 0,\n        \"provider\": \"google\",\n        \"emailVerified\": false,\n        \"dateOfBirth\": \"0001-01-01T00:00:00Z\",\n        \"gender\": \"\",\n        \"interestedIn\": null,\n        \"location\": {\n            \"type\": \"\",\n            \"coordinates\": null\n        },\n        \"relationStatus\": \"\",\n        \"height\": 0,\n        \"interests\": null,\n        \"occupation\": \"\",\n        \"education\": \"\",\n        \"datingPhotos\": null,\n        \"isVerified\": false,\n        \"isActive\": true,\n        \"live\": {\n            \"city\": \"\",\n            \"country\": \"\"\n        }\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzUxNzkzNjMsInR5cGUiOiJhY2Nlc3MiLCJ1c2VyX2lkIjoiNjc2YjY5Mzk1ZGQwM2IwYjVjOTUxYzBiIn0.xbwovDwXHTPEe-rGHgxWZJotJFgPfGDBqv6Xp5Bp1Qo\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Mzc2ODQ5NjMsImp0aSI6IkEwU2dZX0hsS0hVWlN0SUJoNFhuT2RhYUxxSkU5RFhQVmp6U2xidUtTcjA9IiwidHlwZSI6InJlZnJlc2giLCJ1c2VyX2lkIjoiNjc2YjY5Mzk1ZGQwM2IwYjVjOTUxYzBiIn0.gAUObLkU0P9leL9BOKrLwX-CXvaNKuIQF1VPHkLOMak\"\n}"
+						}
+					]
 				},
 				{
 					"name": "Refresh Token",
@@ -92,7 +143,8 @@
 									"    pm.expect(jsonData.access_token).to.exist;",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -106,7 +158,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"refresh_token\": \"{{refresh_token}}\"\n}"
+							"raw": "{\n\t\"refreshToken\": \"{{refresh_token}}\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/auth/refresh",
@@ -121,7 +173,58 @@
 						},
 						"description": "Get a new access token using refresh token"
 					},
-					"response": []
+					"response": [
+						{
+							"name": "Refresh Token",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"refreshToken\": \"{{refresh_token}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/refresh",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"refresh"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 25 Dec 2024 02:11:29 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "460"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzUxNzkwODksInR5cGUiOiJhY2Nlc3MiLCJ1c2VyX2lkIjoiNjc2YjY5Mzk1ZGQwM2IwYjVjOTUxYzBiIn0.x-9z2j1u_oyEvZ8TKy-FIkOD6En_a91mbpob5Ldoyqw\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Mzc2ODQ2ODksImp0aSI6IlhiYTVLY2N0aGU4b3M5cno0dTFkWXEzNTdYNVZNZ3ZjUGJIaVlSNVR1QkU9IiwidHlwZSI6InJlZnJlc2giLCJ1c2VyX2lkIjoiNjc2YjY5Mzk1ZGQwM2IwYjVjOTUxYzBiIn0.FZLgJGNCtFHnGHGkrCAfZ93sBLVxvw7Iw9p-nIOC8dc\"\n}"
+						}
+					]
 				},
 				{
 					"name": "Logout",
@@ -144,7 +247,8 @@
 									"    pm.expect(pm.environment.get(\"refresh_token\")).to.be.undefined;",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -156,6 +260,15 @@
 								"value": "Bearer {{access_token}}"
 							}
 						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refresh_token}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
 							"raw": "{{base_url}}/api/auth/logout",
 							"host": [
@@ -168,6 +281,120 @@
 							]
 						},
 						"description": "Logout and invalidate the current session"
+					},
+					"response": [
+						{
+							"name": "Logout",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"refreshToken\": \"{{refresh_token}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/logout",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"logout"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 25 Dec 2024 02:15:56 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "2"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "OK"
+						}
+					]
+				},
+				{
+					"name": "Create Token Mork",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.accessToken) {",
+									"    pm.environment.set(\"access_token\", jsonData.accessToken);",
+									"}",
+									"if (jsonData.refreshToken) {",
+									"    pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+									"}",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has access token\", function () {",
+									"    pm.expect(jsonData.accessToken).to.exist;",
+									"});",
+									"",
+									"pm.test(\"Response has refresh token\", function () {",
+									"    pm.expect(jsonData.refreshToken).to.exist;",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"676e2fa834a7b662652c85ca\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/createTestToken",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"createTestToken"
+							]
+						}
 					},
 					"response": []
 				}
@@ -211,6 +438,16 @@
 				{
 					"name": "Get Profile",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "GET",
 						"header": [
 							{
@@ -231,12 +468,145 @@
 						},
 						"description": "Get the current user's profile"
 					},
-					"response": []
+					"response": [
+						{
+							"name": "Get Profile",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/users/me",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"users",
+										"me"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 25 Dec 2024 02:20:58 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "675"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"user\": {\n        \"id\": \"676b69395dd03b0b5c951c0b\",\n        \"createdAt\": \"2024-12-25T02:08:57.073Z\",\n        \"updatedAt\": \"2024-12-25T02:08:57.073Z\",\n        \"version\": 1,\n        \"username\": \"nutprohmpiriya1928\",\n        \"displayName\": \"\",\n        \"email\": \"nut.prohmpiriya@gmail.com\",\n        \"firstName\": \"\",\n        \"lastName\": \"\",\n        \"avatar\": \"\",\n        \"bio\": \"\",\n        \"photoProfile\": \"\",\n        \"photoCover\": \"\",\n        \"followersCount\": 0,\n        \"followingCount\": 0,\n        \"friendsCount\": 0,\n        \"provider\": \"google\",\n        \"emailVerified\": false,\n        \"dateOfBirth\": \"0001-01-01T00:00:00Z\",\n        \"gender\": \"\",\n        \"interestedIn\": null,\n        \"location\": {\n            \"type\": \"\",\n            \"coordinates\": null\n        },\n        \"relationStatus\": \"\",\n        \"height\": 0,\n        \"interests\": null,\n        \"occupation\": \"\",\n        \"education\": \"\",\n        \"datingPhotos\": null,\n        \"isVerified\": false,\n        \"isActive\": true,\n        \"live\": {\n            \"city\": \"\",\n            \"country\": \"\"\n        }\n    }\n}"
+						}
+					]
 				},
 				{
 					"name": "Update User",
 					"request": {
-						"method": "PUT",
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\n\t\"photoCover\": \"https://firebasestorage.googleapis.com/v0/b/sabaimai-174e4.firebasestorage.app/o/1735030264169836000.png?alt=media&token=9959e5bd-bbb3-4911-b744-e4666cf00e4f\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
+						},
+						"description": "Update user profile with optional fields"
+					},
+					"response": [
+						{
+							"name": "Update User",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\n\t\"photoCover\": \"https://firebasestorage.googleapis.com/v0/b/sabaimai-174e4.firebasestorage.app/o/1735030264169836000.png?alt=media&token=9959e5bd-bbb3-4911-b744-e4666cf00e4f\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/users",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"users"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 25 Dec 2024 02:23:27 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "1169"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"user\": {\n        \"id\": \"676b69395dd03b0b5c951c0b\",\n        \"createdAt\": \"2024-12-25T02:08:57.073Z\",\n        \"updatedAt\": \"2024-12-25T09:23:28.104332+07:00\",\n        \"version\": 4,\n        \"username\": \"johndoe\",\n        \"displayName\": \"\",\n        \"email\": \"nut.prohmpiriya@gmail.com\",\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"avatar\": \"https://example.com/avatar.jpg\",\n        \"bio\": \"Software Developer\",\n        \"photoProfile\": \"https://firebasestorage.googleapis.com/v0/b/sabaimai-174e4.firebasestorage.app/o/1735030264169836000.png?alt=media&token=9959e5bd-bbb3-4911-b744-e4666cf00e4f\",\n        \"photoCover\": \"https://firebasestorage.googleapis.com/v0/b/sabaimai-174e4.firebasestorage.app/o/1735030264169836000.png?alt=media&token=9959e5bd-bbb3-4911-b744-e4666cf00e4f\",\n        \"followersCount\": 0,\n        \"followingCount\": 0,\n        \"friendsCount\": 0,\n        \"provider\": \"google\",\n        \"emailVerified\": false,\n        \"dateOfBirth\": \"1990-01-01T00:00:00Z\",\n        \"gender\": \"male\",\n        \"interestedIn\": [\n            \"female\"\n        ],\n        \"location\": {\n            \"type\": \"Point\",\n            \"coordinates\": [\n                100.5018,\n                13.7563\n            ]\n        },\n        \"relationStatus\": \"single\",\n        \"height\": 175.5,\n        \"interests\": [\n            \"coding\",\n            \"reading\"\n        ],\n        \"occupation\": \"Software Engineer\",\n        \"education\": \"Bachelor's Degree\",\n        \"datingPhotos\": null,\n        \"isVerified\": false,\n        \"isActive\": true,\n        \"phoneNumber\": \"+66123456789\",\n        \"live\": {\n            \"city\": \"\",\n            \"country\": \"\"\n        }\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
 						"header": [
 							{
 								"key": "Authorization",
@@ -263,7 +633,61 @@
 						},
 						"description": "Update user profile with optional fields"
 					},
-					"response": []
+					"response": [
+						{
+							"name": "Update User Copy",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"firstName\": \"John\",\n\t\"lastName\": \"Doe\",\n\t\"username\": \"johndoe\",\n\t\"bio\": \"Software Developer\",\n\t\"avatar\": \"https://example.com/avatar.jpg\",\n\t\"photoProfile\": \"https://example.com/profile.jpg\",\n\t\"photoCover\": \"https://example.com/cover.jpg\",\n\t\"dateOfBirth\": \"1990-01-01T00:00:00Z\",\n\t\"gender\": \"male\",\n\t\"interestedIn\": [\"female\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"relationStatus\": \"single\",\n\t\"height\": 175.5,\n\t\"interests\": [\"coding\", \"reading\"],\n\t\"occupation\": \"Software Engineer\",\n\t\"education\": \"Bachelor's Degree\",\n\t\"phoneNumber\": \"+66123456789\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/users",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"users"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 25 Dec 2024 02:30:16 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "42"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"message\": \"Account deleted successfully\"\n}"
+						}
+					]
 				},
 				{
 					"name": "Get User By Username",
@@ -276,14 +700,13 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/users/username/:username",
+							"raw": "{{base_url}}/api/users/:username",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"users",
-								"username",
 								":username"
 							],
 							"variable": [
@@ -308,17 +731,16 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/users/check-username/:username",
+							"raw": "{{base_url}}/api/users/check-username?username=johndoe",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"users",
-								"check-username",
-								":username"
+								"check-username"
 							],
-							"variable": [
+							"query": [
 								{
 									"key": "username",
 									"value": "johndoe"
@@ -327,7 +749,60 @@
 						},
 						"description": "Check if a username is available"
 					},
-					"response": []
+					"response": [
+						{
+							"name": "Check Username Availability",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/users/check-username?username=johndoe",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"users",
+										"check-username"
+									],
+									"query": [
+										{
+											"key": "username",
+											"value": "johndoe"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 25 Dec 2024 02:40:54 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "18"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"available\": true\n}"
+						}
+					]
 				}
 			]
 		},
@@ -936,7 +1411,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"content\": \"This is a test post\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"test\", \"example\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\",\n\t\"subPosts\": [\n\t\t{\n\t\t\t\"content\": \"This is subpost 1\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost1.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 1\n\t\t},\n\t\t{\n\t\t\t\"content\": \"This is subpost 2\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost2.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 2\n\t\t}\n\t]\n}"
+							"raw": "{\n\t\"content\": \"This is a test post 9\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"test\", \"example\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\",\n\t\"subPosts\": [\n\t\t{\n\t\t\t\"content\": \"This is subpost 1\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost1.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 1\n\t\t},\n\t\t{\n\t\t\t\"content\": \"This is subpost 2\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost2.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 2\n\t\t}\n\t]\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/posts",
@@ -950,7 +1425,61 @@
 						},
 						"description": "Create a new post"
 					},
-					"response": []
+					"response": [
+						{
+							"name": "Create Post",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"content\": \"This is a test post\",\n\t\"media\": [\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"url\": \"https://example.com/image.jpg\"\n\t\t}\n\t],\n\t\"tags\": [\"test\", \"example\"],\n\t\"location\": {\n\t\t\"type\": \"Point\",\n\t\t\"coordinates\": [100.5018, 13.7563],\n\t\t\"placeName\": \"Bangkok\"\n\t},\n\t\"visibility\": \"public\",\n\t\"subPosts\": [\n\t\t{\n\t\t\t\"content\": \"This is subpost 1\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost1.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 1\n\t\t},\n\t\t{\n\t\t\t\"content\": \"This is subpost 2\",\n\t\t\t\"media\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"url\": \"https://example.com/subpost2.jpg\"\n\t\t\t\t}\n\t\t\t],\n\t\t\t\"order\": 2\n\t\t}\n\t]\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/posts",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"posts"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 25 Dec 2024 04:54:59 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "545"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"676b9023f473335c18db7ead\",\n    \"createdAt\": \"2024-12-25T11:54:59.956128+07:00\",\n    \"updatedAt\": \"2024-12-25T11:54:59.956128+07:00\",\n    \"isActive\": true,\n    \"version\": 1,\n    \"userId\": \"676b69395dd03b0b5c951c0b\",\n    \"content\": \"This is a test post\",\n    \"media\": [\n        {\n            \"type\": \"image\",\n            \"url\": \"https://example.com/image.jpg\",\n            \"size\": 0\n        }\n    ],\n    \"reactionCounts\": {},\n    \"commentCount\": 0,\n    \"subPostCount\": 2,\n    \"tags\": [\n        \"test\",\n        \"example\"\n    ],\n    \"location\": {\n        \"type\": \"Point\",\n        \"coordinates\": [\n            100.5018,\n            13.7563\n        ],\n        \"placeName\": \"Bangkok\"\n    },\n    \"visibility\": \"public\",\n    \"shareCount\": 0,\n    \"viewCount\": 0,\n    \"isEdited\": false,\n    \"editHistory\": []\n}"
+						}
+					]
 				},
 				{
 					"name": "Update Post",
@@ -1051,7 +1580,7 @@
 							"variable": [
 								{
 									"key": "id",
-									"value": "676b463df8e64d3ff04d8615"
+									"value": "676bda2e4c93a6a7795bbc7c"
 								}
 							]
 						},
@@ -1129,7 +1658,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/posts?limit=10&offset=0&userId=67694aaeec1886f9f9ba85ed&includeSubPosts=true",
+							"raw": "{{base_url}}/api/posts?limit=10&offset=0&userId=676b6e5b82922534fe691e67&includeSubPosts=true",
 							"host": [
 								"{{base_url}}"
 							],
@@ -1148,7 +1677,7 @@
 								},
 								{
 									"key": "userId",
-									"value": "67694aaeec1886f9f9ba85ed"
+									"value": "676b6e5b82922534fe691e67"
 								},
 								{
 									"key": "includeSubPosts",
@@ -1232,6 +1761,16 @@
 				{
 					"name": "Create Comment",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "POST",
 						"header": [
 							{
@@ -1245,16 +1784,24 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"content\": \"This is a comment\",\n\t\"postId\": \"post_id_here\"\n}"
+							"raw": "{\n\t\"content\": \"This is a commentsafsafsadf\"\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/comments",
+							"raw": "{{base_url}}/api/comments/posts/:postId",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"comments"
+								"comments",
+								"posts",
+								":postId"
+							],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "676bda2e4c93a6a7795bbc7c"
+								}
 							]
 						},
 						"description": "Create a new comment"
@@ -1323,7 +1870,7 @@
 							"variable": [
 								{
 									"key": "id",
-									"value": "comment_id_here"
+									"value": "676bda2e4c93a6a7795bbc7c"
 								}
 							]
 						},
@@ -1342,32 +1889,92 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/comments?postId=post_id_here&limit=10&offset=0",
+							"raw": "{{base_url}}/api/comments/posts/:postId&limit=10&offset=0?",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"comments"
+								"comments",
+								"posts",
+								":postId&limit=10&offset=0"
 							],
 							"query": [
 								{
-									"key": "postId",
-									"value": "post_id_here"
-								},
+									"key": "",
+									"value": null
+								}
+							],
+							"variable": [
 								{
-									"key": "limit",
-									"value": "10"
-								},
-								{
-									"key": "offset",
-									"value": "0"
+									"key": "postId&limit=10&offset=0",
+									"value": "676bda2e4c93a6a7795bbc7c"
 								}
 							]
 						},
 						"description": "List comments for a post with pagination"
 					},
-					"response": []
+					"response": [
+						{
+							"name": "List Comments",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/comments/posts/:postId&limit=10&offset=0?",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"comments",
+										"posts",
+										":postId&limit=10&offset=0"
+									],
+									"query": [
+										{
+											"key": "",
+											"value": null
+										}
+									],
+									"variable": [
+										{
+											"key": "postId&limit=10&offset=0",
+											"value": "676bda2e4c93a6a7795bbc7c"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 25 Dec 2024 11:58:06 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "1068"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": \"676be7c106acda0f3f6faa97\",\n        \"createdAt\": \"2024-12-25T11:08:49.445Z\",\n        \"updatedAt\": \"2024-12-25T11:08:49.445Z\",\n        \"isActive\": true,\n        \"version\": 1,\n        \"postId\": \"676bda2e4c93a6a7795bbc7c\",\n        \"userId\": \"676b6e5b82922534fe691e67\",\n        \"content\": \"This is a commentsafsafsadf\",\n        \"reactionCounts\": {}\n    },\n    {\n        \"id\": \"676be5f206acda0f3f6faa95\",\n        \"createdAt\": \"2024-12-25T11:01:06.947Z\",\n        \"updatedAt\": \"2024-12-25T11:01:06.947Z\",\n        \"isActive\": true,\n        \"version\": 1,\n        \"postId\": \"676bda2e4c93a6a7795bbc7c\",\n        \"userId\": \"676b6e5b82922534fe691e67\",\n        \"content\": \"mmm807\",\n        \"reactionCounts\": {}\n    },\n    {\n        \"id\": \"676be56d06acda0f3f6faa93\",\n        \"createdAt\": \"2024-12-25T10:58:53.197Z\",\n        \"updatedAt\": \"2024-12-25T10:58:53.197Z\",\n        \"isActive\": true,\n        \"version\": 1,\n        \"postId\": \"676bda2e4c93a6a7795bbc7c\",\n        \"userId\": \"676b6e5b82922534fe691e67\",\n        \"content\": \"This is a commentsafsafsadf\",\n        \"reactionCounts\": {}\n    },\n    {\n        \"id\": \"676be56206acda0f3f6faa91\",\n        \"createdAt\": \"2024-12-25T10:58:42.951Z\",\n        \"updatedAt\": \"2024-12-25T10:58:42.951Z\",\n        \"isActive\": true,\n        \"version\": 1,\n        \"postId\": \"676bda2e4c93a6a7795bbc7c\",\n        \"userId\": \"676b6e5b82922534fe691e67\",\n        \"content\": \"This is a commentsafsafsadf\",\n        \"reactionCounts\": {}\n    }\n]"
+						}
+					]
 				}
 			]
 		},
@@ -1551,6 +2158,194 @@
 				"description": "Check the health status of the server and its services"
 			},
 			"response": []
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "List Notifications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications?limit=10&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of items to return"
+								},
+								{
+									"key": "offset",
+									"value": "0",
+									"description": "Number of items to skip"
+								}
+							]
+						},
+						"description": "Get a list of notifications with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Notification",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Notification ID"
+								}
+							]
+						},
+						"description": "Get details of a specific notification"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark as Read",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/:id/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								":id",
+								"read"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Notification ID"
+								}
+							]
+						},
+						"description": "Mark a specific notification as read"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark All as Read",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/read-all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"read-all"
+							]
+						},
+						"description": "Mark all notifications as read"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Notification",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "",
+									"description": "Notification ID"
+								}
+							]
+						},
+						"description": "Delete a specific notification"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unread Count",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/unread-count",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"unread-count"
+							]
+						},
+						"description": "Get the number of unread notifications"
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [

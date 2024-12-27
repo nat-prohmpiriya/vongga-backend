@@ -16,6 +16,46 @@ func NewAuthHandler(authUseCase domain.AuthUseCase) *AuthHandler {
 	}
 }
 
+// CreateTestToken creates a test access token for development purposes
+// @Summary Create test access token
+// @Description Creates a test access token for development purposes. Should only be used in development environment.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body CreateTestTokenRequest true "User ID for test token"
+// @Success 200 {object} TokenResponse
+// @Failure 400 {object} ErrorResponse
+// @Router /auth/createTestToken [post]
+func (h *AuthHandler) CreateTestToken(c *fiber.Ctx) error {
+	logger := utils.NewLogger("AuthHandler.CreateTestToken")
+	
+	var req CreateTestTokenRequest
+	if err := c.BodyParser(&req); err != nil {
+		logger.LogInput(req)
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid request body",
+		})
+	}
+
+	logger.LogInput(req)
+	tokenPair, err := h.authUseCase.CreateTestToken(c.Context(), req.UserID)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	response := TokenResponse{
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
+	}
+
+	logger.LogOutput(response, nil)
+	return c.JSON(response)
+}
+
 // VerifyTokenFirebase verifies Firebase ID token and returns user data with JWT tokens
 func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
 	logger := utils.NewLogger("AuthHandler.VerifyTokenFirebase")
@@ -119,6 +159,10 @@ type RefreshTokenRequest struct {
 
 type LogoutRequest struct {
 	RefreshToken string `json:"refreshToken" example:"refresh_token_here"`
+}
+
+type CreateTestTokenRequest struct {
+	UserID string `json:"userId" example:"user_id_here"`
 }
 
 type LoginResponse struct {

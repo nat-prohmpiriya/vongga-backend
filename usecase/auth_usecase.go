@@ -199,6 +199,60 @@ func (u *authUseCase) RevokeRefreshToken(ctx context.Context, refreshToken strin
 	return nil
 }
 
+func (u *authUseCase) CreateTestToken(ctx context.Context, userID string) (*domain.TokenPair, error) {
+	logger := utils.NewLogger("AuthUseCase.CreateTestToken")
+	logger.LogInput(userID)
+
+	// Find user
+	user, err := u.userRepo.FindByID(userID)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+	if user == nil {
+		err = fmt.Errorf("user not found")
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Create access token
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.ID.Hex(),
+		"exp": time.Now().Add(u.tokenExpiry).Unix(),
+	})
+	accessTokenString, err := accessToken.SignedString([]byte(u.jwtSecret))
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Create refresh token
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.ID.Hex(),
+		"exp": time.Now().Add(u.refreshTokenExpiry).Unix(),
+	})
+	refreshTokenString, err := refreshToken.SignedString([]byte(u.refreshTokenSecret))
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Store refresh token in Redis
+	err = u.redisClient.Set(ctx, fmt.Sprintf("refresh_token:%s", refreshTokenString), user.ID.Hex(), u.refreshTokenExpiry).Err()
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	tokenPair := &domain.TokenPair{
+		AccessToken:  accessTokenString,
+		RefreshToken: refreshTokenString,
+	}
+
+	logger.LogOutput(tokenPair, nil)
+	return tokenPair, nil
+}
+
 func (u *authUseCase) generateTokenPair(ctx context.Context, userID string) (*domain.TokenPair, error) {
 	logger := utils.NewLogger("AuthUseCase.generateTokenPair")
 	logger.LogInput(userID)
