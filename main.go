@@ -80,15 +80,13 @@ func main() {
 	commentRepo := repository.NewCommentRepository(db)
 	reactionRepo := repository.NewReactionRepository(db)
 	subPostRepo := repository.NewSubPostRepository(db)
-	fileRepo, err := repository.NewFileStorage("firebase-credentials.json", cfg.FirebaseStorageBucket)
-	if err != nil {
-		log.Fatal(err)
-	}
+	storyRepo := repository.NewStoryRepository(db)
 
 	// Initialize use cases
 	userUseCase := usecase.NewUserUseCase(userRepo)
 	notificationUseCase := usecase.NewNotificationUseCase(notificationRepo)
 	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo, userRepo, notificationUseCase)
+	storyUseCase := usecase.NewStoryUseCase(storyRepo, userRepo)
 	authUseCase := usecase.NewAuthUseCase(
 		userRepo,
 		authClient,
@@ -147,6 +145,7 @@ func main() {
 	follows := protectedApi.Group("/follows")
 	friendships := protectedApi.Group("/friendships")
 	notifications := protectedApi.Group("/notifications")
+	stories := protectedApi.Group("/stories")
 
 	// Initialize handlers with their respective route groups
 	handler.NewUserHandler(users, userUseCase)
@@ -157,7 +156,7 @@ func main() {
 	handler.NewCommentHandler(comments, commentUseCase, userUseCase)
 	handler.NewReactionHandler(reactions, reactionUseCase)
 	handler.NewNotificationHandler(notifications, notificationUseCase)
-	handler.NewFileHandler(protectedApi, fileRepo)
+	handler.NewStoryHandler(stories, storyUseCase)
 
 	// Start server
 	log.Fatal(app.Listen(cfg.ServerAddress))
