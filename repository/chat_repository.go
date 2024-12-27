@@ -2,8 +2,11 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,15 +17,17 @@ import (
 
 type chatRepository struct {
 	db                *mongo.Database
+	rdb               *redis.Client
 	roomsColl         *mongo.Collection
 	messagesColl      *mongo.Collection
 	notificationsColl *mongo.Collection
 	userStatusColl    *mongo.Collection
 }
 
-func NewChatRepository(db *mongo.Database) domain.ChatRepository {
+func NewChatRepository(db *mongo.Database, rdb *redis.Client) domain.ChatRepository {
 	return &chatRepository{
 		db:                db,
+		rdb:               rdb,
 		roomsColl:         db.Collection("chatRooms"),
 		messagesColl:      db.Collection("chatMessages"),
 		notificationsColl: db.Collection("chatNotifications"),
@@ -211,26 +216,64 @@ func (r *chatRepository) GetRoomMessages(roomID string, limit, offset int64) ([]
 		"offset": offset,
 	})
 
-	opts := options.Find().
-		SetSort(bson.M{"created_at": -1}).
-		SetSkip(offset).
-		SetLimit(limit)
+	ctx := context.Background()
+	cacheKey := fmt.Sprintf("room_messages:%s:%d:%d", roomID, limit, offset)
 
-	cursor, err := r.messagesColl.Find(
-		context.Background(),
-		bson.M{"room_id": roomID},
-		opts,
-	)
+	// Try to get from Redis first
+	messagesJSON, err := r.rdb.Get(ctx, cacheKey).Result()
+	if err == nil {
+		// Found in Redis
+		var messages []*domain.ChatMessage
+		err = json.Unmarshal([]byte(messagesJSON), &messages)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return nil, err
+		}
+		logger.LogOutput(messages, nil)
+		return messages, nil
+	} else if err != redis.Nil {
+		// Redis error
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Not found in Redis, get from MongoDB
+	objectID, err := primitive.ObjectIDFromHex(roomID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
-	defer cursor.Close(context.Background())
 
-	var messages []*domain.ChatMessage
-	if err = cursor.All(context.Background(), &messages); err != nil {
+	opts := options.Find().
+		SetSort(bson.D{{Key: "createdAt", Value: -1}}).
+		SetSkip(offset).
+		SetLimit(limit)
+
+	cursor, err := r.messagesColl.Find(ctx, bson.M{"roomId": objectID}, opts)
+	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var messages []*domain.ChatMessage
+	if err = cursor.All(ctx, &messages); err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Cache in Redis
+	messagesBytes, err := json.Marshal(messages)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Cache for 1 hour
+	err = r.rdb.Set(ctx, cacheKey, string(messagesBytes), time.Hour).Err()
+	if err != nil {
+		// Log Redis error but don't return it since we have the data
+		logger.LogOutput(nil, err)
 	}
 
 	logger.LogOutput(messages, nil)
@@ -265,23 +308,68 @@ func (r *chatRepository) GetUnreadMessages(userID string, roomID string) ([]*dom
 		"roomID": roomID,
 	})
 
-	cursor, err := r.messagesColl.Find(
-		context.Background(),
-		bson.M{
-			"room_id": roomID,
-			"read_by": bson.M{"$nin": []string{userID}},
-		},
-	)
+	ctx := context.Background()
+	cacheKey := fmt.Sprintf("unread_messages:%s:%s", userID, roomID)
+
+	// Try to get from Redis first
+	messagesJSON, err := r.rdb.Get(ctx, cacheKey).Result()
+	if err == nil {
+		// Found in Redis
+		var messages []*domain.ChatMessage
+		err = json.Unmarshal([]byte(messagesJSON), &messages)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return nil, err
+		}
+		logger.LogOutput(messages, nil)
+		return messages, nil
+	} else if err != redis.Nil {
+		// Redis error
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Not found in Redis, get from MongoDB
+	objectID, err := primitive.ObjectIDFromHex(roomID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
-	defer cursor.Close(context.Background())
 
-	var messages []*domain.ChatMessage
-	if err = cursor.All(context.Background(), &messages); err != nil {
+	filter := bson.M{
+		"roomId": objectID,
+		"readBy": bson.M{
+			"$nin": []string{userID},
+		},
+	}
+
+	opts := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
+
+	cursor, err := r.messagesColl.Find(ctx, filter, opts)
+	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var messages []*domain.ChatMessage
+	if err = cursor.All(ctx, &messages); err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Cache in Redis
+	messagesBytes, err := json.Marshal(messages)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Cache for 5 minutes since unread status changes frequently
+	err = r.rdb.Set(ctx, cacheKey, string(messagesBytes), 5*time.Minute).Err()
+	if err != nil {
+		// Log Redis error but don't return it since we have the data
+		logger.LogOutput(nil, err)
 	}
 
 	logger.LogOutput(messages, nil)
@@ -335,20 +423,36 @@ func (r *chatRepository) UpdateUserStatus(status *domain.ChatUserStatus) error {
 	logger := utils.NewLogger("ChatRepository.UpdateUserStatus")
 	logger.LogInput(status)
 
-	status.UpdatedAt = time.Now()
-	opts := options.Update().SetUpsert(true)
-	_, err := r.userStatusColl.UpdateOne(
-		context.Background(),
-		bson.M{"_id": status.UserID},
-		bson.M{"$set": status},
-		opts,
-	)
+	// Update in Redis first
+	ctx := context.Background()
+	key := fmt.Sprintf("user_status:%s", status.UserID)
+	
+	// Marshal status to JSON
+	statusBytes, err := json.Marshal(status)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
 	}
 
-	logger.LogOutput(status, nil)
+	// Set in Redis with 24 hour expiry
+	err = r.rdb.Set(ctx, key, string(statusBytes), 24*time.Hour).Err()
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+
+	// Then update in MongoDB
+	filter := bson.M{"userId": status.UserID}
+	update := bson.M{"$set": status}
+	opts := options.Update().SetUpsert(true)
+
+	_, err = r.userStatusColl.UpdateOne(ctx, filter, update, opts)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+
+	logger.LogOutput(nil, nil)
 	return nil
 }
 
@@ -356,11 +460,51 @@ func (r *chatRepository) GetUserStatus(userID string) (*domain.ChatUserStatus, e
 	logger := utils.NewLogger("ChatRepository.GetUserStatus")
 	logger.LogInput(userID)
 
+	ctx := context.Background()
+	key := fmt.Sprintf("user_status:%s", userID)
+
+	// Try to get from Redis first
+	statusJSON, err := r.rdb.Get(ctx, key).Result()
+	if err == nil {
+		// Found in Redis
+		var status domain.ChatUserStatus
+		err = json.Unmarshal([]byte(statusJSON), &status)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return nil, err
+		}
+		logger.LogOutput(&status, nil)
+		return &status, nil
+	} else if err != redis.Nil {
+		// Redis error
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Not found in Redis, get from MongoDB
+	filter := bson.M{"userId": userID}
 	var status domain.ChatUserStatus
-	err := r.userStatusColl.FindOne(context.Background(), bson.M{"_id": userID}).Decode(&status)
+	err = r.userStatusColl.FindOne(ctx, filter).Decode(&status)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			logger.LogOutput(nil, nil)
+			return nil, nil
+		}
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Cache in Redis
+	statusBytes, err := json.Marshal(&status)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
+	}
+
+	err = r.rdb.Set(ctx, key, string(statusBytes), 24*time.Hour).Err()
+	if err != nil {
+		// Log Redis error but don't return it since we have the data
+		logger.LogOutput(nil, err)
 	}
 
 	logger.LogOutput(&status, nil)
