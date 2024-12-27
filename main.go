@@ -72,15 +72,15 @@ func main() {
 	log.Println("Connected to Redis successfully")
 
 	// Initialize repositories
-	userRepo := repository.NewUserRepository(db)
-	postRepo := repository.NewPostRepository(db)
+	userRepo := repository.NewUserRepository(db, redisClient)
+	postRepo := repository.NewPostRepository(db, redisClient)
 	followRepo := repository.NewFollowRepository(db)
 	friendshipRepo := repository.NewFriendshipRepository(db)
-	notificationRepo := repository.NewNotificationRepository(db)
-	commentRepo := repository.NewCommentRepository(db)
+	notificationRepo := repository.NewNotificationRepository(db, redisClient)
+	commentRepo := repository.NewCommentRepository(db, redisClient)
 	reactionRepo := repository.NewReactionRepository(db)
-	subPostRepo := repository.NewSubPostRepository(db)
-	storyRepo := repository.NewStoryRepository(db)
+	subPostRepo := repository.NewSubPostRepository(db, redisClient)
+	storyRepo := repository.NewStoryRepository(db, redisClient)
 
 	// Initialize use cases
 	userUseCase := usecase.NewUserUseCase(userRepo)

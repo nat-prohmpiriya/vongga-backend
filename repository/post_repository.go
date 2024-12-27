@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 	"go.mongodb.org/mongo-driver/bson"
