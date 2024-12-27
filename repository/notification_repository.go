@@ -2,8 +2,11 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,11 +17,13 @@ import (
 
 type notificationRepository struct {
 	collection *mongo.Collection
+	rdb        *redis.Client
 }
 
-func NewNotificationRepository(db *mongo.Database) domain.NotificationRepository {
+func NewNotificationRepository(db *mongo.Database, rdb *redis.Client) domain.NotificationRepository {
 	return &notificationRepository{
 		collection: db.Collection("notifications"),
+		rdb:        rdb,
 	}
 }
 
@@ -39,6 +44,31 @@ func (r *notificationRepository) Create(notification *domain.Notification) error
 	}
 
 	notification.ID = result.InsertedID.(primitive.ObjectID)
+
+	// Invalidate recipient's notifications cache and unread count
+	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID.Hex())
+	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID.Hex())
+
+	keys, err := r.rdb.Keys(ctx, pattern).Result()
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+	if len(keys) > 0 {
+		err = r.rdb.Del(ctx, keys...).Err()
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return err
+		}
+	}
+
+	// Delete unread count cache
+	err = r.rdb.Del(ctx, unreadKey).Err()
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+
 	logger.LogOutput(notification, nil)
 	return nil
 }
@@ -67,6 +97,30 @@ func (r *notificationRepository) Update(notification *domain.Notification) error
 		return err
 	}
 
+	// Invalidate recipient's notifications cache and unread count
+	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID.Hex())
+	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID.Hex())
+
+	keys, err := r.rdb.Keys(ctx, pattern).Result()
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+	if len(keys) > 0 {
+		err = r.rdb.Del(ctx, keys...).Err()
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return err
+		}
+	}
+
+	// Delete unread count cache
+	err = r.rdb.Del(ctx, unreadKey).Err()
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+
 	logger.LogOutput(notification, nil)
 	return nil
 }
@@ -87,6 +141,36 @@ func (r *notificationRepository) Delete(id primitive.ObjectID) error {
 
 	if result.DeletedCount == 0 {
 		err := domain.ErrNotFound
+		logger.LogOutput(nil, err)
+		return err
+	}
+
+	// Invalidate recipient's notifications cache and unread count
+	notification := &domain.Notification{}
+	err = r.collection.FindOne(ctx, filter).Decode(notification)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID.Hex())
+	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID.Hex())
+
+	keys, err := r.rdb.Keys(ctx, pattern).Result()
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+	if len(keys) > 0 {
+		err = r.rdb.Del(ctx, keys...).Err()
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return err
+		}
+	}
+
+	// Delete unread count cache
+	err = r.rdb.Del(ctx, unreadKey).Err()
+	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
 	}
@@ -145,6 +229,19 @@ func (r *notificationRepository) FindByRecipient(recipientID primitive.ObjectID,
 		return nil, err
 	}
 
+	// Cache notifications
+	notificationsKey := fmt.Sprintf("user_notifications:%s:%d:%d", recipientID.Hex(), limit, offset)
+	notificationsJSON, err := json.Marshal(notifications)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+	err = r.rdb.Set(ctx, notificationsKey, notificationsJSON, time.Hour*24).Err()
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
 	logger.LogOutput(notifications, nil)
 	return notifications, nil
 }
@@ -172,6 +269,36 @@ func (r *notificationRepository) MarkAsRead(notificationID primitive.ObjectID) e
 
 	if result.MatchedCount == 0 {
 		err := domain.ErrNotFound
+		logger.LogOutput(nil, err)
+		return err
+	}
+
+	// Invalidate recipient's notifications cache and unread count
+	notification := &domain.Notification{}
+	err = r.collection.FindOne(ctx, filter).Decode(notification)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID.Hex())
+	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID.Hex())
+
+	keys, err := r.rdb.Keys(ctx, pattern).Result()
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+	if len(keys) > 0 {
+		err = r.rdb.Del(ctx, keys...).Err()
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return err
+		}
+	}
+
+	// Delete unread count cache
+	err = r.rdb.Del(ctx, unreadKey).Err()
+	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
 	}
@@ -204,6 +331,30 @@ func (r *notificationRepository) MarkAllAsRead(recipientID primitive.ObjectID) e
 		return err
 	}
 
+	// Invalidate recipient's notifications cache and unread count
+	pattern := fmt.Sprintf("user_notifications:%s:*", recipientID.Hex())
+	unreadKey := fmt.Sprintf("unread_count:%s", recipientID.Hex())
+
+	keys, err := r.rdb.Keys(ctx, pattern).Result()
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+	if len(keys) > 0 {
+		err = r.rdb.Del(ctx, keys...).Err()
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return err
+		}
+	}
+
+	// Delete unread count cache
+	err = r.rdb.Del(ctx, unreadKey).Err()
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return err
+	}
+
 	logger.LogOutput(map[string]interface{}{"modifiedCount": result.ModifiedCount}, nil)
 	return nil
 }
@@ -215,17 +366,34 @@ func (r *notificationRepository) CountUnread(recipientID primitive.ObjectID) (in
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.M{
-		"recipientId": recipientID,
-		"isRead":      false,
-	}
-
-	count, err := r.collection.CountDocuments(ctx, filter)
-	if err != nil {
+	unreadKey := fmt.Sprintf("unread_count:%s", recipientID.Hex())
+	unreadCount, err := r.rdb.Get(ctx, unreadKey).Int64()
+	if err != nil && err != redis.Nil {
 		logger.LogOutput(nil, err)
 		return 0, err
 	}
+	if err == redis.Nil {
+		filter := bson.M{
+			"recipientId": recipientID,
+			"isRead":      false,
+		}
 
-	logger.LogOutput(map[string]interface{}{"count": count}, nil)
-	return count, nil
+		count, err := r.collection.CountDocuments(ctx, filter)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return 0, err
+		}
+
+		// Cache unread count
+		err = r.rdb.Set(ctx, unreadKey, count, time.Hour*24).Err()
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return 0, err
+		}
+
+		unreadCount = count
+	}
+
+	logger.LogOutput(map[string]interface{}{"count": unreadCount}, nil)
+	return unreadCount, nil
 }
