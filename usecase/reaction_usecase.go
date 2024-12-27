@@ -9,16 +9,23 @@ import (
 )
 
 type reactionUseCase struct {
-	reactionRepo domain.ReactionRepository
-	postRepo     domain.PostRepository
-	commentRepo  domain.CommentRepository
+	reactionRepo       domain.ReactionRepository
+	postRepo          domain.PostRepository
+	commentRepo       domain.CommentRepository
+	notificationUseCase domain.NotificationUseCase
 }
 
-func NewReactionUseCase(reactionRepo domain.ReactionRepository, postRepo domain.PostRepository, commentRepo domain.CommentRepository) domain.ReactionUseCase {
+func NewReactionUseCase(
+	reactionRepo domain.ReactionRepository,
+	postRepo domain.PostRepository,
+	commentRepo domain.CommentRepository,
+	notificationUseCase domain.NotificationUseCase,
+) domain.ReactionUseCase {
 	return &reactionUseCase{
-		reactionRepo: reactionRepo,
-		postRepo:     postRepo,
-		commentRepo:  commentRepo,
+		reactionRepo:       reactionRepo,
+		postRepo:          postRepo,
+		commentRepo:       commentRepo,
+		notificationUseCase: notificationUseCase,
 	}
 }
 
@@ -32,28 +39,30 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 	}
 	logger.LogInput(input)
 
-	var target interface{}
-	var err error
-
-	if commentID != nil {
-		// If commentID is provided, get the comment
-		comment, err := r.commentRepo.FindByID(*commentID)
-		if err != nil {
-			logger.LogOutput(nil, err)
-			return nil, err
-		}
-		target = comment
-	} else {
-		// If only postID is provided, get the post
-		post, err := r.postRepo.FindByID(postID)
-		if err != nil {
-			logger.LogOutput(nil, err)
-			return nil, err
-		}
-		target = post
+	// Check if reaction already exists
+	existing, err := r.reactionRepo.FindByUserAndTarget(userID, postID, commentID)
+	if err != nil && !domain.IsErrNotFound(err) {
+		logger.LogOutput(nil, err)
+		return nil, err
 	}
 
-	// Create reaction
+	// If reaction exists, update it
+	if existing != nil {
+		if existing.Type == reactionType {
+			logger.LogOutput(existing, nil)
+			return existing, nil
+		}
+		existing.Type = reactionType
+		err = r.reactionRepo.Update(existing)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			return nil, err
+		}
+		logger.LogOutput(existing, nil)
+		return existing, nil
+	}
+
+	// Create new reaction
 	now := time.Now()
 	reaction := &domain.Reaction{
 		BaseModel: domain.BaseModel{
@@ -69,7 +78,6 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 		Type:      reactionType,
 	}
 
-	// Save reaction
 	err = r.reactionRepo.Create(reaction)
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -78,8 +86,8 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 
 	// Update reaction counts
 	if commentID == nil {
-		post, ok := target.(*domain.Post)
-		if !ok {
+		post, ok := r.postRepo.FindByID(postID)
+		if err != nil {
 			logger.LogOutput(nil, err)
 			return nil, err
 		}
@@ -93,8 +101,8 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 			return nil, err
 		}
 	} else {
-		comment, ok := target.(*domain.Comment)
-		if !ok {
+		comment, ok := r.commentRepo.FindByID(*commentID)
+		if err != nil {
 			logger.LogOutput(nil, err)
 			return nil, err
 		}
@@ -106,6 +114,49 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 		if err != nil {
 			logger.LogOutput(nil, err)
 			return nil, err
+		}
+	}
+
+	// Create notification based on target type
+	if commentID != nil {
+		// Reaction on comment
+		comment, err := r.commentRepo.FindByID(*commentID)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			// Don't return error, just skip notification
+		} else if comment.UserID != userID { // Don't notify if user reacts to their own comment
+			_, err = r.notificationUseCase.CreateNotification(
+				comment.UserID,         // recipientID (comment owner)
+				userID,                 // senderID (user who reacted)
+				reaction.ID,            // refID (reference to the reaction)
+				domain.NotificationTypeLike,
+				"comment",              // refType
+				"reacted to your comment", // message
+			)
+			if err != nil {
+				logger.LogOutput(nil, err)
+				// Don't return error here as the reaction was created successfully
+			}
+		}
+	} else {
+		// Reaction on post
+		post, err := r.postRepo.FindByID(postID)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			// Don't return error, just skip notification
+		} else if post.UserID != userID { // Don't notify if user reacts to their own post
+			_, err = r.notificationUseCase.CreateNotification(
+				post.UserID,           // recipientID (post owner)
+				userID,                // senderID (user who reacted)
+				reaction.ID,           // refID (reference to the reaction)
+				domain.NotificationTypeLike,
+				"post",                // refType
+				"reacted to your post", // message
+			)
+			if err != nil {
+				logger.LogOutput(nil, err)
+				// Don't return error here as the reaction was created successfully
+			}
 		}
 	}
 

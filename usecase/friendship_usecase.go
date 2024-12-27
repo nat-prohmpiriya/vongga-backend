@@ -10,13 +10,15 @@ import (
 )
 
 type friendshipUseCase struct {
-	friendshipRepo domain.FriendshipRepository
+	friendshipRepo     domain.FriendshipRepository
+	notificationUseCase domain.NotificationUseCase
 }
 
 // NewFriendshipUseCase creates a new instance of FriendshipUseCase
-func NewFriendshipUseCase(fr domain.FriendshipRepository) domain.FriendshipUseCase {
+func NewFriendshipUseCase(fr domain.FriendshipRepository, nu domain.NotificationUseCase) domain.FriendshipUseCase {
 	return &friendshipUseCase{
-		friendshipRepo: fr,
+		friendshipRepo:     fr,
+		notificationUseCase: nu,
 	}
 }
 
@@ -59,6 +61,7 @@ func (f *friendshipUseCase) SendFriendRequest(fromID, toID primitive.ObjectID) e
 		}
 	}
 
+	// Create friendship request
 	friendship := &domain.Friendship{
 		UserID1:     fromID,
 		UserID2:     toID,
@@ -66,9 +69,25 @@ func (f *friendshipUseCase) SendFriendRequest(fromID, toID primitive.ObjectID) e
 		RequestedBy: fromID,
 	}
 
-	if err := f.friendshipRepo.Create(friendship); err != nil {
+	err = f.friendshipRepo.Create(friendship)
+	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
+	}
+
+	// Create notification for friend request
+	_, err = f.notificationUseCase.CreateNotification(
+		toID,     // recipientID (user receiving the request)
+		fromID,   // senderID (user sending the request)
+		fromID,   // refID (reference to the requester)
+		domain.NotificationTypeFriendReq,
+		"user",   // refType
+		"sent you a friend request", // message
+	)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		// Don't return error here as the friend request was successful
+		// Just log the notification error
 	}
 
 	logger.LogOutput(friendship, nil)
@@ -84,6 +103,7 @@ func (f *friendshipUseCase) AcceptFriendRequest(userID, friendID primitive.Objec
 	}
 	logger.LogInput(input)
 
+	// Find the friendship
 	friendship, err := f.friendshipRepo.FindByUsers(friendID, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
@@ -111,6 +131,21 @@ func (f *friendshipUseCase) AcceptFriendRequest(userID, friendID primitive.Objec
 	if err := f.friendshipRepo.Update(friendship); err != nil {
 		logger.LogOutput(nil, err)
 		return err
+	}
+
+	// Create notification for the user who sent the request
+	_, err = f.notificationUseCase.CreateNotification(
+		friendship.RequestedBy, // recipientID (user who sent the request)
+		userID,                // senderID (user accepting the request)
+		userID,                // refID (reference to the accepter)
+		domain.NotificationTypeFriendReq,
+		"user",                // refType
+		"accepted your friend request", // message
+	)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		// Don't return error here as the accept action was successful
+		// Just log the notification error
 	}
 
 	logger.LogOutput(friendship, nil)

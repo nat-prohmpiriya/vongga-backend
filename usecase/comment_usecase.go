@@ -9,14 +9,20 @@ import (
 )
 
 type commentUseCase struct {
-	commentRepo domain.CommentRepository
-	postRepo    domain.PostRepository
+	commentRepo        domain.CommentRepository
+	postRepo          domain.PostRepository
+	notificationUseCase domain.NotificationUseCase
 }
 
-func NewCommentUseCase(commentRepo domain.CommentRepository, postRepo domain.PostRepository) domain.CommentUseCase {
+func NewCommentUseCase(
+	commentRepo domain.CommentRepository,
+	postRepo domain.PostRepository,
+	notificationUseCase domain.NotificationUseCase,
+) domain.CommentUseCase {
 	return &commentUseCase{
-		commentRepo: commentRepo,
-		postRepo:    postRepo,
+		commentRepo:        commentRepo,
+		postRepo:          postRepo,
+		notificationUseCase: notificationUseCase,
 	}
 }
 
@@ -31,7 +37,7 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 	}
 	logger.LogInput(input)
 
-	// Get post to increment comment count
+	// Get post to increment comment count and get post owner
 	post, err := c.postRepo.FindByID(postID)
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -51,14 +57,54 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 		UserID:         userID,
 		Content:        content,
 		Media:          media,
-		ReplyTo:        replyTo,
 		ReactionCounts: make(map[string]int),
+		ReplyTo:        replyTo,
 	}
 
 	err = c.commentRepo.Create(comment)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
+	}
+
+	// If this is a reply to another comment, notify the original comment owner
+	if replyTo != nil {
+		originalComment, err := c.commentRepo.FindByID(*replyTo)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			// Don't return error, just skip notification
+		} else {
+			// Create notification for reply
+			_, err = c.notificationUseCase.CreateNotification(
+				originalComment.UserID, // recipientID (original comment owner)
+				userID,                 // senderID (user who replied)
+				comment.ID,             // refID (reference to the reply)
+				domain.NotificationTypeComment,
+				"comment",              // refType
+				"replied to your comment", // message
+			)
+			if err != nil {
+				logger.LogOutput(nil, err)
+				// Don't return error here as the comment was created successfully
+			}
+		}
+	} else {
+		// This is a comment on a post, notify the post owner
+		// Only notify if the commenter is not the post owner
+		if post.UserID != userID {
+			_, err = c.notificationUseCase.CreateNotification(
+				post.UserID,            // recipientID (post owner)
+				userID,                 // senderID (commenter)
+				comment.ID,             // refID (reference to the comment)
+				domain.NotificationTypeComment,
+				"post",                 // refType
+				"commented on your post", // message
+			)
+			if err != nil {
+				logger.LogOutput(nil, err)
+				// Don't return error here as the comment was created successfully
+			}
+		}
 	}
 
 	// Increment comment count in post

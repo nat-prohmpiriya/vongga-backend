@@ -9,13 +9,15 @@ import (
 )
 
 type followUseCase struct {
-	followRepo domain.FollowRepository
+	followRepo         domain.FollowRepository
+	notificationUseCase domain.NotificationUseCase
 }
 
 // NewFollowUseCase creates a new instance of FollowUseCase
-func NewFollowUseCase(fr domain.FollowRepository) domain.FollowUseCase {
+func NewFollowUseCase(fr domain.FollowRepository, nu domain.NotificationUseCase) domain.FollowUseCase {
 	return &followUseCase{
-		followRepo: fr,
+		followRepo:         fr,
+		notificationUseCase: nu,
 	}
 }
 
@@ -57,9 +59,25 @@ func (f *followUseCase) Follow(followerID, followingID primitive.ObjectID) error
 		Status:      "active",
 	}
 
-	if err := f.followRepo.Create(follow); err != nil {
+	err = f.followRepo.Create(follow)
+	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
+	}
+
+	// Create notification for the user being followed
+	_, err = f.notificationUseCase.CreateNotification(
+		followingID,  // recipientID (user being followed)
+		followerID,   // senderID (user who followed)
+		followerID,   // refID (reference to the follower)
+		domain.NotificationTypeFollow,
+		"user",       // refType
+		"started following you", // message
+	)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		// Don't return error here as the follow action was successful
+		// Just log the notification error
 	}
 
 	logger.LogOutput(follow, nil)
