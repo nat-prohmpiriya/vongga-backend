@@ -69,13 +69,18 @@ type SubPostInput struct {
 	Order   int     `json:"order"`
 }
 
+const (
+	MediaTypeImage = "image"
+	MediaTypeVideo = "video"
+)
+
 // Repository interface
 type PostRepository interface {
 	Create(post *Post) error
 	Update(post *Post) error
 	Delete(id primitive.ObjectID) error
 	FindByID(id primitive.ObjectID) (*Post, error)
-	FindByUserID(userID primitive.ObjectID, limit, offset int) ([]Post, error)
+	FindByUserID(userID primitive.ObjectID, limit, offset int, hasMedia bool, mediaType string) ([]Post, error)
 }
 
 type SubPostRepository interface {
@@ -93,7 +98,7 @@ type PostUseCase interface {
 	UpdatePost(postID primitive.ObjectID, content string, media []Media, tags []string, location *Location, visibility string) (*Post, error)
 	DeletePost(postID primitive.ObjectID) error
 	GetPost(postID primitive.ObjectID, includeSubPosts bool) (*PostWithDetails, error)
-	ListPosts(userID primitive.ObjectID, limit, offset int, includeSubPosts bool) ([]PostWithDetails, error)
+	ListPosts(userID primitive.ObjectID, limit, offset int, includeSubPosts bool, hasMedia bool, mediaType string) ([]PostWithDetails, error)
 }
 
 type SubPostUseCase interface {

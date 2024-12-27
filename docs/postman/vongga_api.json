@@ -1658,7 +1658,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/posts?limit=10&offset=0&userId=676b6e5b82922534fe691e67&includeSubPosts=true",
+							"raw": "{{base_url}}/api/posts?userId={{user_id}}&limit=10&offset=0&includeSubPosts=true&hasMedia=true&mediaType=image",
 							"host": [
 								"{{base_url}}"
 							],
@@ -1668,24 +1668,38 @@
 							],
 							"query": [
 								{
+									"key": "userId",
+									"value": "{{user_id}}",
+									"description": "ID of the user whose posts to retrieve"
+								},
+								{
 									"key": "limit",
-									"value": "10"
+									"value": "10",
+									"description": "Number of posts to retrieve"
 								},
 								{
 									"key": "offset",
-									"value": "0"
-								},
-								{
-									"key": "userId",
-									"value": "676b6e5b82922534fe691e67"
+									"value": "0",
+									"description": "Number of posts to skip"
 								},
 								{
 									"key": "includeSubPosts",
-									"value": "true"
+									"value": "true",
+									"description": "Whether to include sub-posts in the response"
+								},
+								{
+									"key": "hasMedia",
+									"value": "true",
+									"description": "Filter posts that have media (images/videos)"
+								},
+								{
+									"key": "mediaType",
+									"value": "image",
+									"description": "Filter by media type (image or video)"
 								}
 							]
 						},
-						"description": "List posts with pagination"
+						"description": "Get posts for a specific user with optional filtering and pagination"
 					},
 					"response": [
 						{
@@ -1699,7 +1713,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{base_url}}/api/posts?limit=10&offset=0&userId=67694aaeec1886f9f9ba85ed&includeSubPosts=true",
+									"raw": "{{base_url}}/api/posts?userId={{user_id}}&limit=10&offset=0&includeSubPosts=true&hasMedia=true&mediaType=image",
 									"host": [
 										"{{base_url}}"
 									],
@@ -1709,20 +1723,34 @@
 									],
 									"query": [
 										{
+											"key": "userId",
+											"value": "{{user_id}}",
+											"description": "ID of the user whose posts to retrieve"
+										},
+										{
 											"key": "limit",
-											"value": "10"
+											"value": "10",
+											"description": "Number of posts to retrieve"
 										},
 										{
 											"key": "offset",
-											"value": "0"
-										},
-										{
-											"key": "userId",
-											"value": "67694aaeec1886f9f9ba85ed"
+											"value": "0",
+											"description": "Number of posts to skip"
 										},
 										{
 											"key": "includeSubPosts",
-											"value": "true"
+											"value": "true",
+											"description": "Whether to include sub-posts in the response"
+										},
+										{
+											"key": "hasMedia",
+											"value": "true",
+											"description": "Filter posts that have media (images/videos)"
+										},
+										{
+											"key": "mediaType",
+											"value": "image",
+											"description": "Filter by media type (image or video)"
 										}
 									]
 								}

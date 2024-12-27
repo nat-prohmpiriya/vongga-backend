@@ -201,16 +201,27 @@ func (h *PostHandler) ListPosts(c *fiber.Ctx) error {
 	limit := c.QueryInt("limit", 0)
 	offset := c.QueryInt("offset", 0)
 	includeSubPosts := c.Query("includeSubPosts") == "true"
+	hasMedia := c.Query("hasMedia") == "true"
+	mediaType := c.Query("mediaType")
+
+	// Validate mediaType if hasMedia is true
+	if hasMedia && mediaType != "" && mediaType != domain.MediaTypeImage && mediaType != domain.MediaTypeVideo {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid media type. Must be 'image' or 'video'",
+		})
+	}
 
 	input := map[string]interface{}{
-		"userID":          userID,
-		"limit":           limit,
-		"offset":          offset,
+		"userID":         userID,
+		"limit":         limit,
+		"offset":        offset,
 		"includeSubPosts": includeSubPosts,
+		"hasMedia":      hasMedia,
+		"mediaType":     mediaType,
 	}
 	logger.LogInput(input)
 
-	posts, err := h.postUseCase.ListPosts(userID, limit, offset, includeSubPosts)
+	posts, err := h.postUseCase.ListPosts(userID, limit, offset, includeSubPosts, hasMedia, mediaType)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

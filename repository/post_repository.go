@@ -213,70 +213,55 @@ func (r *postRepository) FindByID(id primitive.ObjectID) (*domain.Post, error) {
 	return &post, nil
 }
 
-func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset int) ([]domain.Post, error) {
+func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset int, hasMedia bool, mediaType string) ([]domain.Post, error) {
 	logger := utils.NewLogger("PostRepository.FindByUserID")
-	logger.LogInput(map[string]interface{}{
-		"userID": userID,
-		"limit":  limit,
-		"offset": offset,
-	})
 
-	ctx := context.Background()
-	key := fmt.Sprintf("user_posts:%s:%d:%d", userID.Hex(), limit, offset)
+	input := map[string]interface{}{
+		"userID":    userID,
+		"limit":     limit,
+		"offset":    offset,
+		"hasMedia":  hasMedia,
+		"mediaType": mediaType,
+	}
+	logger.LogInput(input)
 
-	// Try to get from Redis first
-	postsJSON, err := r.rdb.Get(ctx, key).Result()
-	if err == nil {
-		// Found in Redis
-		var posts []domain.Post
-		err = json.Unmarshal([]byte(postsJSON), &posts)
-		if err != nil {
-			logger.LogOutput(nil, err)
-			return nil, err
+	filter := bson.M{"userId": userID}
+	if hasMedia {
+		mediaFilter := bson.M{"$ne": []interface{}{}}
+		if mediaType != "" {
+			mediaFilter = bson.M{
+				"$elemMatch": bson.M{
+					"type": mediaType,
+				},
+			}
 		}
-		logger.LogOutput(posts, nil)
-		return posts, nil
-	} else if err != redis.Nil {
-		// Redis error
-		logger.LogOutput(nil, err)
-		return nil, err
+
+		filter["$or"] = []bson.M{
+			{"media": mediaFilter},
+			{"subPosts.media": mediaFilter},
+		}
 	}
 
-	// Not found in Redis, get from MongoDB
-	opts := options.Find().
-		SetLimit(int64(limit)).
-		SetSkip(int64(offset)).
-		SetSort(bson.D{{Key: "createdAt", Value: -1}})
-
-	filter := bson.M{
-		"userId":    userID,
-		"deletedAt": bson.M{"$exists": false},
+	opts := options.Find()
+	if limit > 0 {
+		opts.SetLimit(int64(limit))
 	}
+	if offset > 0 {
+		opts.SetSkip(int64(offset))
+	}
+	opts.SetSort(bson.M{"createdAt": -1})
 
-	cursor, err := r.collection.Find(ctx, filter, opts)
+	cursor, err := r.collection.Find(context.Background(), filter, opts)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer cursor.Close(context.Background())
 
 	var posts []domain.Post
-	if err = cursor.All(ctx, &posts); err != nil {
+	if err := cursor.All(context.Background(), &posts); err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
-	}
-
-	// Cache in Redis for 15 minutes
-	postsBytes, err := json.Marshal(posts)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return nil, err
-	}
-
-	err = r.rdb.Set(ctx, key, string(postsBytes), 15*time.Minute).Err()
-	if err != nil {
-		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
 	}
 
 	logger.LogOutput(posts, nil)

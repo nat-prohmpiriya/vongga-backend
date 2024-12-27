@@ -286,33 +286,39 @@ func (p *postUseCase) GetPost(postID primitive.ObjectID, includeSubPosts bool) (
 	return result, nil
 }
 
-func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, includeSubPosts bool) ([]domain.PostWithDetails, error) {
+func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, includeSubPosts bool, hasMedia bool, mediaType string) ([]domain.PostWithDetails, error) {
 	logger := utils.NewLogger("PostUseCase.ListPosts")
+
 	input := map[string]interface{}{
-		"userID":          userID,
-		"limit":           limit,
-		"offset":          offset,
+		"userID":         userID,
+		"limit":         limit,
+		"offset":        offset,
 		"includeSubPosts": includeSubPosts,
+		"hasMedia":      hasMedia,
+		"mediaType":     mediaType,
 	}
 	logger.LogInput(input)
 
-	posts, err := p.postRepo.FindByUserID(userID, limit, offset)
+	posts, err := p.postRepo.FindByUserID(userID, limit, offset, hasMedia, mediaType)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
 
-	result := make([]domain.PostWithDetails, len(posts))
-	for i := range posts {
-		// Get user data for each post
-		user, err := p.userRepo.FindByID(posts[i].UserID.Hex())
-		if err != nil {
-			logger.LogOutput(nil, err)
-			return nil, err
+	var result []domain.PostWithDetails
+	for _, post := range posts {
+		postWithDetails := domain.PostWithDetails{
+			Post: &post,
 		}
 
-		// Map to PostUser with limited fields
-		postUser := &domain.PostUser{
+		// Get user details
+		user, err := p.userRepo.FindByID(post.UserID)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			continue
+		}
+
+		postWithDetails.User = &domain.PostUser{
 			ID:           user.ID,
 			Username:     user.Username,
 			DisplayName:  user.DisplayName,
@@ -321,17 +327,17 @@ func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, in
 			LastName:     user.LastName,
 		}
 
-		result[i].Post = &posts[i]
-		result[i].User = postUser
-
+		// Get sub-posts if requested
 		if includeSubPosts {
-			subPosts, err := p.subPostRepo.FindByParentID(posts[i].ID, 0, 0) // Get all subposts
+			subPosts, err := p.subPostRepo.FindByParentID(post.ID, 0, 0)
 			if err != nil {
 				logger.LogOutput(nil, err)
-				return nil, err
+				continue
 			}
-			result[i].SubPosts = subPosts
+			postWithDetails.SubPosts = subPosts
 		}
+
+		result = append(result, postWithDetails)
 	}
 
 	logger.LogOutput(result, nil)
