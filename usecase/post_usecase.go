@@ -9,22 +9,22 @@ import (
 )
 
 type postUseCase struct {
-	postRepo    domain.PostRepository
-	subPostRepo domain.SubPostRepository
-	userRepo    domain.UserRepository
+	postRepo            domain.PostRepository
+	subPostRepo         domain.SubPostRepository
+	userRepo            domain.UserRepository
 	notificationUseCase domain.NotificationUseCase
 }
 
 func NewPostUseCase(
-	postRepo domain.PostRepository, 
-	subPostRepo domain.SubPostRepository, 
+	postRepo domain.PostRepository,
+	subPostRepo domain.SubPostRepository,
 	userRepo domain.UserRepository,
 	notificationUseCase domain.NotificationUseCase,
 ) domain.PostUseCase {
 	return &postUseCase{
-		postRepo:    postRepo,
-		subPostRepo: subPostRepo,
-		userRepo:    userRepo,
+		postRepo:            postRepo,
+		subPostRepo:         subPostRepo,
+		userRepo:            userRepo,
 		notificationUseCase: notificationUseCase,
 	}
 }
@@ -114,11 +114,11 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 
 		// Create mention notification
 		_, err = p.notificationUseCase.CreateNotification(
-			mentionedUser.ID,     // recipientID (mentioned user)
-			userID,               // senderID (user who mentioned)
-			post.ID,              // refID (reference to the post)
+			mentionedUser.ID, // recipientID (mentioned user)
+			userID,           // senderID (user who mentioned)
+			post.ID,          // refID (reference to the post)
 			domain.NotificationTypeMention,
-			"post",               // refType
+			"post",                    // refType
 			"mentioned you in a post", // message
 		)
 		if err != nil {
@@ -191,11 +191,11 @@ func (p *postUseCase) UpdatePost(postID primitive.ObjectID, content string, medi
 
 		// Create mention notification
 		_, err = p.notificationUseCase.CreateNotification(
-			mentionedUser.ID,     // recipientID (mentioned user)
-			post.UserID,          // senderID (user who mentioned)
-			post.ID,              // refID (reference to the post)
+			mentionedUser.ID, // recipientID (mentioned user)
+			post.UserID,      // senderID (user who mentioned)
+			post.ID,          // refID (reference to the post)
 			domain.NotificationTypeMention,
-			"post",               // refType
+			"post",                    // refType
 			"mentioned you in a post", // message
 		)
 		if err != nil {
@@ -290,12 +290,12 @@ func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, in
 	logger := utils.NewLogger("PostUseCase.ListPosts")
 
 	input := map[string]interface{}{
-		"userID":         userID,
-		"limit":         limit,
-		"offset":        offset,
+		"userID":          userID,
+		"limit":           limit,
+		"offset":          offset,
 		"includeSubPosts": includeSubPosts,
-		"hasMedia":      hasMedia,
-		"mediaType":     mediaType,
+		"hasMedia":        hasMedia,
+		"mediaType":       mediaType,
 	}
 	logger.LogInput(input)
 
@@ -315,7 +315,7 @@ func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, in
 		// Get user details
 		user, err := p.userRepo.FindByID(post.UserID.Hex())
 		if err != nil {
-			logger.LogOutput(nil, fmt.Errorf("error fetching user data for post %s: %w", post.ID.Hex(), err))
+			logger.LogOutput(nil, err)
 			continue
 		}
 
@@ -332,7 +332,7 @@ func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, in
 		if includeSubPosts {
 			subPosts, err := p.subPostRepo.FindByParentID(post.ID, 0, 0)
 			if err != nil {
-				logger.LogOutput(nil, fmt.Errorf("error fetching subposts for post %s: %w", post.ID.Hex(), err))
+				logger.LogOutput(nil, err)
 				continue
 			}
 			postWithDetails.SubPosts = subPosts

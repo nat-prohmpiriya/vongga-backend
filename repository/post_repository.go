@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -75,7 +75,7 @@ func (r *postRepository) Update(post *domain.Post) error {
 	ctx := context.Background()
 	key := fmt.Sprintf("post:%s", post.ID.Hex())
 	pattern := fmt.Sprintf("user_posts:%s:*", post.UserID.Hex())
-	
+
 	// Delete post cache
 	err = r.rdb.Del(ctx, key).Err()
 	if err != nil {
@@ -127,7 +127,7 @@ func (r *postRepository) Delete(id primitive.ObjectID) error {
 	ctx := context.Background()
 	key := fmt.Sprintf("post:%s", id.Hex())
 	pattern := fmt.Sprintf("user_posts:%s:*", post.UserID.Hex())
-	
+
 	// Delete post cache
 	err = r.rdb.Del(ctx, key).Err()
 	if err != nil {
@@ -223,11 +223,10 @@ func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset i
 		"hasMedia":  hasMedia,
 		"mediaType": mediaType,
 	}
-    logger.LogInput(input)
-    logger.Log("hasMedia value:", hasMedia)
+	logger.LogInput(input)
 
 	filter := bson.M{
-		"userId":    userID,
+		"userId":   userID,
 		"isActive": true,
 	}
 
