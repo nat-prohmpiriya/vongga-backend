@@ -314,7 +314,7 @@ func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, in
 		// Get user details
 		user, err := p.userRepo.FindByID(post.UserID.Hex())
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.LogOutput(nil, fmt.Errorf("error fetching user data for post %s: %w", post.ID.Hex(), err))
 			continue
 		}
 
@@ -331,7 +331,7 @@ func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, in
 		if includeSubPosts {
 			subPosts, err := p.subPostRepo.FindByParentID(post.ID, 0, 0)
 			if err != nil {
-				logger.LogOutput(nil, err)
+				logger.LogOutput(nil, fmt.Errorf("error fetching subposts for post %s: %w", post.ID.Hex(), err))
 				continue
 			}
 			postWithDetails.SubPosts = subPosts
