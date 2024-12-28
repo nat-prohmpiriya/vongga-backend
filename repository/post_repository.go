@@ -225,20 +225,35 @@ func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset i
 	}
 	logger.LogInput(input)
 
-	filter := bson.M{"userId": userID}
+	filter := bson.M{
+		"userId":    userID,
+		"isActive": true,
+	}
+
+	// Handle media filtering
 	if hasMedia {
-		mediaFilter := bson.M{"$ne": []interface{}{}}
 		if mediaType != "" {
-			mediaFilter = bson.M{
-				"$elemMatch": bson.M{
-					"type": mediaType,
+			// Filter for specific media type
+			filter = bson.M{
+				"$and": []bson.M{
+					{"userId": userID, "isActive": true},
+					{"$or": []bson.M{
+						{"media": bson.M{"$elemMatch": bson.M{"type": mediaType}}},
+						{"subPosts.media": bson.M{"$elemMatch": bson.M{"type": mediaType}}},
+					}},
 				},
 			}
-		}
-
-		filter["$or"] = []bson.M{
-			{"media": mediaFilter},
-			{"subPosts.media": mediaFilter},
+		} else {
+			// Filter for any media
+			filter = bson.M{
+				"$and": []bson.M{
+					{"userId": userID, "isActive": true},
+					{"$or": []bson.M{
+						{"media": bson.M{"$exists": true, "$ne": []interface{}{}}},
+						{"subPosts.media": bson.M{"$exists": true, "$ne": []interface{}{}}},
+					}},
+				},
+			}
 		}
 	}
 
