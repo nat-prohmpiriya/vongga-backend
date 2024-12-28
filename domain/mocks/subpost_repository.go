@@ -44,7 +44,7 @@ func (m *SubPostRepository) FindByPostID(postID primitive.ObjectID) ([]domain.Su
 func (m *SubPostRepository) FindByParentID(parentID primitive.ObjectID, limit, offset int) ([]domain.SubPost, error) {
 	args := m.Called(parentID, limit, offset)
 	if args.Get(0) == nil {
-		return nil, args.Error(1)
+		return []domain.SubPost{}, args.Error(1)
 	}
 	return args.Get(0).([]domain.SubPost), args.Error(1)
 }
