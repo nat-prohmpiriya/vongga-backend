@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type StoryHandler struct {
@@ -28,7 +29,8 @@ func NewStoryHandler(router fiber.Router, storyUseCase domain.StoryUseCase) *Sto
 func (h *StoryHandler) CreateStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.CreateStory")
 
-	userID := c.Locals("userId").(string)
+	userID := c.Locals("userId").(primitive.ObjectID)
+	userIDStr := userID.Hex()
 
 	var req struct {
 		MediaURL      string           `json:"mediaUrl"`
@@ -60,7 +62,7 @@ func (h *StoryHandler) CreateStory(c *fiber.Ctx) error {
 	}
 
 	story := &domain.Story{
-		UserID: userID,
+		UserID: userIDStr,
 		Media: domain.StoryMedia{
 			URL:       req.MediaURL,
 			Type:      req.MediaType,
