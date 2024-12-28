@@ -223,7 +223,8 @@ func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset i
 		"hasMedia":  hasMedia,
 		"mediaType": mediaType,
 	}
-	logger.LogInput(input)
+    logger.LogInput(input)
+    logger.Log("hasMedia value:", hasMedia)
 
 	filter := bson.M{
 		"userId":    userID,
