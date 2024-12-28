@@ -307,8 +307,9 @@ func (p *postUseCase) ListPosts(userID primitive.ObjectID, limit, offset int, in
 
 	var result []domain.PostWithDetails
 	for _, post := range posts {
+		postCopy := post
 		postWithDetails := domain.PostWithDetails{
-			Post: &post,
+			Post: &postCopy,
 		}
 
 		// Get user details
