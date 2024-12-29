@@ -60,7 +60,7 @@ func (u *storyUseCase) CreateStory(story *domain.Story) error {
 	return nil
 }
 
-func (u *storyUseCase) GetStoryByID(id string) (*domain.Story, error) {
+func (u *storyUseCase) GetStoryByID(id string) (*domain.StoryResponse, error) {
 	logger := utils.NewLogger("StoryUseCase.GetStoryByID")
 	logger.LogInput(id)
 
@@ -76,11 +76,28 @@ func (u *storyUseCase) GetStoryByID(id string) (*domain.Story, error) {
 		return nil, err
 	}
 
-	logger.LogOutput(story, nil)
-	return story, nil
+	// Get user information
+	user, err := u.userRepo.FindByID(story.UserID)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	response := &domain.StoryResponse{
+		Story: story,
+	}
+	response.User.ID = user.ID.Hex()
+	response.User.Username = user.Username
+	response.User.DisplayName = user.DisplayName
+	response.User.PhotoProfile = user.PhotoProfile
+	response.User.FirstName = user.FirstName
+	response.User.LastName = user.LastName
+
+	logger.LogOutput(response, nil)
+	return response, nil
 }
 
-func (u *storyUseCase) GetUserStories(userID string) ([]*domain.Story, error) {
+func (u *storyUseCase) GetUserStories(userID string) ([]*domain.StoryResponse, error) {
 	logger := utils.NewLogger("StoryUseCase.GetUserStories")
 	logger.LogInput(userID)
 
@@ -102,11 +119,25 @@ func (u *storyUseCase) GetUserStories(userID string) ([]*domain.Story, error) {
 		return nil, err
 	}
 
-	logger.LogOutput(stories, nil)
-	return stories, nil
+	var responses []*domain.StoryResponse
+	for _, story := range stories {
+		response := &domain.StoryResponse{
+			Story: story,
+		}
+		response.User.ID = user.ID.Hex()
+		response.User.Username = user.Username
+		response.User.DisplayName = user.DisplayName
+		response.User.PhotoProfile = user.PhotoProfile
+		response.User.FirstName = user.FirstName
+		response.User.LastName = user.LastName
+		responses = append(responses, response)
+	}
+
+	logger.LogOutput(responses, nil)
+	return responses, nil
 }
 
-func (u *storyUseCase) GetActiveStories() ([]*domain.Story, error) {
+func (u *storyUseCase) GetActiveStories() ([]*domain.StoryResponse, error) {
 	logger := utils.NewLogger("StoryUseCase.GetActiveStories")
 
 	stories, err := u.storyRepo.FindActiveStories()
@@ -115,8 +146,28 @@ func (u *storyUseCase) GetActiveStories() ([]*domain.Story, error) {
 		return nil, err
 	}
 
-	logger.LogOutput(stories, nil)
-	return stories, nil
+	var responses []*domain.StoryResponse
+	for _, story := range stories {
+		user, err := u.userRepo.FindByID(story.UserID)
+		if err != nil {
+			logger.LogOutput(nil, err)
+			continue
+		}
+
+		response := &domain.StoryResponse{
+			Story: story,
+		}
+		response.User.ID = user.ID.Hex()
+		response.User.Username = user.Username
+		response.User.DisplayName = user.DisplayName
+		response.User.PhotoProfile = user.PhotoProfile
+		response.User.FirstName = user.FirstName
+		response.User.LastName = user.LastName
+		responses = append(responses, response)
+	}
+
+	logger.LogOutput(responses, nil)
+	return responses, nil
 }
 
 func (u *storyUseCase) ViewStory(storyID string, viewerID string) error {

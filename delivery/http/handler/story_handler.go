@@ -149,7 +149,8 @@ func (h *StoryHandler) ViewStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.ViewStory")
 
 	storyID := c.Params("storyId")
-	viewerID := c.Locals("userId").(string)
+	viewerID := c.Locals("userId").(primitive.ObjectID)
+	viewerIDStr := viewerID.Hex()
 
 	input := map[string]interface{}{
 		"storyId":  storyID,
@@ -157,7 +158,7 @@ func (h *StoryHandler) ViewStory(c *fiber.Ctx) error {
 	}
 	logger.LogInput(input)
 
-	err := h.storyUseCase.ViewStory(storyID, viewerID)
+	err := h.storyUseCase.ViewStory(storyID, viewerIDStr)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -173,7 +174,8 @@ func (h *StoryHandler) DeleteStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.DeleteStory")
 
 	storyID := c.Params("storyId")
-	userID := c.Locals("userId").(string)
+	userID := c.Locals("userId").(primitive.ObjectID)
+	userIDStr := userID.Hex()
 
 	input := map[string]interface{}{
 		"storyId": storyID,
@@ -181,7 +183,7 @@ func (h *StoryHandler) DeleteStory(c *fiber.Ctx) error {
 	}
 	logger.LogInput(input)
 
-	err := h.storyUseCase.DeleteStory(storyID, userID)
+	err := h.storyUseCase.DeleteStory(storyID, userIDStr)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

@@ -37,6 +37,18 @@ type Story struct {
 	IsActive     bool          `bson:"isActive" json:"isActive"`
 }
 
+type StoryResponse struct {
+	*Story
+	User struct {
+		ID           string `json:"userId"`
+		Username     string `json:"username"`
+		DisplayName  string `json:"displayName"`
+		PhotoProfile string `json:"photoProfile"`
+		FirstName    string `json:"firstName"`
+		LastName     string `json:"lastName"`
+	} `json:"user"`
+}
+
 type StoryRepository interface {
 	Create(story *Story) error
 	FindByID(id string) (*Story, error)
@@ -50,9 +62,9 @@ type StoryRepository interface {
 
 type StoryUseCase interface {
 	CreateStory(story *Story) error
-	GetStoryByID(id string) (*Story, error)
-	GetUserStories(userID string) ([]*Story, error)
-	GetActiveStories() ([]*Story, error)
+	GetStoryByID(id string) (*StoryResponse, error)
+	GetUserStories(userID string) ([]*StoryResponse, error)
+	GetActiveStories() ([]*StoryResponse, error)
 	ViewStory(storyID string, viewerID string) error
 	DeleteStory(storyID string, userID string) error
 	ArchiveExpiredStories() error
