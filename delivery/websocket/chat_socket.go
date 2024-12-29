@@ -118,41 +118,30 @@ func (h *Hub) BroadcastToRoom(roomID string, message interface{}) {
 		"message": message,
 	})
 
-	// Get room members
-	room, err := h.ChatUsecase.GetRoom(roomID)
+	// แปลง message เป็น JSON
+	messageBytes, err := json.Marshal(message)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.LogOutput(nil, fmt.Errorf("error marshaling message: %v", err))
 		return
 	}
 
-	// Convert message to JSON
-	msgBytes, err := json.Marshal(message)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return
-	}
+	h.Mutex.Lock()
+	defer h.Mutex.Unlock()
 
-	// Send to all room members
-	for _, memberID := range room.Members {
-		if client, ok := h.UserMap[memberID]; ok {
+	// ส่งข้อความไปยังทุก client ที่อยู่ในห้อง
+	for client := range h.Clients {
+		if client.RoomIDs[roomID] {
 			select {
-			case client.Send <- msgBytes:
+			case client.Send <- messageBytes:
 				logger.LogOutput(map[string]interface{}{
 					"clientID": client.ID,
-					"status":  "message_sent",
+					"status":   "message_sent",
 				}, nil)
 			default:
-				h.Mutex.Lock()
+				// ถ้าส่งไม่ได้ ให้ลบ client ออก
 				delete(h.Clients, client)
 				delete(h.UserMap, client.UserID)
 				close(client.Send)
-				h.Mutex.Unlock()
-
-				logger.LogOutput(map[string]interface{}{
-					"clientID": client.ID,
-					"status":  "client_removed",
-					"reason":  "send_failed",
-				}, nil)
 			}
 		}
 	}
@@ -191,65 +180,57 @@ func (c *Client) ReadPump() {
 	for {
 		_, message, err := c.Conn.ReadMessage()
 		if err != nil {
-			logger.LogOutput(nil, err)
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				logger.LogOutput(nil, fmt.Errorf("error: %v", err))
+			}
 			break
 		}
 
-		logger.LogInput(map[string]interface{}{
-			"messageSize": len(message),
-			"action":     "message_received",
-		})
-
-		// Parse message
 		var msg Message
 		if err := json.Unmarshal(message, &msg); err != nil {
-			logger.LogOutput(nil, err)
+			logger.LogOutput(nil, fmt.Errorf("error unmarshaling message: %v", err))
 			continue
 		}
 
-		// Handle message based on type
+		msg.SenderID = c.UserID
+		msg.CreatedAt = time.Now()
+
 		switch msg.Type {
-		case "join_room":
-			roomID := msg.RoomID
-			c.RoomIDs[roomID] = true
-
-			// Notify room members
-			c.Hub.BroadcastToRoom(roomID, Message{
-				Type:      "user_joined",
-				RoomID:    roomID,
-				SenderID:  c.UserID,
-				Content:   "User joined the room",
-				CreatedAt: time.Now(),
-			})
-
-		case "leave_room":
-			roomID := msg.RoomID
-			delete(c.RoomIDs, roomID)
-
-			// Notify room members
-			c.Hub.BroadcastToRoom(roomID, Message{
-				Type:      "user_left",
-				RoomID:    roomID,
-				SenderID:  c.UserID,
-				Content:   "User left the room",
-				CreatedAt: time.Now(),
-			})
-
-		case "chat_message":
-			// Save message to database
-			chatMsg := &domain.ChatMessage{
-				RoomID:   msg.RoomID,
-				SenderID: msg.SenderID,
-				Content:  msg.Content,
-				Type:     "text",
-			}
-			if _, err := c.Hub.ChatUsecase.SendMessage(chatMsg.RoomID, chatMsg.SenderID, chatMsg.Type, chatMsg.Content); err != nil {
-				logger.LogOutput(nil, err)
+		case "message":
+			// จัดการข้อความปกติ
+			chatMsg, err := c.Hub.ChatUsecase.SendMessage(
+				msg.RoomID,
+				msg.SenderID,
+				"text",
+				msg.Content,
+			)
+			if err != nil {
+				logger.LogOutput(nil, fmt.Errorf("error sending message: %v", err))
 				continue
 			}
+			
+			// แปลง chatMsg เป็น Message สำหรับ broadcast
+			broadcastMsg := Message{
+				Type:      "message",
+				RoomID:    chatMsg.RoomID,
+				SenderID:  chatMsg.SenderID,
+				Content:   chatMsg.Content,
+				CreatedAt: chatMsg.CreatedAt,
+			}
+			c.Hub.BroadcastToRoom(msg.RoomID, broadcastMsg)
 
-			// Broadcast message to room
-			c.Hub.BroadcastToRoom(msg.RoomID, msg)
+		case "typing":
+			// สำหรับ typing status ไม่ต้องบันทึกลง database แค่ broadcast ไปยังสมาชิกในห้องเท่านั้น
+			typingMsg := Message{
+				Type:     "typing",
+				RoomID:   msg.RoomID,
+				SenderID: msg.SenderID,
+				Content:  msg.Content, // "true" หรือ "false"
+			}
+			c.Hub.BroadcastToRoom(msg.RoomID, typingMsg)
+
+		default:
+			logger.LogOutput(nil, fmt.Errorf("unknown message type: %s", msg.Type))
 		}
 	}
 }

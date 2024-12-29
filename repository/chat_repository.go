@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -237,24 +237,20 @@ func (r *chatRepository) GetRoomMessages(roomID string, limit, offset int64) ([]
 		return nil, err
 	}
 
-	// Not found in Redis, get from MongoDB
-	objectID, err := primitive.ObjectIDFromHex(roomID)
-	if err != nil {
-		logger.LogOutput(nil, err)
-		return nil, err
-	}
-
+	// Not found in Redis, get from MongoDB``
 	opts := options.Find().
 		SetSort(bson.D{{Key: "createdAt", Value: -1}}).
 		SetSkip(offset).
 		SetLimit(limit)
 
-	cursor, err := r.messagesColl.Find(ctx, bson.M{"roomId": objectID}, opts)
+	cursor, err := r.messagesColl.Find(ctx, bson.M{"roomId": roomID}, opts)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
 	defer cursor.Close(ctx)
+
+	fmt.Printf("Found %d messages\n", cursor.RemainingBatchLength())
 
 	var messages []*domain.ChatMessage
 	if err = cursor.All(ctx, &messages); err != nil {
