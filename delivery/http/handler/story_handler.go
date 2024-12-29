@@ -94,6 +94,12 @@ func (h *StoryHandler) GetStoryByID(c *fiber.Ctx) error {
 	storyID := c.Params("storyId")
 	logger.LogInput(storyID)
 
+	if utils.IsUndefined(storyID) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "storyId is required",
+		})
+	}
+
 	story, err := h.storyUseCase.GetStoryByID(storyID)
 	if err != nil {
 		logger.LogOutput(nil, err)
