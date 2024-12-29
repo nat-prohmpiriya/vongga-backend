@@ -9,6 +9,7 @@ type ChatRoom struct {
 	Name      string   `bson:"name" json:"name"`
 	Type      string   `bson:"type" json:"type"` // "private" or "group"
 	Members   []string `bson:"members" json:"members"`
+	Users     []User   `bson:"users,omitempty" json:"users,omitempty"`
 }
 
 type ChatMessage struct {

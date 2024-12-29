@@ -401,6 +401,27 @@ func (r *userRepository) Update(user *domain.User) error {
 	return nil
 }
 
+func (r *userRepository) GetUserByID(userID string) (*domain.User, error) {
+	logger := utils.NewLogger("UserRepository.GetUserByID")
+	logger.LogInput(userID)
+
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	var user domain.User
+	err = r.collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&user)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	logger.LogOutput(&user, nil)
+	return &user, nil
+}
+
 func (r *userRepository) SoftDelete(id string) error {
 	logger := utils.NewLogger("UserRepository.SoftDelete")
 	logger.LogInput(id)

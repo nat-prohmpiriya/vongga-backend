@@ -44,10 +44,34 @@ func (u *chatUsecase) CreatePrivateChat(userID1 string, userID2 string) (*domain
 			members := room.Members
 			if (members[0] == userID1 && members[1] == userID2) ||
 				(members[0] == userID2 && members[1] == userID1) {
+				// Get user details
+				var users []domain.User
+				for _, memberID := range room.Members {
+					user, err := u.userRepo.GetUserByID(memberID)
+					if err != nil {
+						logger.LogOutput(nil, err)
+						continue
+					}
+					users = append(users, *user)
+				}
+				room.Users = users
 				logger.LogOutput(room, nil)
 				return room, nil
 			}
 		}
+	}
+
+	// Get user details for new room
+	user1, err := u.userRepo.GetUserByID(userID1)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	user2, err := u.userRepo.GetUserByID(userID2)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
 	}
 
 	// Create new room if not exists
@@ -61,6 +85,7 @@ func (u *chatUsecase) CreatePrivateChat(userID1 string, userID2 string) (*domain
 		},
 		Type:    "private",
 		Members: []string{userID1, userID2},
+		Users:   []domain.User{*user1, *user2},
 	}
 
 	// Save room
@@ -107,12 +132,29 @@ func (u *chatUsecase) CreateGroupChat(name string, memberIDs []string) (*domain.
 
 func (u *chatUsecase) GetUserChats(userID string) ([]*domain.ChatRoom, error) {
 	logger := utils.NewLogger("ChatUsecase.GetUserChats")
-	logger.LogInput(userID)
+	logger.LogInput(map[string]interface{}{
+		"userID": userID,
+	})
 
+	// Get rooms
 	rooms, err := u.chatRepo.GetRoomsByUser(userID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
+	}
+
+	// Get user details for each room
+	for _, room := range rooms {
+		var users []domain.User
+		for _, memberID := range room.Members {
+			user, err := u.userRepo.GetUserByID(memberID)
+			if err != nil {
+				logger.LogOutput(nil, err)
+				continue
+			}
+			users = append(users, *user)
+		}
+		room.Users = users
 	}
 
 	logger.LogOutput(rooms, nil)

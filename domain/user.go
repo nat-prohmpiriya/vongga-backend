@@ -102,6 +102,7 @@ type UserRepository interface {
 	Update(user *User) error
 	SoftDelete(id string) error
 	GetUserList(req *UserListRequest) ([]User, int64, error)
+	GetUserByID(userID string) (*User, error)
 }
 
 type UserUseCase interface {
