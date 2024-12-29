@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -37,6 +37,8 @@ func (r *storyRepository) Create(story *domain.Story) error {
 	story.IsActive = true
 	story.Version = 1
 	story.ExpiresAt = time.Now().Add(24 * time.Hour) // Stories expire after 24 hours
+	story.Viewers = []domain.StoryViewer{}           // Initialize empty viewers array
+	story.ViewersCount = 0
 
 	_, err := r.collection.InsertOne(context.Background(), story)
 	if err != nil {
@@ -359,7 +361,10 @@ func (r *storyRepository) AddViewer(storyID string, viewer domain.StoryViewer) e
 
 	result, err := r.collection.UpdateOne(
 		context.Background(),
-		bson.M{"_id": objectID, "isActive": true},
+		bson.M{
+			"_id":      objectID,
+			"isActive": true,
+		},
 		update,
 	)
 
@@ -374,7 +379,7 @@ func (r *storyRepository) AddViewer(storyID string, viewer domain.StoryViewer) e
 		return err
 	}
 
-	// Invalidate story cache
+	// ลบ cache
 	key := fmt.Sprintf("story:%s", storyID)
 	err = r.rdb.Del(context.Background(), key).Err()
 	if err != nil {
