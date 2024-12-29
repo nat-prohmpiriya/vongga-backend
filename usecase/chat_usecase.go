@@ -31,6 +31,26 @@ func (u *chatUsecase) CreatePrivateChat(userID1 string, userID2 string) (*domain
 		"userID2": userID2,
 	})
 
+	// Check if room already exists
+	rooms, err := u.chatRepo.GetRoomsByUser(userID1)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Find existing private chat room with both users
+	for _, room := range rooms {
+		if room.Type == "private" && len(room.Members) == 2 {
+			members := room.Members
+			if (members[0] == userID1 && members[1] == userID2) ||
+				(members[0] == userID2 && members[1] == userID1) {
+				logger.LogOutput(room, nil)
+				return room, nil
+			}
+		}
+	}
+
+	// Create new room if not exists
 	room := &domain.ChatRoom{
 		BaseModel: domain.BaseModel{
 			ID:        primitive.NewObjectID(),
@@ -44,7 +64,7 @@ func (u *chatUsecase) CreatePrivateChat(userID1 string, userID2 string) (*domain
 	}
 
 	// Save room
-	err := u.chatRepo.SaveRoom(room)
+	err = u.chatRepo.SaveRoom(room)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
