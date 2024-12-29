@@ -8,6 +8,7 @@ import (
 	ws "github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/websocket"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ChatHandler struct {
@@ -24,32 +25,29 @@ func NewChatHandler(router fiber.Router, chatUsecase domain.ChatUsecase) {
 	// Start WebSocket hub
 	go handler.hub.Run()
 
-	chatGroup := router.Group("/api/chat")
-	{
-		// WebSocket endpoint
-		chatGroup.Get("/ws", websocket.New(handler.handleWebSocket))
+	// WebSocket endpoint
+	router.Get("/ws", websocket.New(handler.handleWebSocket))
 
-		// Room endpoints
-		chatGroup.Post("/rooms/private", handler.CreatePrivateChat)
-		chatGroup.Post("/rooms/group", handler.CreateGroupChat)
-		chatGroup.Get("/rooms", handler.GetUserChats)
-		chatGroup.Post("/rooms/:roomId/members", handler.AddMemberToGroup)
-		chatGroup.Delete("/rooms/:roomId/members/:userId", handler.RemoveMemberFromGroup)
+	// Room endpoints
+	router.Post("/rooms/private", handler.CreatePrivateChat)
+	router.Post("/rooms/group", handler.CreateGroupChat)
+	router.Get("/rooms", handler.GetUserChats)
+	router.Post("/rooms/:roomId/members", handler.AddMemberToGroup)
+	router.Delete("/rooms/:roomId/members/:userId", handler.RemoveMemberFromGroup)
 
-		// Message endpoints
-		chatGroup.Post("/messages", handler.SendMessage)
-		chatGroup.Post("/messages/file", handler.SendFileMessage)
-		chatGroup.Get("/rooms/:roomId/messages", handler.GetChatMessages)
-		chatGroup.Put("/messages/:messageId/read", handler.MarkMessageRead)
+	// Message endpoints
+	router.Post("/messages", handler.SendMessage)
+	router.Post("/messages/file", handler.SendFileMessage)
+	router.Get("/rooms/:roomId/messages", handler.GetChatMessages)
+	router.Put("/messages/:messageId/read", handler.MarkMessageRead)
 
-		// User status endpoints
-		chatGroup.Put("/status", handler.UpdateUserStatus)
-		chatGroup.Get("/status/:userId", handler.GetUserStatus)
+	// User status endpoints
+	router.Put("/status", handler.UpdateUserStatus)
+	router.Get("/status/:userId", handler.GetUserStatus)
 
-		// Notification endpoints
-		chatGroup.Get("/notifications", handler.GetUserNotifications)
-		chatGroup.Put("/notifications/:notificationId/read", handler.MarkNotificationRead)
-	}
+	// Notification endpoints
+	router.Get("/notifications", handler.GetUserNotifications)
+	router.Put("/notifications/:notificationId/read", handler.MarkNotificationRead)
 }
 
 // Room handlers
@@ -91,8 +89,8 @@ func (h *ChatHandler) CreateGroupChat(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+		"error": "Invalid request body",
+	})
 	}
 
 	logger := utils.NewLogger("ChatHandler.CreateGroupChat")
@@ -115,7 +113,7 @@ func (h *ChatHandler) CreateGroupChat(c *fiber.Ctx) error {
 
 func (h *ChatHandler) GetUserChats(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.GetUserChats")
-	userID := c.Locals("userId").(string)
+	userID := c.Locals("userId").(primitive.ObjectID).Hex()
 	logger.LogInput(userID)
 
 	rooms, err := h.chatUsecase.GetUserChats(userID)
@@ -198,7 +196,7 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 		})
 	}
 
-	senderID := c.Locals("userId").(string)
+	senderID := c.Locals("userId").(primitive.ObjectID).Hex()
 	logger.LogInput(map[string]string{
 		"roomID":   req.RoomID,
 		"senderID": senderID,
@@ -234,7 +232,7 @@ func (h *ChatHandler) SendFileMessage(c *fiber.Ctx) error {
 		})
 	}
 
-	senderID := c.Locals("userId").(string)
+	senderID := c.Locals("userId").(primitive.ObjectID).Hex()
 	logger.LogInput(map[string]interface{}{
 		"roomID":   req.RoomID,
 		"senderID": senderID,
@@ -282,7 +280,7 @@ func (h *ChatHandler) GetChatMessages(c *fiber.Ctx) error {
 func (h *ChatHandler) MarkMessageRead(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.MarkMessageRead")
 	messageID := c.Params("messageId")
-	userID := c.Locals("userId").(string)
+	userID := c.Locals("userId").(primitive.ObjectID).Hex()
 
 	logger.LogInput(map[string]string{
 		"messageID": messageID,
@@ -314,7 +312,7 @@ func (h *ChatHandler) UpdateUserStatus(c *fiber.Ctx) error {
 		})
 	}
 
-	userID := c.Locals("userId").(string)
+	userID := c.Locals("userId").(primitive.ObjectID).Hex()
 	logger.LogInput(map[string]interface{}{
 		"userID":   userID,
 		"isOnline": req.IsOnline,
@@ -351,7 +349,7 @@ func (h *ChatHandler) GetUserStatus(c *fiber.Ctx) error {
 // Notification handlers
 func (h *ChatHandler) GetUserNotifications(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.GetUserNotifications")
-	userID := c.Locals("userId").(string)
+	userID := c.Locals("userId").(primitive.ObjectID).Hex()
 	logger.LogInput(userID)
 
 	notifications, err := h.chatUsecase.GetUserNotifications(userID)
@@ -384,7 +382,7 @@ func (h *ChatHandler) MarkNotificationRead(c *fiber.Ctx) error {
 
 func (h *ChatHandler) handleWebSocket(c *websocket.Conn) {
 	// Get user ID from context
-	userID := c.Locals("userId").(string)
+	userID := c.Locals("userId").(primitive.ObjectID).Hex()
 
 	// Create new client
 	client := &ws.Client{

@@ -81,6 +81,7 @@ func main() {
 	reactionRepo := repository.NewReactionRepository(db)
 	subPostRepo := repository.NewSubPostRepository(db, redisClient)
 	storyRepo := repository.NewStoryRepository(db, redisClient)
+	chatRepo := repository.NewChatRepository(db, redisClient)
 	fileRepo, err := repository.NewFileStorage(cfg.FirebaseCredentialsPath, cfg.FirebaseStorageBucket)
 	if err != nil {
 		log.Fatal(err)
@@ -105,6 +106,7 @@ func main() {
 	commentUseCase := usecase.NewCommentUseCase(commentRepo, postRepo, notificationUseCase, userRepo)
 	reactionUseCase := usecase.NewReactionUseCase(reactionRepo, postRepo, commentRepo, notificationUseCase)
 	subPostUseCase := usecase.NewSubPostUseCase(subPostRepo, postRepo)
+	chatUseCase := usecase.NewChatUsecase(chatRepo, userRepo, notificationUseCase)
 
 	// Initialize Fiber app
 	app := fiber.New()
@@ -151,6 +153,7 @@ func main() {
 	friendships := protectedApi.Group("/friendships")
 	notifications := protectedApi.Group("/notifications")
 	stories := protectedApi.Group("/stories")
+	chats := protectedApi.Group("/chat")
 
 	// Initialize handlers with their respective route groups
 	handler.NewUserHandler(users, userUseCase)
@@ -163,6 +166,7 @@ func main() {
 	handler.NewNotificationHandler(notifications, notificationUseCase)
 	handler.NewStoryHandler(stories, storyUseCase)
 	handler.NewFileHandler(protectedApi, fileRepo)
+	handler.NewChatHandler(chats, chatUseCase)
 
 	// Start server
 	log.Fatal(app.Listen(cfg.ServerAddress))

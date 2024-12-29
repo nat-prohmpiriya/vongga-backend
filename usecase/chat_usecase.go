@@ -10,12 +10,16 @@ import (
 )
 
 type chatUsecase struct {
-	chatRepo domain.ChatRepository
+	chatRepo         domain.ChatRepository
+	userRepo         domain.UserRepository
+	notificationUsecase domain.NotificationUseCase
 }
 
-func NewChatUsecase(chatRepo domain.ChatRepository) domain.ChatUsecase {
+func NewChatUsecase(chatRepo domain.ChatRepository, userRepo domain.UserRepository, notificationUsecase domain.NotificationUseCase) domain.ChatUsecase {
 	return &chatUsecase{
-		chatRepo: chatRepo,
+		chatRepo:         chatRepo,
+		userRepo:         userRepo,
+		notificationUsecase: notificationUsecase,
 	}
 }
 
