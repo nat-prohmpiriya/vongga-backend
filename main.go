@@ -8,8 +8,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/config"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/auth"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/http/handler"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/http/middleware"
+	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/websocket"
 	_ "github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/docs" // swagger docs
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/repository"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/usecase"
@@ -45,6 +47,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	firebaseAuth, err := firebaseApp.Auth(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create auth adapter
+	authAdapter := auth.NewFirebaseAuthAdapter(firebaseAuth)
 
 	authClient, err := firebaseApp.Auth(context.Background())
 	if err != nil {
@@ -133,16 +143,18 @@ func main() {
 	// Routes
 	api := app.Group("/api")
 
+	// WebSocket endpoint (outside protected routes)
+	websocket.NewWebSocketHandler(api, chatUseCase, authAdapter)
+
+	// Protected routes
+	protectedApi := api.Group("", middleware.JWTAuthMiddleware(cfg.JWTSecret, authClient))
+
 	// Public routes
-	auth := api.Group("/auth")
+	auth := protectedApi.Group("/auth")
 	auth.Post("/verifyTokenFirebase", handler.NewAuthHandler(authUseCase).VerifyTokenFirebase)
 	auth.Post("/refresh", handler.NewAuthHandler(authUseCase).RefreshToken)
 	auth.Post("/logout", handler.NewAuthHandler(authUseCase).Logout)
 	auth.Post("/createTestToken", handler.NewAuthHandler(authUseCase).CreateTestToken)
-
-	// Protected routes (everything under /api except /auth)
-	protectedApi := api.Group("")
-	protectedApi.Use(middleware.JWTAuthMiddleware(cfg.JWTSecret, authClient))
 
 	// Create route groups
 	users := protectedApi.Group("/users")

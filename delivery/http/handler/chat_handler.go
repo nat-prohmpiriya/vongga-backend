@@ -4,8 +4,6 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/websocket/v2"
-	ws "github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/delivery/websocket"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,20 +11,12 @@ import (
 
 type ChatHandler struct {
 	chatUsecase domain.ChatUsecase
-	hub         *ws.Hub
 }
 
 func NewChatHandler(router fiber.Router, chatUsecase domain.ChatUsecase) {
 	handler := &ChatHandler{
 		chatUsecase: chatUsecase,
-		hub:         ws.NewHub(chatUsecase),
 	}
-
-	// Start WebSocket hub
-	go handler.hub.Run()
-
-	// WebSocket endpoint
-	router.Get("/ws", websocket.New(handler.handleWebSocket))
 
 	// Room endpoints
 	router.Post("/rooms/private", handler.CreatePrivateChat)
@@ -378,26 +368,4 @@ func (h *ChatHandler) MarkNotificationRead(c *fiber.Ctx) error {
 
 	logger.LogOutput(nil, nil)
 	return c.SendStatus(fiber.StatusOK)
-}
-
-func (h *ChatHandler) handleWebSocket(c *websocket.Conn) {
-	// Get user ID from context
-	userID := c.Locals("userId").(primitive.ObjectID).Hex()
-
-	// Create new client
-	client := &ws.Client{
-		ID:      utils.GenerateID(),
-		UserID:  userID,
-		Conn:    c,
-		Send:    make(chan []byte, 256),
-		Hub:     h.hub,
-		RoomIDs: make(map[string]bool),
-	}
-
-	// Register client
-	h.hub.Register <- client
-
-	// Start goroutines for reading and writing
-	go client.WritePump()
-	go client.ReadPump()
 }

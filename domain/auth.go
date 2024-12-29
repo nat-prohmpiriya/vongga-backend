@@ -7,6 +7,14 @@ type TokenPair struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
+type Claims struct {
+	UserID string `json:"user_id"`
+}
+
+type AuthClient interface {
+	VerifyToken(token string) (*Claims, error)
+}
+
 type AuthUseCase interface {
 	VerifyTokenFirebase(ctx context.Context, firebaseToken string) (*User, *TokenPair, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error)
