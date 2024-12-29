@@ -55,8 +55,8 @@ func NewChatHandler(router fiber.Router, chatUsecase domain.ChatUsecase) {
 // Room handlers
 func (h *ChatHandler) CreatePrivateChat(c *fiber.Ctx) error {
 	var req struct {
-		UserID1 string `json:"userId_1" binding:"required"`
-		UserID2 string `json:"userId_2" binding:"required"`
+		UserID1 string `json:"userId1" binding:"required"`
+		UserID2 string `json:"userId2" binding:"required"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -86,7 +86,7 @@ func (h *ChatHandler) CreatePrivateChat(c *fiber.Ctx) error {
 func (h *ChatHandler) CreateGroupChat(c *fiber.Ctx) error {
 	var req struct {
 		Name      string   `json:"name" binding:"required"`
-		MemberIDs []string `json:"member_ids" binding:"required"`
+		MemberIDs []string `json:"memberIds" binding:"required"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -186,7 +186,7 @@ func (h *ChatHandler) RemoveMemberFromGroup(c *fiber.Ctx) error {
 func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.SendMessage")
 	var req struct {
-		RoomID  string `json:"room_id" binding:"required"`
+		RoomID  string `json:"roomId" binding:"required"`
 		Content string `json:"content" binding:"required"`
 		Type    string `json:"type" binding:"required"`
 	}
@@ -221,10 +221,10 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 func (h *ChatHandler) SendFileMessage(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.SendFileMessage")
 	var req struct {
-		RoomID   string `json:"room_id" binding:"required"`
-		FileType string `json:"file_type" binding:"required"`
-		FileSize int64  `json:"file_size" binding:"required"`
-		FileURL  string `json:"file_url" binding:"required"`
+		RoomID   string `json:"roomId" binding:"required"`
+		FileType string `json:"fileType" binding:"required"`
+		FileSize int64  `json:"fileSize" binding:"required"`
+		FileURL  string `json:"fileUrl" binding:"required"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -304,7 +304,7 @@ func (h *ChatHandler) MarkMessageRead(c *fiber.Ctx) error {
 func (h *ChatHandler) UpdateUserStatus(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.UpdateUserStatus")
 	var req struct {
-		IsOnline bool `json:"is_online" binding:"required"`
+		IsOnline bool `json:"isOnline" binding:"required"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {

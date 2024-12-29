@@ -425,7 +425,7 @@ func (r *chatRepository) UpdateUserStatus(status *domain.ChatUserStatus) error {
 
 	// Update in Redis first
 	ctx := context.Background()
-	key := fmt.Sprintf("user_status:%s", status.UserID)
+	key := fmt.Sprintf("userStatus:%s", status.UserID)
 
 	// Marshal status to JSON
 	statusBytes, err := json.Marshal(status)
@@ -669,7 +669,7 @@ func (r *chatRepository) DeleteRoomNotifications(roomID string) error {
 		return err
 	}
 
-	filter := bson.M{"room_id": objectID}
+	filter := bson.M{"roomId": objectID}
 	_, err = r.notificationsColl.DeleteMany(context.Background(), filter)
 	if err != nil {
 		logger.LogOutput(nil, err)
