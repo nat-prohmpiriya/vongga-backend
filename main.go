@@ -146,15 +146,15 @@ func main() {
 	// WebSocket endpoint (outside protected routes)
 	websocket.NewWebSocketHandler(api, chatUseCase, authAdapter)
 
-	// Protected routes
-	protectedApi := api.Group("", middleware.JWTAuthMiddleware(cfg.JWTSecret, authClient))
-
-	// Public routes
-	auth := protectedApi.Group("/auth")
+	// Public auth routes
+	auth := api.Group("/auth")
 	auth.Post("/verifyTokenFirebase", handler.NewAuthHandler(authUseCase).VerifyTokenFirebase)
 	auth.Post("/refresh", handler.NewAuthHandler(authUseCase).RefreshToken)
 	auth.Post("/logout", handler.NewAuthHandler(authUseCase).Logout)
 	auth.Post("/createTestToken", handler.NewAuthHandler(authUseCase).CreateTestToken)
+
+	// Protected routes
+	protectedApi := api.Group("", middleware.JWTAuthMiddleware(cfg.JWTSecret, authClient))
 
 	// Create route groups
 	users := protectedApi.Group("/users")
