@@ -204,6 +204,27 @@ func (r *chatRepository) SaveMessage(message *domain.ChatMessage) error {
 		return err
 	}
 
+	// Clear Redis cache for this room's messages
+	pattern := fmt.Sprintf("room_messages:%s:*", message.RoomID)
+	keys, err := r.rdb.Keys(context.Background(), pattern).Result()
+	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("failed to get Redis keys: %v", err))
+		return err
+	}
+
+	if len(keys) > 0 {
+		err = r.rdb.Del(context.Background(), keys...).Err()
+		if err != nil {
+			logger.LogOutput(nil, fmt.Errorf("failed to delete Redis keys: %v", err))
+			return err
+		}
+		logger.LogOutput(map[string]interface{}{
+			"action":      "clearฉache",
+			"pattern":     pattern,
+			"deletedKeys": keys,
+		}, nil)
+	}
+
 	logger.LogOutput(message, nil)
 	return nil
 }
@@ -237,7 +258,9 @@ func (r *chatRepository) GetRoomMessages(roomID string, limit, offset int64) ([]
 		return nil, err
 	}
 
-	// Not found in Redis, get from MongoDB``
+	logger.LogInfo("redis", messagesJSON)
+
+	// Not found in Redis, get from MongoDB
 	opts := options.Find().
 		SetSort(bson.D{{Key: "createdAt", Value: -1}}).
 		SetSkip(offset).
@@ -259,17 +282,38 @@ func (r *chatRepository) GetRoomMessages(roomID string, limit, offset int64) ([]
 	}
 
 	// Cache in Redis
-	messagesBytes, err := json.Marshal(messages)
+	messageBytes, err := json.Marshal(messages)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.LogOutput(nil, fmt.Errorf("failed to marshal messages: %v", err))
 		return nil, err
 	}
 
+	// Log before caching
+	logger.LogOutput(map[string]interface{}{
+		"action":       "caching_to_redis",
+		"cacheKey":     cacheKey,
+		"dataSize":     len(messageBytes),
+		"messageBytes": string(messageBytes),
+	}, nil)
+
 	// Cache for 1 hour
-	err = r.rdb.Set(ctx, cacheKey, string(messagesBytes), time.Hour).Err()
+	err = r.rdb.Set(ctx, cacheKey, string(messageBytes), time.Hour).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.LogOutput(nil, fmt.Errorf("failed to cache in Redis: %v", err))
+	}
+
+	// Verify cache
+	cachedData, err := r.rdb.Get(ctx, cacheKey).Result()
+	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("failed to verify cache: %v", err))
+	} else {
+		logger.LogOutput(map[string]interface{}{
+			"action":         "verify_cache",
+			"cacheKey":       cacheKey,
+			"cachedDataSize": len(cachedData),
+			"cachedData":     cachedData,
+		}, nil)
 	}
 
 	logger.LogOutput(messages, nil)
@@ -357,15 +401,36 @@ func (r *chatRepository) GetUnreadMessages(userID string, roomID string) ([]*dom
 	// Cache in Redis
 	messagesBytes, err := json.Marshal(messages)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.LogOutput(nil, fmt.Errorf("failed to marshal messages: %v", err))
 		return nil, err
 	}
+
+	// Log before caching
+	logger.LogOutput(map[string]interface{}{
+		"action":       "caching_to_redis",
+		"cacheKey":     cacheKey,
+		"dataSize":     len(messagesBytes),
+		"messageBytes": string(messagesBytes),
+	}, nil)
 
 	// Cache for 5 minutes since unread status changes frequently
 	err = r.rdb.Set(ctx, cacheKey, string(messagesBytes), 5*time.Minute).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.LogOutput(nil, fmt.Errorf("failed to cache in Redis: %v", err))
+	}
+
+	// Verify cache
+	cachedData, err := r.rdb.Get(ctx, cacheKey).Result()
+	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("failed to verify cache: %v", err))
+	} else {
+		logger.LogOutput(map[string]interface{}{
+			"action":         "verify_cache",
+			"cacheKey":       cacheKey,
+			"cachedDataSize": len(cachedData),
+			"cachedData":     cachedData,
+		}, nil)
 	}
 
 	logger.LogOutput(messages, nil)
@@ -497,10 +562,31 @@ func (r *chatRepository) GetUserStatus(userID string) (*domain.ChatUserStatus, e
 		return nil, err
 	}
 
+	// Log before caching
+	logger.LogOutput(map[string]interface{}{
+		"action":      "caching_to_redis",
+		"cacheKey":    key,
+		"dataSize":    len(statusBytes),
+		"statusBytes": string(statusBytes),
+	}, nil)
+
 	err = r.rdb.Set(ctx, key, string(statusBytes), 24*time.Hour).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.LogOutput(nil, fmt.Errorf("failed to cache in Redis: %v", err))
+	}
+
+	// Verify cache
+	cachedData, err := r.rdb.Get(ctx, key).Result()
+	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("failed to verify cache: %v", err))
+	} else {
+		logger.LogOutput(map[string]interface{}{
+			"action":         "verify_cache",
+			"cacheKey":       key,
+			"cachedDataSize": len(cachedData),
+			"cachedData":     cachedData,
+		}, nil)
 	}
 
 	logger.LogOutput(&status, nil)

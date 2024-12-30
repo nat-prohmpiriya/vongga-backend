@@ -17,7 +17,7 @@ const (
 	MessageTypeTyping     = "typing"
 	MessageTypePing       = "ping"
 	MessageTypePong       = "pong"
-	MessageTypeUserStatus = "user_status"
+	MessageTypeUserStatus = "userStatus"
 )
 
 // WebSocketMessage represents the message structure for WebSocket communication
@@ -103,7 +103,7 @@ func (h *Hub) Run() {
 				case client.Send <- message:
 					logger.LogOutput(map[string]interface{}{
 						"clientID": client.ID,
-						"status":   "message_sent",
+						"status":   "messageSent",
 					}, nil)
 				default:
 					h.Mutex.Lock()
@@ -114,8 +114,8 @@ func (h *Hub) Run() {
 
 					logger.LogOutput(map[string]interface{}{
 						"clientID": client.ID,
-						"status":   "client_removed",
-						"reason":   "send_failed",
+						"status":   "clientRemoved",
+						"reason":   "sendFailed",
 					}, nil)
 				}
 			}
@@ -147,7 +147,7 @@ func (h *Hub) BroadcastToRoom(roomID string, message interface{}) {
 			case client.Send <- messageBytes:
 				logger.LogOutput(map[string]interface{}{
 					"clientID": client.ID,
-					"status":   "message_sent",
+					"status":   "messageSent",
 				}, nil)
 			default:
 				// ถ้าส่งไม่ได้ ให้ลบ client ออก
