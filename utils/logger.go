@@ -26,6 +26,23 @@ func (l *Logger) LogInput(params ...interface{}) {
 	}
 }
 
+func (l *Logger) LogInfo(params ...interface{}) {
+	fmt.Printf("\n#### %s INFO #### ", l.FunctionName)
+	for _, param := range params {
+		jsonBytes, _ := json.Marshal(param)
+		fmt.Printf("%s\n", string(jsonBytes))
+	}
+}
+
+func (l *Logger) LogWarning(params ...interface{}) (err error) {
+	fmt.Printf("\n#### %s WARNING #### ", l.FunctionName)
+	for _, param := range params {
+		jsonBytes, _ := json.Marshal(param)
+		fmt.Printf("%s\n", string(jsonBytes))
+	}
+	return nil
+}
+
 // LogOutput logs the output of a function
 func (l *Logger) LogOutput(output interface{}, err error) {
 	if err != nil {
