@@ -43,12 +43,31 @@ func NewWebSocketHandler(router fiber.Router, chatUsecase domain.ChatUsecase, au
 
 	// WebSocket endpoint with custom middleware for WebSocket authentication
 	router.Get("/ws", websocket.New(handler.handleWebSocket, websocket.Config{
-		HandshakeTimeout: 10 * time.Second,
+		HandshakeTimeout:    10 * time.Second,
+		ReadBufferSize:     1024,
+		WriteBufferSize:    1024,
+		EnableCompression:  true,
 	}))
 }
 
 func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
 	logger := utils.NewLogger("WebSocketHandler.handleWebSocket")
+	
+	defer func() {
+		if r := recover(); r != nil {
+			logger.LogOutput(nil, fmt.Errorf("panic recovered in handleWebSocket: %v", r))
+			ws.WriteControl(
+				websocket.CloseMessage,
+				websocket.FormatCloseMessage(
+					websocket.CloseInternalServerErr,
+					fmt.Sprintf("Internal server error: %v", r),
+				),
+				time.Now().Add(time.Second),
+			)
+			ws.Close()
+		}
+	}()
+
 	// Get token from query parameter
 	token := ws.Query("token")
 	logger.LogInput(token)
@@ -57,7 +76,7 @@ func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
 		ws.WriteControl(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(
-				websocket.CloseInvalidFramePayloadData, // code 1007
+				websocket.CloseInvalidFramePayloadData,
 				"Missing token",
 			), time.Now().Add(time.Second),
 		)
@@ -72,21 +91,19 @@ func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
 		ws.WriteControl(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(
-				websocket.ClosePolicyViolation, // code 1008
+				websocket.ClosePolicyViolation,
 				"Invalid or expired token",
 			),
 			time.Now().Add(time.Second),
 		)
-
 		ws.Close()
 		return
 	}
 
 	logger.LogOutput(claims, nil)
-
 	userID := claims.UserID
 
-	// Create new client
+	// Create new client with mutex
 	client := &Client{
 		ID:      utils.GenerateID(),
 		UserID:  userID,
@@ -96,54 +113,15 @@ func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
 		RoomIDs: make(map[string]bool),
 	}
 
-	// ตรวจสอบ nil
-	if client.Conn == nil {
-		logger.LogOutput(nil, fmt.Errorf("Client connection is nil"))
-		ws.WriteControl(
-			websocket.CloseMessage,
-			websocket.FormatCloseMessage(
-				websocket.CloseInternalServerErr, // code 1011
-				"Client connection is nil",
-			),
-			time.Now().Add(time.Second),
-		)
-		ws.Close()
-		return
-	}
-
-	// ตรวจสอบ nil ก่อนใช้ Hub
-	if h.hub == nil {
-		logger.LogOutput(nil, fmt.Errorf("Hub is nil"))
-		ws.WriteControl(
-			websocket.CloseMessage,
-			websocket.FormatCloseMessage(
-				websocket.CloseInternalServerErr, // code 1011
-				"Hub is nil",
-			),
-			time.Now().Add(time.Second),
-		)
-		ws.Close()
-		return
-	}
-
-	logger.LogInfo(map[string]interface{}{
-		"userID": userID,
-		"status": "connected",
-	})
-
-	// Register client
+	// Register client before starting pumps
 	h.hub.Register <- client
+
 	logger.LogInfo(map[string]interface{}{
 		"userID": userID,
-		"status": "registered",
+		"status": "client_registered",
 	})
 
-	// Start goroutines for reading and writing
+	// Start ReadPump in main goroutine to keep ws.Conn alive
 	go client.WritePump()
-	go client.ReadPump()
-
-	logger.LogInfo(map[string]interface{}{
-		"userID": userID,
-		"status": "pump_started",
-	})
+	client.ReadPump() // This blocks until connection is closed
 }

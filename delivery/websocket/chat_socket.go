@@ -11,6 +11,26 @@ import (
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 )
 
+// Message types
+const (
+	MessageTypeMessage = "message"
+	MessageTypeTyping  = "typing"
+	MessageTypePing    = "ping"
+	MessageTypePong    = "pong"
+	MessageTypeUserStatus = "user_status"
+)
+
+// WebSocketMessage represents the message structure for WebSocket communication
+type WebSocketMessage struct {
+	Type      string      `json:"type"`                // message, typing, ping, pong
+	RoomID    string      `json:"roomId"`             // room identifier
+	SenderID  string      `json:"senderId,omitempty"` // set by server
+	Content   string      `json:"content"`            // message content or typing status (true/false)
+	Data      interface{} `json:"data,omitempty"`     // additional data if needed
+	CreatedAt string      `json:"createdAt,omitempty"`// set by server in RFC3339 format
+}
+
+// Client represents a WebSocket client connection
 type Client struct {
 	ID      string
 	UserID  string
@@ -18,15 +38,7 @@ type Client struct {
 	Send    chan []byte
 	Hub     *Hub
 	RoomIDs map[string]bool
-}
-
-type Message struct {
-	Type      string      `json:"type"`
-	RoomID    string      `json:"roomId"`
-	SenderID  string      `json:"senderId"`
-	Content   string      `json:"content"`
-	Data      interface{} `json:"data,omitempty"`
-	CreatedAt time.Time   `json:"createdAt"`
+	mu      sync.Mutex
 }
 
 type Hub struct {
@@ -154,11 +166,11 @@ func (h *Hub) BroadcastUserStatus(userID string, status string) {
 		"status": status,
 	})
 
-	msg := Message{
-		Type:      "user_status",
+	msg := WebSocketMessage{
+		Type:      MessageTypeUserStatus,
 		SenderID:  userID,
 		Content:   status,
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().Format(time.RFC3339),
 	}
 
 	msgBytes, err := json.Marshal(msg)
@@ -172,31 +184,102 @@ func (h *Hub) BroadcastUserStatus(userID string, status string) {
 
 func (c *Client) ReadPump() {
 	logger := utils.NewLogger("Client.ReadPump")
+	
+	// Recover from panic
 	defer func() {
-		c.Hub.Unregister <- c
-		c.Conn.Close()
+		if r := recover(); r != nil {
+			logger.LogOutput(nil, fmt.Errorf("panic recovered in ReadPump: %v", r))
+		}
+		logger.LogInfo("closing connection and unregistering client")
+		if c.Hub != nil {
+			c.Hub.Unregister <- c
+		}
+		if c.Conn != nil {
+			c.Conn.Close()
+		}
 	}()
 
+	// Check if connection is valid
+	if c.Conn == nil {
+		logger.LogOutput(nil, fmt.Errorf("connection is nil"))
+		return
+	}
+
+	// Set read deadline and pong handler
+	c.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	c.Conn.SetPongHandler(func(string) error {
+		c.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
 	for {
-		_, message, err := c.Conn.ReadMessage()
+		messageType, message, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				logger.LogOutput(nil, fmt.Errorf("error: %v", err))
+				logger.LogOutput(nil, fmt.Errorf("unexpected close error: %v", err))
+			} else {
+				logger.LogOutput(nil, fmt.Errorf("read error: %v", err))
 			}
 			break
 		}
 
-		var msg Message
+		// Handle ping message
+		if messageType == websocket.PingMessage {
+			if err := c.Conn.WriteMessage(websocket.PongMessage, nil); err != nil {
+				logger.LogOutput(nil, fmt.Errorf("error sending pong: %v", err))
+				return
+			}
+			continue
+		}
+
+		// Handle text message
+		if messageType != websocket.TextMessage {
+			logger.LogOutput(nil, fmt.Errorf("unexpected message type: %v", messageType))
+			continue
+		}
+
+		// Validate message is not empty
+		if len(message) == 0 {
+			logger.LogOutput(nil, fmt.Errorf("received empty message"))
+			continue
+		}
+
+		var msg WebSocketMessage
 		if err := json.Unmarshal(message, &msg); err != nil {
 			logger.LogOutput(nil, fmt.Errorf("error unmarshaling message: %v", err))
 			continue
 		}
 
+		// Handle ping type message from client
+		if msg.Type == MessageTypePing {
+			pongMsg := WebSocketMessage{
+				Type: MessageTypePong,
+				CreatedAt: time.Now().Format(time.RFC3339),
+			}
+			pongBytes, err := json.Marshal(pongMsg)
+			if err != nil {
+				logger.LogOutput(nil, fmt.Errorf("error marshaling pong message: %v", err))
+				continue
+			}
+			select {
+			case c.Send <- pongBytes:
+			default:
+				logger.LogOutput(nil, fmt.Errorf("send channel full"))
+				return
+			}
+			continue
+		}
+
 		msg.SenderID = c.UserID
-		msg.CreatedAt = time.Now()
+		msg.CreatedAt = time.Now().Format(time.RFC3339)
 
 		switch msg.Type {
-		case "message":
+		case MessageTypeMessage:
+			if msg.RoomID == "" || msg.Content == "" {
+				logger.LogOutput(nil, fmt.Errorf("roomID and content are required for message type"))
+				continue
+			}
+
 			// จัดการข้อความปกติ
 			chatMsg, err := c.Hub.ChatUsecase.SendMessage(
 				msg.RoomID,
@@ -210,24 +293,50 @@ func (c *Client) ReadPump() {
 			}
 
 			// แปลง chatMsg เป็น Message สำหรับ broadcast
-			broadcastMsg := Message{
-				Type:      "message",
+			broadcastMsg := WebSocketMessage{
+				Type:      MessageTypeMessage,
 				RoomID:    chatMsg.RoomID,
 				SenderID:  chatMsg.SenderID,
 				Content:   chatMsg.Content,
-				CreatedAt: chatMsg.CreatedAt,
+				CreatedAt: chatMsg.CreatedAt.Format(time.RFC3339),
 			}
-			c.Hub.BroadcastToRoom(msg.RoomID, broadcastMsg)
+			
+			// Safely broadcast message
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						logger.LogOutput(nil, fmt.Errorf("panic recovered in broadcast: %v", r))
+					}
+				}()
+				if c.Hub != nil {
+					c.Hub.BroadcastToRoom(msg.RoomID, broadcastMsg)
+				}
+			}()
 
-		case "typing":
-			// สำหรับ typing status ไม่ต้องบันทึกลง database แค่ broadcast ไปยังสมาชิกในห้องเท่านั้น
-			typingMsg := Message{
-				Type:     "typing",
+		case MessageTypeTyping:
+			if msg.RoomID == "" {
+				logger.LogOutput(nil, fmt.Errorf("roomID is required for typing status"))
+				continue
+			}
+
+			typingMsg := WebSocketMessage{
+				Type:     MessageTypeTyping,
 				RoomID:   msg.RoomID,
 				SenderID: msg.SenderID,
-				Content:  msg.Content, // "true" หรือ "false"
+				Content:  msg.Content,
+				CreatedAt: time.Now().Format(time.RFC3339),
 			}
-			c.Hub.BroadcastToRoom(msg.RoomID, typingMsg)
+			
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						logger.LogOutput(nil, fmt.Errorf("panic recovered in broadcast: %v", r))
+					}
+				}()
+				if c.Hub != nil {
+					c.Hub.BroadcastToRoom(msg.RoomID, typingMsg)
+				}
+			}()
 
 		default:
 			logger.LogOutput(nil, fmt.Errorf("unknown message type: %s", msg.Type))
@@ -237,34 +346,52 @@ func (c *Client) ReadPump() {
 
 func (c *Client) WritePump() {
 	logger := utils.NewLogger("Client.WritePump")
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
+	
 	defer func() {
+		if r := recover(); r != nil {
+			logger.LogOutput(nil, fmt.Errorf("panic recovered in WritePump: %v", r))
+		}
 		ticker.Stop()
-		c.Conn.Close()
+		if c.Conn != nil {
+			c.Conn.Close()
+		}
 	}()
+
+	// Check if connection is valid
+	if c.Conn == nil {
+		logger.LogOutput(nil, fmt.Errorf("connection is nil"))
+		return
+	}
 
 	for {
 		select {
 		case message, ok := <-c.Send:
 			if !ok {
-				logger.LogInfo("channel closed")
+				// Send channel was closed
+				if c.Conn != nil {
+					if err := c.Conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
+						logger.LogOutput(nil, fmt.Errorf("error sending close message: %v", err))
+					}
+				}
 				return
 			}
 
-			if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				logger.LogOutput(nil, err)
-				return
+			if c.Conn != nil {
+				c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+				if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
+					logger.LogOutput(nil, fmt.Errorf("error writing message: %v", err))
+					return
+				}
 			}
-
-			logger.LogOutput(map[string]interface{}{
-				"messageSize": len(message),
-				"action":      "message_sent",
-			}, nil)
 
 		case <-ticker.C:
-			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				logger.LogOutput(nil, err)
-				return
+			if c.Conn != nil {
+				c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+				if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					logger.LogOutput(nil, fmt.Errorf("error writing ping message: %v", err))
+					return
+				}
 			}
 		}
 	}
