@@ -360,6 +360,31 @@ func (c *Client) ReadPump() {
 				}
 			}()
 
+		case MessageTypeUserStatus:
+			statusMsg := WebSocketMessage{
+				Type:      MessageTypeUserStatus,
+				SenderID:  msg.SenderID,
+				Content:   msg.Content,
+				CreatedAt: time.Now().Format(time.RFC3339),
+			}
+
+			// Broadcast user status to all connected clients
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						logger.LogOutput(nil, fmt.Errorf("panic recovered in broadcast: %v", r))
+					}
+				}()
+				if c.Hub != nil {
+					statusBytes, err := json.Marshal(statusMsg)
+					if err != nil {
+						logger.LogOutput(nil, fmt.Errorf("error marshaling status message: %v", err))
+						return
+					}
+					c.Hub.Broadcast <- statusBytes
+				}
+			}()
+
 		default:
 			logger.LogOutput(nil, fmt.Errorf("unknown message type: %s", msg.Type))
 		}
