@@ -31,16 +31,12 @@ func NewFriendshipHandler(router fiber.Router, fu domain.FriendshipUseCase) *Fri
 func (h *FriendshipHandler) SendFriendRequest(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.SendFriendRequest")
 
-	userIDInterface := c.Locals("userId")
-	if userIDInterface == nil {
-		logger.LogOutput(nil, fmt.Errorf("user ID not found in context"))
-		return utils.SendError(c, fiber.StatusUnauthorized, "User not authenticated")
-	}
-
-	userID, ok := userIDInterface.(primitive.ObjectID)
-	if !ok {
-		logger.LogOutput(nil, fmt.Errorf("invalid user ID type in context"))
-		return utils.SendError(c, fiber.StatusUnauthorized, "Invalid user authentication")
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
 	}
 
 	targetID, err := primitive.ObjectIDFromHex(c.Params("userId"))
@@ -67,7 +63,14 @@ func (h *FriendshipHandler) SendFriendRequest(c *fiber.Ctx) error {
 func (h *FriendshipHandler) AcceptFriendRequest(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.AcceptFriendRequest")
 
-	userID := c.Locals("userId").(primitive.ObjectID)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
 	targetID, err := primitive.ObjectIDFromHex(c.Params("userId"))
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -87,7 +90,14 @@ func (h *FriendshipHandler) AcceptFriendRequest(c *fiber.Ctx) error {
 func (h *FriendshipHandler) RejectFriendRequest(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.RejectFriendRequest")
 
-	userID := c.Locals("userId").(primitive.ObjectID)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
 	targetID, err := primitive.ObjectIDFromHex(c.Params("userId"))
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -107,7 +117,14 @@ func (h *FriendshipHandler) RejectFriendRequest(c *fiber.Ctx) error {
 func (h *FriendshipHandler) RemoveFriend(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.RemoveFriend")
 
-	userID := c.Locals("userId").(primitive.ObjectID)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
 	targetID, err := primitive.ObjectIDFromHex(c.Params("userId"))
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -127,7 +144,14 @@ func (h *FriendshipHandler) RemoveFriend(c *fiber.Ctx) error {
 func (h *FriendshipHandler) ListFriends(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.ListFriends")
 
-	userID := c.Locals("userId").(primitive.ObjectID)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
 	limit, offset := utils.GetPaginationParams(c)
 	logger.LogInput(userID, limit, offset)
 
@@ -144,7 +168,14 @@ func (h *FriendshipHandler) ListFriends(c *fiber.Ctx) error {
 func (h *FriendshipHandler) ListFriendRequests(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.ListFriendRequests")
 
-	userID := c.Locals("userId").(primitive.ObjectID)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
 	limit, offset := utils.GetPaginationParams(c)
 	logger.LogInput(userID, limit, offset)
 

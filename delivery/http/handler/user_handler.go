@@ -1,14 +1,12 @@
 package handler
 
 import (
-	"fmt"
 	"regexp"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserHandler struct {
@@ -34,15 +32,13 @@ func NewUserHandler(router fiber.Router, userUseCase domain.UserUseCase) *UserHa
 func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.CreateOrUpdateUser")
 
-	// Get Firebase user data from context (set by middleware)
-	userIDObj, ok := c.Locals("userId").(primitive.ObjectID)
-	if !ok {
-		logger.LogOutput(nil, fmt.Errorf("userId is not a valid ObjectID"))
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "invalid user ID",
+			"error": "Unauthorized",
 		})
 	}
-	userID := userIDObj.Hex()
 	email := c.Locals("email").(string)
 
 	var req struct {
@@ -77,7 +73,7 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 
 	logger.LogInput(userID, email, req)
 	user, err := h.userUseCase.CreateOrUpdateUser(
-		userID,
+		userID.Hex(),
 		email,
 		req.FirstName,
 		req.LastName,
@@ -99,17 +95,16 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.GetProfile")
 
-	userIDObj, ok := c.Locals("userId").(primitive.ObjectID)
-	if !ok {
-		logger.LogOutput(nil, fmt.Errorf("userId is not a valid ObjectID"))
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "invalid user ID",
+			"error": "Unauthorized",
 		})
 	}
-	userID := userIDObj.Hex()
 	logger.LogInput(userID)
 
-	user, err := h.userUseCase.GetUserByID(userID)
+	user, err := h.userUseCase.GetUserByID(userID.Hex())
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -126,14 +121,13 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.UpdateUser")
 
-	userIDObj, ok := c.Locals("userId").(primitive.ObjectID)
-	if !ok {
-		logger.LogOutput(nil, fmt.Errorf("userId is not a valid ObjectID"))
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "invalid user ID",
+			"error": "Unauthorized",
 		})
 	}
-	userID := userIDObj.Hex()
 
 	var req struct {
 		FirstName      *string              `json:"firstName"`
@@ -169,7 +163,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	logger.LogInput(userID, req)
-	user, err := h.userUseCase.GetUserByID(userID)
+	user, err := h.userUseCase.GetUserByID(userID.Hex())
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -416,18 +410,17 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 func (h *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.DeleteAccount")
 
-	userIDObj, ok := c.Locals("userId").(primitive.ObjectID)
-	if !ok {
-		logger.LogOutput(nil, fmt.Errorf("userId is not a valid ObjectID"))
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "invalid user ID",
+			"error": "Unauthorized",
 		})
 	}
-	userID := userIDObj.Hex()
 	authClient := c.Locals("firebase_auth")
 	logger.LogInput(userID)
 
-	err := h.userUseCase.DeleteAccount(userID, authClient)
+	err = h.userUseCase.DeleteAccount(userID.Hex(), authClient)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

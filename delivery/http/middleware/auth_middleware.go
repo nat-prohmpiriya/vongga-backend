@@ -23,6 +23,7 @@ func AuthMiddleware(jwtSecret string) fiber.Handler {
 		}
 
 		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
+		logger.LogInfo(tokenString)
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			logger.LogOutput(nil, fmt.Errorf("parsing token"))
 			return []byte(jwtSecret), nil

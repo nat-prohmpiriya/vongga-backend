@@ -4,7 +4,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type StoryHandler struct {
@@ -29,8 +28,13 @@ func NewStoryHandler(router fiber.Router, storyUseCase domain.StoryUseCase) *Sto
 func (h *StoryHandler) CreateStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.CreateStory")
 
-	userID := c.Locals("userId").(primitive.ObjectID)
-	userIDStr := userID.Hex()
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
 
 	var req struct {
 		MediaURL      string           `json:"mediaUrl"`
@@ -62,7 +66,7 @@ func (h *StoryHandler) CreateStory(c *fiber.Ctx) error {
 	}
 
 	story := &domain.Story{
-		UserID: userIDStr,
+		UserID: userID.Hex(),
 		Media: domain.StoryMedia{
 			URL:       req.MediaURL,
 			Type:      req.MediaType,
@@ -74,7 +78,7 @@ func (h *StoryHandler) CreateStory(c *fiber.Ctx) error {
 	}
 
 	logger.LogInput(story)
-	err := h.storyUseCase.CreateStory(story)
+	err = h.storyUseCase.CreateStory(story)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -155,8 +159,13 @@ func (h *StoryHandler) ViewStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.ViewStory")
 
 	storyID := c.Params("storyId")
-	viewerID := c.Locals("userId").(primitive.ObjectID)
-	viewerIDStr := viewerID.Hex()
+	viewerID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
 
 	input := map[string]interface{}{
 		"storyId":  storyID,
@@ -164,7 +173,7 @@ func (h *StoryHandler) ViewStory(c *fiber.Ctx) error {
 	}
 	logger.LogInput(input)
 
-	err := h.storyUseCase.ViewStory(storyID, viewerIDStr)
+	err = h.storyUseCase.ViewStory(storyID, viewerID.Hex())
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -180,8 +189,13 @@ func (h *StoryHandler) DeleteStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.DeleteStory")
 
 	storyID := c.Params("storyId")
-	userID := c.Locals("userId").(primitive.ObjectID)
-	userIDStr := userID.Hex()
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
 
 	input := map[string]interface{}{
 		"storyId": storyID,
@@ -189,7 +203,7 @@ func (h *StoryHandler) DeleteStory(c *fiber.Ctx) error {
 	}
 	logger.LogInput(input)
 
-	err := h.storyUseCase.DeleteStory(storyID, userIDStr)
+	err = h.storyUseCase.DeleteStory(storyID, userID.Hex())
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
