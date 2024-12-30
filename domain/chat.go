@@ -78,6 +78,7 @@ type ChatUsecase interface {
 	CreateGroupChat(name string, memberIDs []string) (*ChatRoom, error)
 	GetUserChats(userID string) ([]*ChatRoom, error)
 	GetRoom(roomID string) (*ChatRoom, error)
+	GetRoomsByUserID(userID string) ([]*ChatRoom, error)
 	AddMemberToGroup(roomID, userID string) error
 	RemoveMemberFromGroup(roomID, userID string) error
 	UpdateRoom(room *ChatRoom) error

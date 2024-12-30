@@ -834,3 +834,7 @@ func (u *chatUsecase) GetUserRooms(userID string) ([]*domain.ChatRoom, error) {
 	logger.LogOutput(rooms, nil)
 	return rooms, nil
 }
+
+func (u *chatUsecase) GetRoomsByUserID(userID string) ([]*domain.ChatRoom, error) {
+    return u.chatRepo.GetRoomsByUser(userID)
+}

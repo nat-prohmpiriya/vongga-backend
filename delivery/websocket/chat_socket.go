@@ -13,21 +13,21 @@ import (
 
 // Message types
 const (
-	MessageTypeMessage = "message"
-	MessageTypeTyping  = "typing"
-	MessageTypePing    = "ping"
-	MessageTypePong    = "pong"
+	MessageTypeMessage    = "message"
+	MessageTypeTyping     = "typing"
+	MessageTypePing       = "ping"
+	MessageTypePong       = "pong"
 	MessageTypeUserStatus = "user_status"
 )
 
 // WebSocketMessage represents the message structure for WebSocket communication
 type WebSocketMessage struct {
 	Type      string      `json:"type"`                // message, typing, ping, pong
-	RoomID    string      `json:"roomId"`             // room identifier
-	SenderID  string      `json:"senderId,omitempty"` // set by server
-	Content   string      `json:"content"`            // message content or typing status (true/false)
-	Data      interface{} `json:"data,omitempty"`     // additional data if needed
-	CreatedAt string      `json:"createdAt,omitempty"`// set by server in RFC3339 format
+	RoomID    string      `json:"roomId"`              // room identifier
+	SenderID  string      `json:"senderId,omitempty"`  // set by server
+	Content   string      `json:"content"`             // message content or typing status (true/false)
+	Data      interface{} `json:"data,omitempty"`      // additional data if needed
+	CreatedAt string      `json:"createdAt,omitempty"` // set by server in RFC3339 format
 }
 
 // Client represents a WebSocket client connection
@@ -182,9 +182,18 @@ func (h *Hub) BroadcastUserStatus(userID string, status string) {
 	h.Broadcast <- msgBytes
 }
 
+func (c *Client) JoinRoom(roomID string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.RoomIDs == nil {
+		c.RoomIDs = make(map[string]bool)
+	}
+	c.RoomIDs[roomID] = true
+}
+
 func (c *Client) ReadPump() {
 	logger := utils.NewLogger("Client.ReadPump")
-	
+
 	// Recover from panic
 	defer func() {
 		if r := recover(); r != nil {
@@ -203,6 +212,16 @@ func (c *Client) ReadPump() {
 	if c.Conn == nil {
 		logger.LogOutput(nil, fmt.Errorf("connection is nil"))
 		return
+	}
+
+	// ดึงข้อมูลห้องแชทที่ user เป็นสมาชิกและเพิ่มเข้าไปใน RoomIDs
+	rooms, err := c.Hub.ChatUsecase.GetRoomsByUserID(c.UserID)
+	if err != nil {
+		logger.LogOutput(nil, fmt.Errorf("error getting user rooms: %v", err))
+	} else {
+		for _, room := range rooms {
+			c.JoinRoom(room.ID.String())
+		}
 	}
 
 	// Set read deadline and pong handler
@@ -253,7 +272,7 @@ func (c *Client) ReadPump() {
 		// Handle ping type message from client
 		if msg.Type == MessageTypePing {
 			pongMsg := WebSocketMessage{
-				Type: MessageTypePong,
+				Type:      MessageTypePong,
 				CreatedAt: time.Now().Format(time.RFC3339),
 			}
 			pongBytes, err := json.Marshal(pongMsg)
@@ -292,6 +311,9 @@ func (c *Client) ReadPump() {
 				continue
 			}
 
+			// เพิ่ม client เข้าห้องแชทถ้ายังไม่ได้อยู่ในห้อง
+			c.JoinRoom(msg.RoomID)
+
 			// แปลง chatMsg เป็น Message สำหรับ broadcast
 			broadcastMsg := WebSocketMessage{
 				Type:      MessageTypeMessage,
@@ -300,7 +322,7 @@ func (c *Client) ReadPump() {
 				Content:   chatMsg.Content,
 				CreatedAt: chatMsg.CreatedAt.Format(time.RFC3339),
 			}
-			
+
 			// Safely broadcast message
 			func() {
 				defer func() {
@@ -320,13 +342,13 @@ func (c *Client) ReadPump() {
 			}
 
 			typingMsg := WebSocketMessage{
-				Type:     MessageTypeTyping,
-				RoomID:   msg.RoomID,
-				SenderID: msg.SenderID,
-				Content:  msg.Content,
+				Type:      MessageTypeTyping,
+				RoomID:    msg.RoomID,
+				SenderID:  msg.SenderID,
+				Content:   msg.Content,
 				CreatedAt: time.Now().Format(time.RFC3339),
 			}
-			
+
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -347,7 +369,7 @@ func (c *Client) ReadPump() {
 func (c *Client) WritePump() {
 	logger := utils.NewLogger("Client.WritePump")
 	ticker := time.NewTicker(30 * time.Second)
-	
+
 	defer func() {
 		if r := recover(); r != nil {
 			logger.LogOutput(nil, fmt.Errorf("panic recovered in WritePump: %v", r))
