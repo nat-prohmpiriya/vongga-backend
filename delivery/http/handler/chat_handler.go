@@ -6,7 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ChatHandler struct {
@@ -79,8 +78,8 @@ func (h *ChatHandler) CreateGroupChat(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-		"error": "Invalid request body",
-	})
+			"error": "Invalid request body",
+		})
 	}
 
 	logger := utils.NewLogger("ChatHandler.CreateGroupChat")
@@ -103,10 +102,18 @@ func (h *ChatHandler) CreateGroupChat(c *fiber.Ctx) error {
 
 func (h *ChatHandler) GetUserChats(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.GetUserChats")
-	userID := c.Locals("userId").(primitive.ObjectID).Hex()
-	logger.LogInput(userID)
 
-	rooms, err := h.chatUsecase.GetUserChats(userID)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	logger.LogInput(userID.Hex())
+
+	rooms, err := h.chatUsecase.GetUserChats(userID.Hex())
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -173,6 +180,15 @@ func (h *ChatHandler) RemoveMemberFromGroup(c *fiber.Ctx) error {
 // Message handlers
 func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.SendMessage")
+
+	senderID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
 	var req struct {
 		RoomID  string `json:"roomId" binding:"required"`
 		Content string `json:"content" binding:"required"`
@@ -186,15 +202,14 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 		})
 	}
 
-	senderID := c.Locals("userId").(primitive.ObjectID).Hex()
 	logger.LogInput(map[string]string{
 		"roomID":   req.RoomID,
-		"senderID": senderID,
+		"senderID": senderID.Hex(),
 		"type":     req.Type,
 		"content":  req.Content,
 	})
 
-	message, err := h.chatUsecase.SendMessage(req.RoomID, senderID, req.Type, req.Content)
+	message, err := h.chatUsecase.SendMessage(req.RoomID, senderID.Hex(), req.Type, req.Content)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -208,6 +223,15 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 
 func (h *ChatHandler) SendFileMessage(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.SendFileMessage")
+
+	senderID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
 	var req struct {
 		RoomID   string `json:"roomId" binding:"required"`
 		FileType string `json:"fileType" binding:"required"`
@@ -222,16 +246,15 @@ func (h *ChatHandler) SendFileMessage(c *fiber.Ctx) error {
 		})
 	}
 
-	senderID := c.Locals("userId").(primitive.ObjectID).Hex()
 	logger.LogInput(map[string]interface{}{
 		"roomID":   req.RoomID,
-		"senderID": senderID,
+		"senderID": senderID.Hex(),
 		"fileType": req.FileType,
 		"fileSize": req.FileSize,
 		"fileURL":  req.FileURL,
 	})
 
-	message, err := h.chatUsecase.SendFileMessage(req.RoomID, senderID, req.FileType, req.FileSize, req.FileURL)
+	message, err := h.chatUsecase.SendFileMessage(req.RoomID, senderID.Hex(), req.FileType, req.FileSize, req.FileURL)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -270,14 +293,21 @@ func (h *ChatHandler) GetChatMessages(c *fiber.Ctx) error {
 func (h *ChatHandler) MarkMessageRead(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.MarkMessageRead")
 	messageID := c.Params("messageId")
-	userID := c.Locals("userId").(primitive.ObjectID).Hex()
 
-	logger.LogInput(map[string]string{
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	logger.LogInput(map[string]interface{}{
 		"messageID": messageID,
-		"userID":    userID,
+		"userID":    userID.Hex(),
 	})
 
-	if err := h.chatUsecase.MarkMessageRead(messageID, userID); err != nil {
+	if err := h.chatUsecase.MarkMessageRead(messageID, userID.Hex()); err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -291,6 +321,15 @@ func (h *ChatHandler) MarkMessageRead(c *fiber.Ctx) error {
 // User status handlers
 func (h *ChatHandler) UpdateUserStatus(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.UpdateUserStatus")
+
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
 	var req struct {
 		IsOnline bool `json:"isOnline" binding:"required"`
 	}
@@ -302,13 +341,12 @@ func (h *ChatHandler) UpdateUserStatus(c *fiber.Ctx) error {
 		})
 	}
 
-	userID := c.Locals("userId").(primitive.ObjectID).Hex()
 	logger.LogInput(map[string]interface{}{
-		"userID":   userID,
+		"userID":   userID.Hex(),
 		"isOnline": req.IsOnline,
 	})
 
-	if err := h.chatUsecase.UpdateUserOnlineStatus(userID, req.IsOnline); err != nil {
+	if err := h.chatUsecase.UpdateUserOnlineStatus(userID.Hex(), req.IsOnline); err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -339,10 +377,18 @@ func (h *ChatHandler) GetUserStatus(c *fiber.Ctx) error {
 // Notification handlers
 func (h *ChatHandler) GetUserNotifications(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ChatHandler.GetUserNotifications")
-	userID := c.Locals("userId").(primitive.ObjectID).Hex()
-	logger.LogInput(userID)
 
-	notifications, err := h.chatUsecase.GetUserNotifications(userID)
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	logger.LogInput(userID.Hex())
+
+	notifications, err := h.chatUsecase.GetUserNotifications(userID.Hex())
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

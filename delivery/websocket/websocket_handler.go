@@ -11,6 +11,20 @@ import (
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
 )
 
+const (
+	// Token missing
+	CloseInvalidFramePayloadData = 1007 // ข้อมูลไม่ถูกต้อง
+
+	// Token invalid/expired
+	ClosePolicyViolation = 1008 // ผิด policy (token)
+
+	// Normal closure
+	CloseNormalClosure = 1000 // ปิดปกติ
+
+	// Server error
+	CloseInternalServerErr = 1011 // server error
+)
+
 type WebSocketHandler struct {
 	chatUsecase domain.ChatUsecase
 	hub         *Hub
@@ -33,14 +47,21 @@ func NewWebSocketHandler(router fiber.Router, chatUsecase domain.ChatUsecase, au
 	}))
 }
 
-func (h *WebSocketHandler) handleWebSocket(c *websocket.Conn) {
+func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
 	logger := utils.NewLogger("WebSocketHandler.handleWebSocket")
 	// Get token from query parameter
-	token := c.Query("token")
+	token := ws.Query("token")
 	logger.LogInput(token)
 	if token == "" {
 		logger.LogOutput(nil, fmt.Errorf("missing token"))
-		c.Close()
+		ws.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(
+				websocket.CloseInvalidFramePayloadData, // code 1007
+				"Missing token",
+			), time.Now().Add(time.Second),
+		)
+		ws.Close()
 		return
 	}
 
@@ -48,7 +69,16 @@ func (h *WebSocketHandler) handleWebSocket(c *websocket.Conn) {
 	claims, err := h.authClient.VerifyToken(token)
 	if err != nil {
 		logger.LogOutput(nil, err)
-		c.Close()
+		ws.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(
+				websocket.ClosePolicyViolation, // code 1008
+				"Invalid or expired token",
+			),
+			time.Now().Add(time.Second),
+		)
+
+		ws.Close()
 		return
 	}
 
@@ -60,10 +90,40 @@ func (h *WebSocketHandler) handleWebSocket(c *websocket.Conn) {
 	client := &Client{
 		ID:      utils.GenerateID(),
 		UserID:  userID,
-		Conn:    c,
+		Conn:    ws,
 		Send:    make(chan []byte, 256),
 		Hub:     h.hub,
 		RoomIDs: make(map[string]bool),
+	}
+
+	// ตรวจสอบ nil
+	if client.Conn == nil {
+		logger.LogOutput(nil, fmt.Errorf("Client connection is nil"))
+		ws.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(
+				websocket.CloseInternalServerErr, // code 1011
+				"Client connection is nil",
+			),
+			time.Now().Add(time.Second),
+		)
+		ws.Close()
+		return
+	}
+
+	// ตรวจสอบ nil ก่อนใช้ Hub
+	if h.hub == nil {
+		logger.LogOutput(nil, fmt.Errorf("Hub is nil"))
+		ws.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(
+				websocket.CloseInternalServerErr, // code 1011
+				"Hub is nil",
+			),
+			time.Now().Add(time.Second),
+		)
+		ws.Close()
+		return
 	}
 
 	logger.LogInfo(map[string]interface{}{

@@ -48,13 +48,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	firebaseAuth, err := firebaseApp.Auth(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	// Create auth adapter
-	authAdapter := auth.NewFirebaseAuthAdapter(firebaseAuth)
+	systemAuthAdapter := auth.NewSystemAuthAdapter(cfg.JWTSecret)
 
 	authClient, err := firebaseApp.Auth(context.Background())
 	if err != nil {
@@ -144,7 +139,7 @@ func main() {
 	api := app.Group("/api")
 
 	// WebSocket endpoint (outside protected routes)
-	websocket.NewWebSocketHandler(api, chatUseCase, authAdapter)
+	websocket.NewWebSocketHandler(api, chatUseCase, systemAuthAdapter)
 
 	// Public auth routes
 	auth := api.Group("/auth")
@@ -154,7 +149,7 @@ func main() {
 	auth.Post("/createTestToken", handler.NewAuthHandler(authUseCase).CreateTestToken)
 
 	// Protected routes
-	protectedApi := api.Group("", middleware.JWTAuthMiddleware(cfg.JWTSecret, authClient))
+	protectedApi := api.Group("", middleware.AuthMiddleware(cfg.JWTSecret))
 
 	// Create route groups
 	users := protectedApi.Group("/users")

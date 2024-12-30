@@ -21,12 +21,12 @@ type Client struct {
 }
 
 type Message struct {
-	Type      string          `json:"type"`
-	RoomID    string          `json:"roomId"`
-	SenderID  string          `json:"senderId"`
-	Content   string          `json:"content"`
-	Data      interface{}     `json:"data,omitempty"`
-	CreatedAt time.Time       `json:"createdAt"`
+	Type      string      `json:"type"`
+	RoomID    string      `json:"roomId"`
+	SenderID  string      `json:"senderId"`
+	Content   string      `json:"content"`
+	Data      interface{} `json:"data,omitempty"`
+	CreatedAt time.Time   `json:"createdAt"`
 }
 
 type Hub struct {
@@ -63,7 +63,7 @@ func (h *Hub) Run() {
 
 			logger.LogOutput(map[string]interface{}{
 				"totalClients": len(h.Clients),
-				"status":      "registered",
+				"status":       "registered",
 			}, nil)
 
 		case client := <-h.Unregister:
@@ -77,13 +77,13 @@ func (h *Hub) Run() {
 
 			logger.LogOutput(map[string]interface{}{
 				"totalClients": len(h.Clients),
-				"status":      "unregistered",
+				"status":       "unregistered",
 			}, nil)
 
 		case message := <-h.Broadcast:
 			logger.LogInput(map[string]interface{}{
 				"messageSize": len(message),
-				"action":     "broadcast",
+				"action":      "broadcast",
 			})
 
 			for client := range h.Clients {
@@ -91,7 +91,7 @@ func (h *Hub) Run() {
 				case client.Send <- message:
 					logger.LogOutput(map[string]interface{}{
 						"clientID": client.ID,
-						"status":  "message_sent",
+						"status":   "message_sent",
 					}, nil)
 				default:
 					h.Mutex.Lock()
@@ -102,8 +102,8 @@ func (h *Hub) Run() {
 
 					logger.LogOutput(map[string]interface{}{
 						"clientID": client.ID,
-						"status":  "client_removed",
-						"reason":  "send_failed",
+						"status":   "client_removed",
+						"reason":   "send_failed",
 					}, nil)
 				}
 			}
@@ -208,7 +208,7 @@ func (c *Client) ReadPump() {
 				logger.LogOutput(nil, fmt.Errorf("error sending message: %v", err))
 				continue
 			}
-			
+
 			// แปลง chatMsg เป็น Message สำหรับ broadcast
 			broadcastMsg := Message{
 				Type:      "message",
@@ -247,7 +247,7 @@ func (c *Client) WritePump() {
 		select {
 		case message, ok := <-c.Send:
 			if !ok {
-				logger.LogOutput(nil, fmt.Errorf("send channel closed"))
+				logger.LogInfo("channel closed")
 				return
 			}
 
@@ -258,7 +258,7 @@ func (c *Client) WritePump() {
 
 			logger.LogOutput(map[string]interface{}{
 				"messageSize": len(message),
-				"action":     "message_sent",
+				"action":      "message_sent",
 			}, nil)
 
 		case <-ticker.C:

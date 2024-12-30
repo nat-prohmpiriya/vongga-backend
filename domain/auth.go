@@ -1,6 +1,9 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"github.com/golang-jwt/jwt/v5"
+)
 
 type TokenPair struct {
 	AccessToken  string `json:"accessToken"`
@@ -8,7 +11,8 @@ type TokenPair struct {
 }
 
 type Claims struct {
-	UserID string `json:"user_id"`
+	UserID string `json:"userId"`
+	jwt.RegisteredClaims
 }
 
 type AuthClient interface {

@@ -295,6 +295,39 @@ func (u *chatUsecase) SendMessage(roomID string, senderID string, messageType st
 		"content":     content,
 	})
 
+	// Validate roomID
+	if !primitive.IsValidObjectID(roomID) {
+		err := fmt.Errorf("invalid room ID format")
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Get room to verify it exists and sender is a member
+	room, err := u.chatRepo.GetRoom(roomID)
+	if err != nil {
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+	if room == nil {
+		err := fmt.Errorf("room not found")
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
+	// Verify sender is a member of the room
+	isMember := false
+	for _, memberID := range room.Members {
+		if memberID == senderID {
+			isMember = true
+			break
+		}
+	}
+	if !isMember {
+		err := fmt.Errorf("sender is not a member of this room")
+		logger.LogOutput(nil, err)
+		return nil, err
+	}
+
 	message := &domain.ChatMessage{
 		BaseModel: domain.BaseModel{
 			ID:        primitive.NewObjectID(),
@@ -311,13 +344,6 @@ func (u *chatUsecase) SendMessage(roomID string, senderID string, messageType st
 	}
 
 	if err := u.chatRepo.SaveMessage(message); err != nil {
-		logger.LogOutput(nil, err)
-		return nil, err
-	}
-
-	// Get room to find all members
-	room, err := u.chatRepo.GetRoom(roomID)
-	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
