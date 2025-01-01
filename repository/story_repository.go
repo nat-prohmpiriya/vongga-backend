@@ -177,8 +177,8 @@ func (r *storyRepository) FindByUserID(userID string) ([]*domain.Story, error) {
 
 	// Not found in Redis, get from MongoDB
 	filter := bson.M{
-		"userId":   userID,
-		"isActive": true,
+		"userId": userID,
+		// "isActive": true,
 	}
 
 	cursor, err := r.collection.Find(context.Background(), filter)
@@ -194,17 +194,17 @@ func (r *storyRepository) FindByUserID(userID string) ([]*domain.Story, error) {
 		return nil, err
 	}
 
-	// Filter out expired stories
-	now := time.Now()
-	activeStories := make([]*domain.Story, 0)
-	for _, story := range stories {
-		if now.Before(story.ExpiresAt) {
-			activeStories = append(activeStories, story)
-		}
-	}
+	// Filter out expired stories not filter becouse use in page site
+	// now := time.Now()
+	// activeStories := make([]*domain.Story, 0)
+	// for _, story := range stories {
+	// 	if now.Before(story.ExpiresAt) {
+	// 		activeStories = append(activeStories, story)
+	// 	}
+	// }
 
 	// Cache in Redis for 5 minutes
-	storiesBytes, err := json.Marshal(activeStories)
+	storiesBytes, err := json.Marshal(stories)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -216,8 +216,8 @@ func (r *storyRepository) FindByUserID(userID string) ([]*domain.Story, error) {
 		logger.LogOutput(nil, err)
 	}
 
-	logger.LogOutput(activeStories, nil)
-	return activeStories, nil
+	logger.LogOutput(stories, nil)
+	return stories, nil
 }
 
 func (r *storyRepository) FindActiveStories() ([]*domain.Story, error) {
@@ -255,8 +255,8 @@ func (r *storyRepository) FindActiveStories() ([]*domain.Story, error) {
 	// Not found in Redis, get from MongoDB
 	now := time.Now()
 	filter := bson.M{
-		"isActive":  true,
-		"isArchive": false,
+		"isActive": true,
+		// "isArchive": false,
 		"expiresAt": bson.M{"$gt": now},
 	}
 

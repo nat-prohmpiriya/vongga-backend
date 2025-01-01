@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        #messages { 
+            height: 300px; 
+            overflow-y: auto; 
+            border: 1px solid #ccc; 
+            margin-bottom: 10px; 
+            padding: 10px;
+        }
+        .message { margin: 5px 0; }
+        .error { color: red; }
+        .success { color: green; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h2>WebSocket Test Client</h2>
+    <div>
+        <label>Token:</label>
+        <input type="text" id="token" style="width: 300px;" />
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <span id="status" style="margin-left: 10px;">Disconnected</span>
+    </div>
+    <div>
+        <label>Room ID:</label>
+        <input type="text" id="roomId" />
+    </div>
+    <div>
+        <label>Message:</label>
+        <input type="text" id="message" oninput="handleTyping()" />
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="sendTyping(true)">Start Typing</button>
+        <button onclick="sendTyping(false)">Stop Typing</button>
+    </div>
+    <div id="messages"></div>
+
+    <script>
+        let ws = null;
+        let pingInterval = null;
+        const messagesDiv = document.getElementById('messages');
+        const statusSpan = document.getElementById('status');
+        let typingTimeout = null;
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateStatus(status, color = 'black') {
+            statusSpan.textContent = status;
+            statusSpan.style.color = color;
+        }
+
+        function startPing() {
+            // ส่ง ping ทุก 30 วินาที เพื่อเช็คว่า connection ยังอยู่
+            pingInterval = setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    log('Sending ping...', 'info');
+                    ws.send(JSON.stringify({ type: 'ping' }));
+                }
+            }, 30000);
+        }
+
+        function connect() {
+            const token = document.getElementById('token').value;
+            if (!token) {
+                log('Token is required', 'error');
+                return;
+            }
+
+            updateStatus('Connecting...', 'orange');
+            const wsUrl = `ws://localhost:8080/api/ws?token=${token}`;
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                updateStatus('Connected', 'green');
+                log('Connected to WebSocket server', 'success');
+                startPing();
+            };
+
+            ws.onclose = (event) => {
+                clearInterval(pingInterval);
+                updateStatus('Disconnected', 'red');
+                log(`WebSocket closed: ${event.code} - ${event.reason}`, event.wasClean ? 'info' : 'error');
+            };
+
+            ws.onerror = (error) => {
+                updateStatus('Error', 'red');
+                log(`WebSocket error: ${error}`, 'error');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    log(`Received: ${JSON.stringify(data, null, 2)}`, 'info');
+                } catch (e) {
+                    log(`Received raw message: ${event.data}`, 'info');
+                }
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close(1000, 'User disconnected');
+                ws = null;
+                updateStatus('Disconnected', 'red');
+                log('Disconnected from server', 'info');
+            }
+        }
+
+        function sendMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('WebSocket is not connected', 'error');
+                return;
+            }
+
+            const roomId = document.getElementById('roomId').value;
+            const content = document.getElementById('message').value;
+
+            if (!roomId || !content) {
+                log('Room ID and message are required', 'error');
+                return;
+            }
+
+            const message = {
+                type: 'message',
+                roomId: roomId,
+                content: content
+            };
+
+            ws.send(JSON.stringify(message));
+            log(`Sent: ${JSON.stringify(message)}`, 'success');
+            document.getElementById('message').value = '';
+        }
+
+        function handleTyping() {
+            const roomId = document.getElementById('roomId').value;
+            if (!roomId) {
+                log('Room ID is required for typing status', 'error');
+                return;
+            }
+            // ส่ง typing status เมื่อมีการพิมพ์
+            sendTyping(true);
+            
+            // หยุดส่ง typing status หลังจากหยุดพิมพ์ 1 วินาที
+            if (typingTimeout) {
+                clearTimeout(typingTimeout);
+            }
+            typingTimeout = setTimeout(() => {
+                sendTyping(false);
+            }, 1000);
+        }
+
+        function sendTyping(isTyping) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('WebSocket is not connected', 'error');
+                return;
+            }
+
+            const roomId = document.getElementById('roomId').value;
+            if (!roomId) {
+                log('Room ID is required for typing status', 'error');
+                return;
+            }
+
+            const message = {
+                type: 'typing',
+                roomId: roomId,
+                content: isTyping.toString()
+            };
+
+            ws.send(JSON.stringify(message));
+            log(`Sent typing status: ${isTyping}`, 'success');
+        }
+
+        // Cleanup on page unload
+        window.onbeforeunload = () => {
+            if (ws) {
+                ws.close();
+            }
+        };
+    </script>
+</body>
+</html>
