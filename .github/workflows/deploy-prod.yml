@@ -72,5 +72,6 @@ jobs:
               --restart always \
               --network vongga-network \
               -p 8080:8080 \
-              --env-file .env.production \
+              --env-file /home/deploy/.env.production \
+              -v /home/deploy/firebase-credentials.json:/app/firebase-credentials.json \
               ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
