@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cache"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/config"
@@ -113,17 +116,33 @@ func main() {
 	subPostUseCase := usecase.NewSubPostUseCase(subPostRepo, postRepo)
 	chatUseCase := usecase.NewChatUsecase(chatRepo, userRepo, notificationUseCase)
 
-	// Initialize Fiber app
-	app := fiber.New()
+	// Initialize Fiber app with performance configurations
+	app := fiber.New(fiber.Config{
+		Prefork:       false,
+		ServerHeader:  "Vongga",
+		StrictRouting: true,
+		CaseSensitive: true,
+		BodyLimit:     4 * 1024 * 1024, // 4MB
+		Concurrency:   256,
+	})
 
 	// CORS
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:3000, http://localhost:4000",
-		AllowCredentials: true,
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
-		AllowMethods:     "GET, HEAD, PUT, PATCH, POST, DELETE",
-		ExposeHeaders:    "Content-Length",
-		MaxAge:           12 * 3600,
+		AllowOrigins: "*",
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		MaxAge:       3600,
+	}))
+
+	// Add compression middleware
+	app.Use(compress.New(compress.Config{
+		Level: compress.LevelBestSpeed,
+	}))
+
+	// Add cache middleware
+	app.Use(cache.New(cache.Config{
+		Expiration:   30 * time.Minute,
+		CacheControl: true,
 	}))
 
 	// Swagger

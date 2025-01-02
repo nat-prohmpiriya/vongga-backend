@@ -22,13 +22,13 @@ type Config struct {
 
 	// Firebase
 	FirebaseCredentialsPath string
-	FirebaseStorageBucket  string
+	FirebaseStorageBucket   string
 
 	// JWT
-	JWTSecret            string
-	JWTExpiryHours      int
-	RefreshTokenSecret   string
-	RefreshTokenExpiry   int // in days
+	JWTSecret          string
+	JWTExpiryHours     int
+	RefreshTokenSecret string
+	RefreshTokenExpiry int // in days
 }
 
 func LoadConfig() *Config {
@@ -42,8 +42,8 @@ func LoadConfig() *Config {
 		ServerAddress: getEnv("SERVER_ADDRESS", ":8080"),
 
 		// MongoDB
-		MongoURI: getEnv("MONGO_URI", "mongodb://localhost:27017"),
-		MongoDB:  getEnv("MONGO_DB", "vongga"),
+		MongoURI: getEnv("MONGO_URI", "mongodb+srv://dackbok:bV9QsS6dJQo6p3Pb@cluster0.bi0ee.mongodb.net/"),
+		MongoDB:  getEnv("MONGO_DB", "dackbok"),
 
 		// Redis
 		RedisURI:      getEnv("REDIS_URI", "localhost:6379"),
@@ -51,7 +51,7 @@ func LoadConfig() *Config {
 
 		// Firebase
 		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", "firebase-credentials.json"),
-		FirebaseStorageBucket:  getEnv("FIREBASE_STORAGE_BUCKET", ""),
+		FirebaseStorageBucket:   getEnv("FIREBASE_STORAGE_BUCKET", ""),
 
 		// JWT
 		JWTSecret:          getEnv("JWT_SECRET", "your-secret-key"),

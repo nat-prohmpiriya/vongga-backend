@@ -228,6 +228,9 @@ func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset i
 	filter := bson.M{
 		"userId":   userID,
 		"isActive": true,
+		"deletedAt": bson.M{
+			"$exists": false,
+		},
 	}
 
 	// Handle media filtering
