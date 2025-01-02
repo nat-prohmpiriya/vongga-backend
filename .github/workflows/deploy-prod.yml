@@ -10,7 +10,7 @@ on:
 
 env:
   DOCKER_REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/vongga-backend-prod
+  IMAGE_NAME: ${{ github.repository_owner }}/vongga-backend-prod
   ENVIRONMENT: production
 
 jobs:
