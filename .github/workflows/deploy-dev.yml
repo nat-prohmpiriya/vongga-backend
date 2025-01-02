@@ -7,7 +7,7 @@ on:
 
 env:
   DOCKER_REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/vongga-backend-dev
+  IMAGE_NAME: nat-prohmpiriya/vongga-backend-dev
   ENVIRONMENT: develop
 
 jobs:
@@ -67,6 +67,6 @@ jobs:
               --name vongga-backend-develop \
               --restart always \
               --network vongga-network \
-              -p 8081:8080 \
+              -p 8080:8080 \
               --env-file .env.develop \
               ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
