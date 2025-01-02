@@ -42,21 +42,21 @@ func LoadConfig() *Config {
 		ServerAddress: getEnv("SERVER_ADDRESS", ":8080"),
 
 		// MongoDB
-		MongoURI: getEnv("MONGO_URI", "mongodb+srv://dackbok:bV9QsS6dJQo6p3Pb@cluster0.bi0ee.mongodb.net/"),
-		MongoDB:  getEnv("MONGO_DB", "dackbok"),
+		MongoURI: getEnv("MONGO_URI", ""),
+		MongoDB:  getEnv("MONGO_DB", ""),
 
 		// Redis
-		RedisURI:      getEnv("REDIS_URI", "localhost:6379"),
+		RedisURI:      getEnv("REDIS_URI", ""),
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 
 		// Firebase
-		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", "firebase-credentials.json"),
+		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", ""),
 		FirebaseStorageBucket:   getEnv("FIREBASE_STORAGE_BUCKET", ""),
 
 		// JWT
-		JWTSecret:          getEnv("JWT_SECRET", "your-secret-key"),
+		JWTSecret:          getEnv("JWT_SECRET", ""),
 		JWTExpiryHours:     1,
-		RefreshTokenSecret: getEnv("REFRESH_TOKEN_SECRET", "your-refresh-secret-key"),
+		RefreshTokenSecret: getEnv("REFRESH_TOKEN_SECRET", ""),
 		RefreshTokenExpiry: 30,
 	}
 }
