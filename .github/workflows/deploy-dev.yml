@@ -66,7 +66,7 @@ jobs:
             docker run -d \
               --name vongga-backend-develop \
               --restart always \
-              --network vongga-network \
+              --network dackbok-network \
               -p 8080:8080 \
               --env-file /home/deploy/.env.develop \
               -v /home/deploy/firebase-credentials.json:/app/firebase-credentials.json \
