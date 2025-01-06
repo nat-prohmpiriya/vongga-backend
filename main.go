@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/gofiber/adaptor/v2" // เพิ่มตรงนี้
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -19,6 +20,7 @@ import (
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/repository"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/usecase"
 	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/utils"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -153,10 +155,12 @@ func main() {
 
 	// Middleware
 	app.Use(utils.RequestLogger())
+	app.Use(middleware.MetricsMiddleware())
 
 	// Routes
 	api := app.Group("/api")
 
+	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 	// WebSocket endpoint (outside protected routes)
 	websocket.NewWebSocketHandler(api, chatUseCase, systemAuthAdapter)
 

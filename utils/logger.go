@@ -9,6 +9,8 @@ import (
 // Logger provides structured logging functionality
 type Logger struct {
 	FunctionName string
+	ServiceName  string
+	Environment  string
 }
 
 // NewLogger creates a new Logger instance
@@ -20,40 +22,72 @@ func NewLogger(functionName string) *Logger {
 
 // LogInput logs the input parameters of a function
 func (l *Logger) LogInput(params ...interface{}) {
-	fmt.Printf("\n[%s] ### %s INPUT ### ", time.Now().Format(time.RFC3339), l.FunctionName)
-	for _, param := range params {
-		jsonBytes, _ := json.Marshal(param)
-		fmt.Printf("%s\n", string(jsonBytes))
+	logEntry := map[string]interface{}{
+		"level":       "INPUT",
+		"timestamp":   time.Now().Format(time.RFC3339),
+		"service":     l.ServiceName,
+		"environment": l.Environment,
+		"function":    l.FunctionName,
 	}
+
+	paramsList := append(make([]interface{}, 0), params...)
+	logEntry["params"] = paramsList
+
+	jsonBytes, _ := json.Marshal(logEntry)
+	fmt.Printf("%s\n", string(jsonBytes))
 }
 
 func (l *Logger) LogInfo(params ...interface{}) {
-	fmt.Printf("\n[%s] ### %s INFO ### ", time.Now().Format(time.RFC3339), l.FunctionName)
-	for _, param := range params {
-		jsonBytes, _ := json.Marshal(param)
-		fmt.Printf("%s\n", string(jsonBytes))
+	logEntry := map[string]interface{}{
+		"level":       "INFO",
+		"timestamp":   time.Now().Format(time.RFC3339),
+		"service":     l.ServiceName,
+		"environment": l.Environment,
+		"function":    l.FunctionName,
 	}
+
+	// ยังคง loop เพื่อเก็บ params
+	paramsList := append(make([]interface{}, 0), params...)
+	logEntry["params"] = paramsList
+
+	jsonBytes, _ := json.Marshal(logEntry)
+	fmt.Printf("%s\n", string(jsonBytes))
 }
 
-func (l *Logger) LogWarning(params ...interface{}) (err error) {
-	fmt.Printf("\n[%s] ### %s WARNING ### ", time.Now().Format(time.RFC3339), l.FunctionName)
-	for _, param := range params {
-		jsonBytes, _ := json.Marshal(param)
-		fmt.Printf("%s\n", string(jsonBytes))
+func (l *Logger) LogWarning(err error, params ...interface{}) {
+	logEntry := map[string]interface{}{
+		"level":       "WARNING",
+		"timestamp":   time.Now().Format(time.RFC3339),
+		"service":     l.ServiceName,
+		"environment": l.Environment,
+		"function":    l.FunctionName,
+		"error":       err.Error(),
 	}
-	return nil
+
+	paramsList := append(make([]interface{}, 0), params...)
+	logEntry["params"] = paramsList
+
+	jsonBytes, _ := json.Marshal(logEntry)
+	fmt.Printf("%s\n", string(jsonBytes))
 }
 
-// LogOutput logs the output of a function
 func (l *Logger) LogOutput(output interface{}, err error) {
-	if err != nil {
-		// กรณีเกิด error เพิ่ม ERROR ในชื่อ
-		fmt.Printf("\n[%s] ### %s ERROR OUTPUT ### ", time.Now().Format(time.RFC3339), l.FunctionName)
-		fmt.Printf("Error: %v\n", err)
-	} else if output != nil {
-		// กรณีปกติ
-		fmt.Printf("\n[%s] ### %s OUTPUT ### ", time.Now().Format(time.RFC3339), l.FunctionName)
-		jsonBytes, _ := json.Marshal(output)
-		fmt.Printf("%s\n", string(jsonBytes))
+	logEntry := map[string]interface{}{
+		"level":       "OUTPUT",
+		"timestamp":   time.Now().Format(time.RFC3339),
+		"service":     l.ServiceName,
+		"environment": l.Environment,
+		"function":    l.FunctionName,
 	}
+
+	if err != nil {
+		logEntry["error"] = err.Error()
+		logEntry["status"] = "error"
+	} else if output != nil {
+		logEntry["output"] = output
+		logEntry["status"] = "success"
+	}
+
+	jsonBytes, _ := json.Marshal(logEntry)
+	fmt.Printf("%s\n", string(jsonBytes))
 }

@@ -54,11 +54,20 @@ jobs:
           host: ${{ secrets.DEV_SERVER_HOST }}
           username: ${{ secrets.DEV_SERVER_USERNAME }}
           key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+          # GitHub Actions workflow
           script: |
-            # Pull latest image
+            cd /opt/dackbok/config
+            
+            # 1. Pull new image
             docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             
-            # Update service with zero downtime
-            cd /opt/dackbok/config
-            docker-compose up -d --force-recreate --no-deps backend
+            # 2. Scale up with new image
+            docker-compose up -d --scale backend=2 --no-recreate backend
+            
+            # 3. Wait for health check
+            echo "Waiting for new container to be healthy..."
+            sleep 10
+            
+            # 4. Scale down (removes old container)
+            docker-compose up -d --scale backend=1 backend
 
