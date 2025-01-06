@@ -58,16 +58,7 @@ jobs:
             # Pull latest image
             docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             
-            # Stop and remove existing container
-            docker stop vongga-backend-develop || true
-            docker rm vongga-backend-develop || true
-            
-            # Run new container
-            docker run -d \
-              --name vongga-backend-develop \
-              --restart always \
-              --network dackbok-network \
-              -p 8080:8080 \
-              --env-file /home/deploy/.env.develop \
-              -v /home/deploy/firebase-credentials.json:/app/firebase-credentials.json \
-              ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            # Update service with zero downtime
+            cd /opt/dackbok/config
+            docker-compose up -d --force-recreate --no-deps backend
+
