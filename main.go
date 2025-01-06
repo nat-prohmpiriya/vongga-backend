@@ -152,6 +152,8 @@ func main() {
 
 	// Health check - public endpoint
 	app.Get("/api", handler.NewHealthHandler(db, redisClient).Health)
+	// Health check - Ping
+	app.Get("/api/ping", handler.NewHealthHandler(db, redisClient).Ping)
 
 	// Middleware
 	app.Use(utils.RequestLogger())

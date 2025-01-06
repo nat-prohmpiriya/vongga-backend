@@ -57,17 +57,7 @@ jobs:
           # GitHub Actions workflow
           script: |
             cd /opt/dackbok/config
-            
-            # 1. Pull new image
             docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            
-            # 2. Scale up with new image
-            docker-compose up -d --scale backend=2 backend
-            
-            # 3. Wait for health check
-            echo "Waiting for new container to be healthy..."
-            sleep 10
-            
-            # 4. Scale down (removes old container)
-            docker-compose up -d --scale backend=1 backend
+            docker stack deploy -c docker-compose.yml vongga --with-registry-auth
+            docker service watch vongga_backend  
 

@@ -56,12 +56,18 @@ func (h *HealthHandler) Health(c *fiber.Ctx) error {
 	}
 
 	return c.Status(statusCode).JSON(fiber.Map{
-		"status": status,
+		"status":    status,
 		"timestamp": time.Now().Format(time.RFC3339),
 		"services": fiber.Map{
 			"mongodb": mongoStatus,
 			"redis":   redisStatus,
 		},
+	})
+}
+
+func (h *HealthHandler) Ping(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": "success",
 	})
 }
 
