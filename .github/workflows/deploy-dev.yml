@@ -58,6 +58,6 @@ jobs:
           script: |
             cd /opt/dackbok/config
             docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            docker stack deploy -c docker-compose.yml vongga --with-registry-auth
-            docker service watch vongga_backend  
+            docker stack deploy -c docker-compose.yml dackbok --with-registry-auth
+            docker service watch dackbok_backend  
 
