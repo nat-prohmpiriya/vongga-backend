@@ -62,7 +62,7 @@ jobs:
             docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             
             # 2. Scale up with new image
-            docker-compose up -d --scale backend=2 --no-recreate backend
+            docker-compose up -d --scale backend=2 backend
             
             # 3. Wait for health check
             echo "Waiting for new container to be healthy..."
