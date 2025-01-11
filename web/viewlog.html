@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Logs Dashboard</title>
+    <link rel="icon" href="data:;base64,=">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
+
+</head>
+<style>
+    .truncate {
+        max-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .input-datepicker {
+        width: 300px;
+        margin-bottom: 5rem;
+    }
+
+    .dropdown-content {
+        width: 800px;
+        height: 350px;
+        padding: 10px;
+
+    }
+
+    .pointer {
+        cursor: pointer;
+    }
+
+    .fs-12 {
+        font-size: 12px;
+    }
+</style>
+
+<body>
+
+
+    <div id="app" class="p-3">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h1 class="fs-3">Logs Dashboard</h1>
+            <div>
+                <span>Current Time Range: {{ currentTimeRange }}</span>
+                <button class="btn btn-primary mx-2 " @click="initSearchTimeRange">default time</button>
+            </div>
+            <div>
+                <button class="btn btn-primary me-2" @click="fetchLogs">Refresh</button>
+                <button :class="{ 'btn btn-secondary': !isRealTime, 'btn btn-success': isRealTime }"
+                    @click="isRealTime = !isRealTime">Realtime</button>
+            </div>
+        </div>
+        <!-- Search -->
+        <div class="row g-3 align-items-center">
+            <!-- dropdown filter -->
+            <div class="col-2">
+                <div class="dropdown w-100">
+                    <button class="btn btn-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown"
+                        data-bs-auto-close="false" aria-expanded="false">
+                        Dropdown button
+                    </button>
+                    <ul class="dropdown-menu dropdown-content">
+                        <!-- dropdown content -->
+                        <div class="d-flex justify-content-end mb-2">
+                            <i class="bi bi-x-lg fs-6 pointer" @click="closeDropdown"></i>
+                        </div>
+                        <div class="d-flex">
+                            <div id="datetime" class=""></div>
+                        </div>
+                    </ul>
+                </div>
+            </div>
+            <!-- input search -->
+            <div class="col-5 d-flex align-items-center gap-2 justify-content-between">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search in logs..." v-model="searchText">
+                    <button class="btn btn-outline-secondary" type="button" id="button-addon2">Button</button>
+                </div>
+                <span class="fs-12 text-muted text-nowrap">Found {{ totalItems }} logs</span>
+            </div>
+            <!-- limit -->
+            <div class="col-2">
+                <select class="form-select w-100" v-model="itemsPerPage">
+                    <option value="50">50 logs</option>
+                    <option value="100">100 logs</option>
+                    <option value="500">500 logs</option>
+                    <option value="1000">1000 logs</option>
+                </select>
+            </div>
+            <!-- pagination -->
+            <div class="col-3">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-end mb-0">
+                        <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                            <a class="page-link" href="#" @click.prevent="currentPage--">Previous</a>
+                        </li>
+                        <li class="page-item" v-if="currentPage > 2">
+                            <a class="page-link" href="#" @click.prevent="currentPage = 1">1</a>
+                        </li>
+                        <li class="page-item disabled" v-if="currentPage > 3">
+                            <span class="page-link">...</span>
+                        </li>
+                        <li class="page-item" v-if="currentPage > 1">
+                            <a class="page-link" href="#" @click.prevent="currentPage--">{{ currentPage - 1 }}</a>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link">{{ currentPage }}</span>
+                        </li>
+                        <li class="page-item" v-if="currentPage < totalPages">
+                            <a class="page-link" href="#" @click.prevent="currentPage++">{{ currentPage + 1 }}</a>
+                        </li>
+                        <li class="page-item disabled" v-if="currentPage < totalPages - 2">
+                            <span class="page-link">...</span>
+                        </li>
+                        <li class="page-item" v-if="currentPage < totalPages - 1">
+                            <a class="page-link" href="#" @click.prevent="currentPage = totalPages">{{ totalPages }}</a>
+                        </li>
+                        <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                            <a class="page-link" href="#" @click.prevent="currentPage++">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        <!-- Content -->
+        <div class="row g-3 px-2 py-2">
+            <!-- Sidbar -->
+            <div class="col-2 bg-body-secondary p-2">
+                <button v-for="time in listTime" @click="setTimeRange(time.time)" :key="time.number"
+                :class="{ 'btn btn-outline-secondary w-100 mb-2': !time.isActive, 'btn btn-primary w-100 mb-2': time.isActive }">
+                {{ time.number }} {{ time.unit }}
+            </button>
+            </div>
+            <!-- Main Content -->
+            <div class="col-10">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Time</th>
+                            <th scope="col" class="text-nowrap">Operation Name</th>
+                            <th scope="col">Level</th>
+                            <th scope="col">Data</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-group-divider">
+                        <template v-for="(log, index) in filteredLogs" :key="index">
+                            <!-- Main Row -->
+                            <tr @click="log.expanded = !log.expanded" class="pointer" v-if="!log.expanded">
+                                <td class="text-nowrap fs-12">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+                                <td class="text-nowrap fs-12" style="width: 100px;">{{ formatTime(log.timestamp) }}</td>
+                                <td class="fs-12">{{ log.operationName }}</td>
+                                <td class="text-nowrap fs-12">{{ log.level }}</td>
+                                <td class="truncate fs-12" style="width: 100%;">{{ log?.data }}</td>
+                            </tr>
+                            <!-- Expanded Row -->
+                            <tr v-if="log.expanded">
+                                <td class="text-nowrap pointer fs-12" @click="log.expanded = !log.expanded">{{(currentPage - 1) * itemsPerPage + index + 1 }}</td>
+                                <td class="text-nowrap fs-12" @click="log.expanded = !log.expanded">{{ formatTime(log.timestamp) }}</td>
+                                <td class="pointer fs-12" @click="log.expanded = !log.expanded">{{ log.operationName }}</td>
+                                <td class="text-nowrap pointer fs-12" @click="log.expanded = !log.expanded">{{ log.level }}</td>
+                                <td class="d-flex justify-content-between" style="width: 100%;">
+                                    <div class="w-100">
+                                        <pre class="fs-12">{{ JSON.stringify(JSON.parse(log?.data), null, 2) }}</pre>
+                                        <p class="fs-12 m-0">Trace ID: {{ log?.traceId }}</p>
+                                        <p class="fs-12 m-0">Span ID: {{ log?.spanId }}</p>
+                                    </div>
+                                    <i class="bi bi-box-arrow-in-up-right fs-5 pointer"@click="log.expanded = !log.expanded"></i>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav aria-label="Page navigation" class="mt-3">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                    <a class="page-link" href="#" @click.prevent="currentPage--">Previous</a>
+                </li>
+                <li class="page-item" v-if="currentPage > 2">
+                    <a class="page-link" href="#" @click.prevent="currentPage = 1">1</a>
+                </li>
+                <li class="page-item disabled" v-if="currentPage > 3">
+                    <span class="page-link">...</span>
+                </li>
+                <li class="page-item" v-if="currentPage > 1">
+                    <a class="page-link" href="#" @click.prevent="currentPage--">{{ currentPage - 1 }}</a>
+                </li>
+                <li class="page-item active">
+                    <span class="page-link">{{ currentPage }}</span>
+                </li>
+                <li class="page-item" v-if="currentPage < totalPages">
+                    <a class="page-link" href="#" @click.prevent="currentPage++">{{ currentPage + 1 }}</a>
+                </li>
+                <li class="page-item disabled" v-if="currentPage < totalPages - 2">
+                    <span class="page-link">...</span>
+                </li>
+                <li class="page-item" v-if="currentPage < totalPages - 1">
+                    <a class="page-link" href="#" @click.prevent="currentPage = totalPages">{{ totalPages }}</a>
+                </li>
+                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                    <a class="page-link" href="#" @click.prevent="currentPage++">Next</a>
+                </li>
+            </ul>
+        </nav>
+
+    </div>
+
+    <script>
+        Vue.createApp({
+            data() {
+                return {
+                    logs: [],
+                    startDate: null,
+                    endDate: null,
+                    isRealTime: false,
+                    picker: null,
+                    startDate: null,
+                    endDate: null,
+                    listTime: [
+                        { isActive: false, number: '30', time: 30, unit: 'minutes' },
+                        { isActive: false, number: '1', time: 60, unit: 'hours' },
+                        { isActive: false, number: '3', time: 180, unit: 'hours' },
+                        { isActive: false, number: '6', time: 360, unit: 'hours' },
+                        { isActive: false, number: '12', time: 720, unit: 'hours' },
+                        { isActive: false, number: '1', time: 1440, unit: 'days' },
+                    ],
+                    searchText: '',  // เพิ่ม searchText
+                    currentPage: 1,
+                    itemsPerPage: 1000,
+                }
+            },
+            computed: {
+                currentTimeRange() {
+                    if (this.startDate && this.endDate) {
+                        const start = new Date(this.startDate);
+                        const end = new Date(this.endDate);
+                        const duration = end.getTime() - start.getTime();
+                        const hours = Math.floor(duration / (1000 * 60 * 60));
+                        const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+                        return `${hours} hours ${minutes} minutes`;
+                    } else {
+                        // 12 hrs
+                        const twelveHours = 12 * 60 * 60 * 1000;
+                        return `Last ${twelveHours} seconds`
+                    }
+                },
+                filteredLogs() {
+                    if (!this.searchText) return this.paginatedLogs;
+
+                    const search = this.searchText.toLowerCase();
+                    return this.logs.filter(log => {
+                        const data = JSON.stringify(JSON.parse(log?.data)).toLowerCase();
+                        return data.includes(search) ||
+                            log?.operationName.toLowerCase().includes(search) ||
+                            log?.level.toLowerCase().includes(search);
+                    }).slice((this.currentPage - 1) * this.itemsPerPage, this.currentPage * this.itemsPerPage);
+                },
+                paginatedLogs() {
+                    const start = (this.currentPage - 1) * this.itemsPerPage;
+                    const end = start + this.itemsPerPage;
+                    return this.logs.slice(start, end);
+                },
+                totalPages() {
+                    return Math.ceil(this.logs.length / this.itemsPerPage);
+                },
+                totalItems() {
+                    return this.filteredLogs.length;
+                }
+            },
+            mounted() {
+                this.initSearchTimeRange()
+                this.fetchLogs()
+                this.initializePicker()
+            },
+            methods: {
+                async fetchLogs() {
+                    try {
+                        let url = 'http://localhost:4000/jaeger/traces?service=todo-service';
+                        if (this.startDate && this.endDate) {
+                            url += `&start=${this.toMicroseconds(this.startDate)}&end=${this.toMicroseconds(this.endDate)}`;
+                        }
+                        // เพิ่ม limit parameter
+                        url += '&limit=1000';  // เพิ่ม limit เป็น 1000 traces
+                        
+                        const resultFetch = await axios.get(url);
+                        const tempLogs = resultFetch.data.data.flatMap(trace => {
+                            const logs = trace.spans.flatMap((span, index) => {
+                                if (!span.logs || span.logs.length === 0) {
+                                    let timestamp = span.startTime;
+                                    if (!timestamp || isNaN(timestamp)) {
+                                        timestamp = Date.now() * 1000;
+                                    }
+                                    const result = [{
+                                        timestamp: timestamp,
+                                        operationName: span.operationName,
+                                        level: 'INFO',
+                                        data: JSON.stringify({ message: 'No logs available' }),
+                                        expanded: false,
+                                        spanId: span.spanID,
+                                        traceId: trace.traceID
+                                    }];
+                                    return result;
+                                }
+                                return span.logs.map(_log => {
+                                    const separateWord = _log.fields?.[0]?.value.split('#')
+                                    return {
+                                        timestamp: _log.timestamp,
+                                        operationName: span.operationName,
+                                        level: separateWord[0],
+                                        data: separateWord[1],
+                                        expanded: false,
+                                        spanId: span.spanID,
+                                        traceId: trace.traceID
+                                    }
+                                })
+                            });
+                            return logs;
+                        });
+                        const sortedLogs = tempLogs.sort((a, b) => b.timestamp - a.timestamp);
+                        this.logs = sortedLogs
+                    } catch (error) {
+                        console.warn(" fetchLogs: ", error)
+                    }
+                },
+                formatTime(timestamp) {
+                    try {
+                        // console.log('Original timestamp:', timestamp);
+
+                        let ts = typeof timestamp === 'string' ? parseInt(timestamp) : timestamp;
+
+                        if (!ts || isNaN(ts)) {
+                            ts = Date.now() * 1000;  // ใช้เวลาปัจจุบันถ้า timestamp ไม่ถูกต้อง
+                        }
+
+                        const ms = ts > 9999999999999 ? ts / 1000 : ts;
+                        const date = new Date(ms);
+
+                        const formatter = new Intl.DateTimeFormat('en-CA', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        });
+
+                        return formatter.format(date).replace(',', '');
+                    } catch (error) {
+                        console.error('Error formatting time:', error);
+                        return 'Invalid time';
+                    }
+                },
+                initializePicker() {
+                    this.picker = new Litepicker({
+                        element: document.getElementById('datetime'),
+                        format: 'YYYY-MM-DD',
+                        singleMode: false,
+                        numberOfMonths: 2,
+                        numberOfColumns: 2,
+                        startDate: this.startDate,
+                        endDate: this.endDate,
+                        inlineMode: true,        // แสดงแบบ inline
+                        autoApply: false,        // แสดงปุ่ม Apply
+                        showTooltip: true,       // แสดง tooltip
+                        maxDate: new Date(),  // วันสูงสุดที่เลือกได้
+                        minDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),  // วันต่ำสุด (ย้อนหลัง 30 วัน)
+                        lockDays: [],  // วันที่ไม่ให้เลือก
+                        highlightedDays: [],  // วันที่ต้องการ highlight
+                        setup: (picker) => {
+                            picker.on('selected', (date1, date2) => {
+                                // change to milliseconds before sending to backend
+                                this.startDate = date1.getTime();
+                                this.endDate = date2.getTime();
+                                this.fetchLogs();
+                            });
+
+
+                            // handle cancel button
+                            picker.on('button:cancel', () => {
+                                this.closeDropdown();
+                            });
+
+                            // handle apply button
+                            picker.on('button:apply', () => {
+                                this.closeDropdown();
+                            });
+
+                        }
+                    });
+                },
+                closeDropdown() {
+                    const dropdownButton = document.querySelector('[data-bs-toggle="dropdown"]');
+                    const bsDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownButton);
+                    bsDropdown.hide();
+                },
+                setTimeRange(selectedTime) {
+                    this.listTime.forEach(time => {
+                        if (time.time === selectedTime) {
+                            time.isActive = true;
+                        } else {
+                            time.isActive = false;
+                        }
+                    });
+                    this.startDate = Date.now() - selectedTime * 60 * 1000;
+                    this.endDate = Date.now();
+                    this.fetchLogs();
+                    this.closeDropdown();
+                },
+                initSearchTimeRange() {
+                    // 12 hours
+                    const now = new Date();
+                    const start = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+                    this.startDate = start.getTime();
+                    this.endDate = now.getTime();
+                    this.fetchLogs();
+                },
+                toMicroseconds(timestamp) {
+                    return timestamp * 1000;
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+
+</html>

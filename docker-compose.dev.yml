@@ -1,0 +1,25 @@
+networks:
+
+volumes:
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - env_file=.env
+
+  mongodb: 
+
+  redis:
+
+  otelc: 
+
+  jaeger:
+
+  loki:
+
+  gafana:

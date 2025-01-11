@@ -1,8 +1,9 @@
 package utils
 
 import (
+	"vongga-api/internal/domain"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/prohmpiriya_phonumnuaisuk/vongga-platform/vongga-backend/domain"
 )
 
 // ErrorResponse represents the structure of error responses
