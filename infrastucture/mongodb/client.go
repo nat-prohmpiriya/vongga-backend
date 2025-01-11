@@ -1,4 +1,4 @@
-package monggo
+package mongodb
 
 import (
 	"context"
@@ -6,9 +6,11 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"vongga-api/config"
 )
 
-func InitMongo(config *Config) (*mongo.Database, error) {
+func InitMongo(config *config.Config) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

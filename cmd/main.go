@@ -6,23 +6,25 @@ import (
 	"time"
 
 	"vongga-api/config"
-	"vongga-api/delivery/auth"
-	"vongga-api/delivery/http/handler"
-	"vongga-api/delivery/http/middleware"
-	"vongga-api/delivery/websocket"
 	_ "vongga-api/docs" // swagger docs
-	"vongga-api/repository"
-	"vongga-api/usecase"
+	"vongga-api/internal/auth"
+	handler "vongga-api/internal/handler/http"
+	"vongga-api/internal/handler/http/middleware"
+	"vongga-api/internal/handler/websocket"
+	"vongga-api/internal/repository"
+	"vongga-api/internal/usecase"
 	"vongga-api/utils"
 
-	"github.com/gofiber/adaptor/v2" // เพิ่มตรงนี้
+	"vongga-api/infrastucture/firebase"
+	"vongga-api/infrastucture/mongodb"
+	"vongga-api/infrastucture/redis"
+
+	// เพิ่มตรงนี้
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/redis/go-redis/v9"
 )
 
 // @title Vongga Backend API
@@ -49,7 +51,7 @@ func main() {
 	cfg := config.LoadConfig()
 
 	// Initialize Firebase Admin
-	firebaseApp, err := config.InitFirebase(cfg)
+	firebaseApp, err := firebase.InitFirebase(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,17 +65,16 @@ func main() {
 	}
 
 	// Initialize MongoDB
-	db, err := config.InitMongo(cfg)
+	db, err := mongodb.InitMongo(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Initialize Redis client
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisURI,
-		Password: cfg.RedisPassword,
-		DB:       0,
-	})
+	redisClient, err := redis.InitRedis(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Test Redis connection
 	_, err = redisClient.Ping(context.Background()).Result()
@@ -158,12 +159,10 @@ func main() {
 
 	// Middleware
 	app.Use(utils.RequestLogger())
-	app.Use(middleware.MetricsMiddleware())
 
 	// Routes
 	api := app.Group("/api")
 
-	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 	// WebSocket endpoint (outside protected routes)
 	websocket.NewWebSocketHandler(api, chatUseCase, systemAuthAdapter)
 
