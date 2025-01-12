@@ -7,10 +7,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"vongga-api/config"
+	"vongga_api/config"
 )
 
-func InitMongo(config *config.Config) (*mongo.Database, error) {
+func NewMongoDBClient(config *config.Config) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

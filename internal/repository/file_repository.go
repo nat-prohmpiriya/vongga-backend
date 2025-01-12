@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"vongga-api/internal/domain"
-	"vongga-api/utils"
+	"vongga_api/internal/domain"
+	"vongga_api/utils"
 
 	"cloud.google.com/go/storage"
 	firebase "firebase.google.com/go/v4"

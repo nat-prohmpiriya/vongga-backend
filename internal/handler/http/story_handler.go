@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"vongga-api/internal/domain"
-	"vongga-api/utils"
+	"vongga_api/internal/domain"
+	"vongga_api/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/trace"
@@ -134,7 +134,7 @@ func (h *StoryHandler) FindStoryByID(c *fiber.Ctx) error {
 }
 
 func (h *StoryHandler) FindUserStories(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.Context(), "StoryHandler.FindUserStories") 
+	ctx, span := h.tracer.Start(c.Context(), "StoryHandler.FindUserStories")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 

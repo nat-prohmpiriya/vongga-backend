@@ -6,8 +6,8 @@ import (
 
 	"fmt"
 
-	"vongga-api/internal/domain"
-	"vongga-api/utils"
+	"vongga_api/internal/domain"
+	"vongga_api/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -31,11 +31,11 @@ const (
 type WebSocketHandler struct {
 	chatUsecase domain.ChatUsecase
 	hub         *Hub
-	authClient  domain.AuthClient
+	authClient  domain.AuthUseCase
 	tracer      trace.Tracer
 }
 
-func NewWebSocketHandler(router fiber.Router, chatUsecase domain.ChatUsecase, authClient domain.AuthClient, tracer trace.Tracer) {
+func NewWebSocketHandler(router fiber.Router, chatUsecase domain.ChatUsecase, authClient domain.AuthUseCase, tracer trace.Tracer) {
 	handler := &WebSocketHandler{
 		chatUsecase: chatUsecase,
 		hub:         NewHub(chatUsecase, tracer),
@@ -92,7 +92,7 @@ func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
 	}
 
 	// Verify token
-	claims, err := h.authClient.VerifyToken(token)
+	claims, err := h.authClient.VerifyToken(ctx, token)
 	if err != nil {
 		logger.Output(nil, err)
 		ws.WriteControl(

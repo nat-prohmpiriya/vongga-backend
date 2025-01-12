@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"vongga-api/internal/domain"
-	"vongga-api/utils"
+	"vongga_api/internal/domain"
+	"vongga_api/utils"
 
 	"github.com/gofiber/websocket/v2"
 	"go.opentelemetry.io/otel/trace"

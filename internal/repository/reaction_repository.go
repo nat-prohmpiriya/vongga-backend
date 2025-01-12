@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"vongga-api/internal/domain"
-	"vongga-api/utils"
+	"vongga_api/internal/domain"
+	"vongga_api/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -63,7 +63,7 @@ func (r *reactionRepository) Update(ctx context.Context, reaction *domain.Reacti
 		logger.Output("1", err)
 		return err
 	}
-	
+
 	logger.Output(reaction, nil)
 	return nil
 }
@@ -87,7 +87,7 @@ func (r *reactionRepository) Delete(ctx context.Context, id primitive.ObjectID) 
 		logger.Output("1", err)
 		return err
 	}
-	
+
 	logger.Output(map[string]interface{}{"id": id}, nil)
 	return nil
 }

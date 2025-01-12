@@ -6,10 +6,10 @@ import (
 	firebase "firebase.google.com/go/v4"
 	"google.golang.org/api/option"
 
-	"vongga-api/config"
+	"vongga_api/config"
 )
 
-func InitFirebase(config *config.Config) (*firebase.App, error) {
+func NewFirebaseProvider(config *config.Config) (*firebase.App, error) {
 	opt := option.WithCredentialsFile(config.FirebaseCredentialsPath)
 	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {

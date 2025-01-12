@@ -3,7 +3,7 @@ package middleware
 import (
 	"fmt"
 	"time"
-	"vongga-api/utils"
+	"vongga_api/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel"

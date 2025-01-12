@@ -2,12 +2,12 @@ package adapter
 
 import (
 	"context"
-	"vongga-api/config"
+	"vongga_api/config"
 
 	"github.com/redis/go-redis/v9"
 )
 
-func InitRedis(config *config.Config) (*redis.Client, error) {
+func NewRedisClient(config *config.Config) (*redis.Client, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     config.RedisURI,
 		Password: config.RedisPassword,

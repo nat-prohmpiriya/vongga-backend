@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"vongga-api/internal/domain"
+	"vongga_api/internal/domain"
 
 	"github.com/gofiber/fiber/v2"
 )

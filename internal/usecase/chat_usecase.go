@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"vongga-api/internal/domain"
-	"vongga-api/utils"
+	"vongga_api/internal/domain"
+	"vongga_api/utils"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.opentelemetry.io/otel/trace"
@@ -16,7 +16,7 @@ type chatUsecase struct {
 	chatRepo            domain.ChatRepository
 	userRepo            domain.UserRepository
 	notificationUsecase domain.NotificationUseCase
-	tracer             trace.Tracer
+	tracer              trace.Tracer
 }
 
 func NewChatUsecase(
@@ -29,7 +29,7 @@ func NewChatUsecase(
 		chatRepo:            chatRepo,
 		userRepo:            userRepo,
 		notificationUsecase: notificationUsecase,
-		tracer:             tracer,
+		tracer:              tracer,
 	}
 }
 

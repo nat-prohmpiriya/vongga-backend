@@ -1,24 +1,18 @@
 package main
 
 import (
-	"context"
 	"log"
 	"time"
 
-	"vongga-api/config"
-	_ "vongga-api/docs" // swagger docs
-	"vongga-api/internal/auth"
-	handler "vongga-api/internal/handler/http"
-	"vongga-api/internal/handler/http/middleware"
-	"vongga-api/internal/handler/websocket"
-	"vongga-api/internal/repository"
-	"vongga-api/internal/usecase"
-	"vongga-api/utils"
-
-	"vongga-api/infrastucture/firebase"
-	"vongga-api/infrastucture/mongodb"
-	"vongga-api/infrastucture/otel"
-	"vongga-api/infrastucture/redis"
+	"vongga_api/config"
+	"vongga_api/internal/adapter/mongodb"
+	"vongga_api/internal/adapter/otel"
+	"vongga_api/internal/adapter/redis"
+	handler "vongga_api/internal/handler/http"
+	"vongga_api/internal/handler/websocket"
+	"vongga_api/internal/repository"
+	"vongga_api/internal/usecase"
+	"vongga_api/utils"
 
 	// เพิ่มตรงนี้
 	"github.com/gofiber/fiber/v2"
@@ -28,73 +22,24 @@ import (
 	"github.com/gofiber/swagger"
 )
 
-// @title Vongga Backend API
-// @version 1.0
-// @description This is the Vongga backend server API documentation
-// @termsOfService http://swagger.io/terms/
-
-// @contact.name API Support
-// @contact.email your.email@vongga.com
-
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @host localhost:8080
-// @BasePath /api
-// @schemes http https
-
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	// Load configuration
 	cfg := config.LoadConfig()
 
-	// Initialize Firebase Admin
-	firebaseApp, err := firebase.InitFirebase(cfg)
+	// Connect External Service
+	db, err := mongodb.NewMongoDBClient(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// Create auth adapter
-	systemAuthAdapter := auth.NewSystemAuthAdapter(cfg.JWTSecret)
-
-	authClient, err := firebaseApp.Auth(context.Background())
+	redisClient, err := redis.NewRedisClient(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	tracerProvider, err := otel.TraceProvider()
+	authClient, err := firebase.NewFirebaseClient(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		if err := tracerProvider.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
-
-	tracer := tracerProvider.Tracer("vongga-api")
-
-	// Initialize MongoDB
-	db, err := mongodb.InitMongo(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Initialize Redis client
-	redisClient, err := redis.InitRedis(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Test Redis connection
-	_, err = redisClient.Ping(context.Background()).Result()
-	if err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
-	}
-	log.Println("Connected to Redis successfully")
+	tracer, systemAuthAdapter := otel.NewTracer(cfg)
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db, redisClient, tracer)

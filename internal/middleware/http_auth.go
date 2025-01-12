@@ -6,8 +6,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/trace"
 
-	"vongga-api/internal/domain"
-	"vongga-api/utils"
+	"vongga_api/internal/domain"
+	"vongga_api/utils"
 )
 
 func HttpAuthMiddleware(authUseCase domain.AuthUseCase, tracer trace.Tracer) fiber.Handler {

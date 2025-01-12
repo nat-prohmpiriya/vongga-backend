@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"vongga-api/internal/domain"
-	"vongga-api/utils"
+	"vongga_api/internal/domain"
+	"vongga_api/utils"
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/golang-jwt/jwt/v5"
