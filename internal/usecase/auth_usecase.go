@@ -58,7 +58,7 @@ func (u *authUseCase) VerifyTokenFirebase(ctx context.Context, firebaseToken str
 		return nil, nil, fmt.Errorf("invalid firebase token: %v", err)
 	}
 
-	// Get or create user
+	// Find or create user
 	user, err := u.userRepo.FindByFirebaseUID(token.UID)
 	if err != nil {
 		logger.LogOutput(nil, fmt.Errorf("error finding user: %v", err))
@@ -66,8 +66,8 @@ func (u *authUseCase) VerifyTokenFirebase(ctx context.Context, firebaseToken str
 	}
 
 	if user == nil {
-		// Get user info from Firebase
-		firebaseUser, err := u.authClient.GetUser(ctx, token.UID)
+		// Find user info from Firebase
+		firebaseUser, err := u.authClient.FindUser(ctx, token.UID)
 		if err != nil {
 			logger.LogOutput(nil, fmt.Errorf("error getting firebase user: %v", err))
 			return nil, nil, fmt.Errorf("error getting firebase user: %v", err)
@@ -87,7 +87,7 @@ func (u *authUseCase) VerifyTokenFirebase(ctx context.Context, firebaseToken str
 			return nil, nil, fmt.Errorf("error creating user: %v", err)
 		}
 
-		// Get the created user from database to get the generated ID
+		// Find the created user from database to get the generated ID
 		user, err = u.userRepo.FindByFirebaseUID(token.UID)
 		if err != nil {
 			logger.LogOutput(nil, fmt.Errorf("error getting created user: %v", err))

@@ -22,8 +22,8 @@ func NewFollowHandler(router fiber.Router, fu domain.FollowUseCase) *FollowHandl
 
 	router.Post("/:userId", handler.Follow)
 	router.Delete("/:userId", handler.Unfollow)
-	router.Get("/followers", handler.GetFollowers)
-	router.Get("/following", handler.GetFollowing)
+	router.Find("/followers", handler.FindFollowers)
+	router.Find("/following", handler.FindFollowing)
 	router.Post("/block/:userId", handler.Block)
 	router.Delete("/block/:userId", handler.Unblock)
 
@@ -34,7 +34,7 @@ func NewFollowHandler(router fiber.Router, fu domain.FollowUseCase) *FollowHandl
 func (h *FollowHandler) Follow(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.Follow")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -75,7 +75,7 @@ func (h *FollowHandler) Follow(c *fiber.Ctx) error {
 func (h *FollowHandler) Unfollow(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.Unfollow")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -173,7 +173,7 @@ func (h *FollowHandler) Block(c *fiber.Ctx) error {
 func (h *FollowHandler) Unblock(c *fiber.Ctx) error {
 	logger := utils.NewLogger("followHandler.Unblock")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -210,11 +210,11 @@ func (h *FollowHandler) Unblock(c *fiber.Ctx) error {
 	})
 }
 
-// GetFollowers handles getting a user's followers
-func (h *FollowHandler) GetFollowers(c *fiber.Ctx) error {
-	logger := utils.NewLogger("followHandler.GetFollowers")
+// FindFollowers handles getting a user's followers
+func (h *FollowHandler) FindFollowers(c *fiber.Ctx) error {
+	logger := utils.NewLogger("followHandler.FindFollowers")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -231,7 +231,7 @@ func (h *FollowHandler) GetFollowers(c *fiber.Ctx) error {
 		"offset": offset,
 	})
 
-	followers, err := h.followUseCase.GetFollowers(userID, limit, offset)
+	followers, err := h.followUseCase.FindFollowers(userID, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
@@ -245,11 +245,11 @@ func (h *FollowHandler) GetFollowers(c *fiber.Ctx) error {
 	})
 }
 
-// GetFollowing handles getting users that a user is following
-func (h *FollowHandler) GetFollowing(c *fiber.Ctx) error {
-	logger := utils.NewLogger("followHandler.GetFollowing")
+// FindFollowing handles getting users that a user is following
+func (h *FollowHandler) FindFollowing(c *fiber.Ctx) error {
+	logger := utils.NewLogger("followHandler.FindFollowing")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -266,7 +266,7 @@ func (h *FollowHandler) GetFollowing(c *fiber.Ctx) error {
 		"offset": offset,
 	})
 
-	following, err := h.followUseCase.GetFollowing(userID, limit, offset)
+	following, err := h.followUseCase.FindFollowing(userID, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{

@@ -22,8 +22,8 @@ func NewCommentHandler(router fiber.Router, cu domain.CommentUseCase, uu domain.
 	router.Post("/posts/:postId", handler.CreateComment)
 	router.Put("/:id", handler.UpdateComment)
 	router.Delete("/:id", handler.DeleteComment)
-	router.Get("/posts/:postId", handler.ListComments)
-	router.Get("/:id", handler.GetComment)
+	router.Find("/posts/:postId", handler.FindManyComments)
+	router.Find("/:id", handler.FindComment)
 
 	return handler
 }
@@ -53,8 +53,8 @@ func (h *CommentHandler) CreateComment(c *fiber.Ctx) error {
 		})
 	}
 
-	// Get userID from auth context
-	userID, err := utils.GetUserIDFromContext(c)
+	// Find userID from auth context
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -159,8 +159,8 @@ func (h *CommentHandler) DeleteComment(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-func (h *CommentHandler) GetComment(c *fiber.Ctx) error {
-	logger := utils.NewLogger("CommentHandler.GetComment")
+func (h *CommentHandler) FindComment(c *fiber.Ctx) error {
+	logger := utils.NewLogger("CommentHandler.FindComment")
 
 	commentID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
@@ -171,7 +171,7 @@ func (h *CommentHandler) GetComment(c *fiber.Ctx) error {
 	}
 	logger.LogInput(commentID)
 
-	comment, err := h.commentUseCase.GetComment(commentID)
+	comment, err := h.commentUseCase.FindComment(commentID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -183,8 +183,8 @@ func (h *CommentHandler) GetComment(c *fiber.Ctx) error {
 	return c.JSON(comment)
 }
 
-func (h *CommentHandler) ListComments(c *fiber.Ctx) error {
-	logger := utils.NewLogger("CommentHandler.ListComments")
+func (h *CommentHandler) FindManyComments(c *fiber.Ctx) error {
+	logger := utils.NewLogger("CommentHandler.FindManyComments")
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("postId"))
 	if err != nil {
@@ -203,7 +203,7 @@ func (h *CommentHandler) ListComments(c *fiber.Ctx) error {
 		"offset": offset,
 	}
 
-	comments, err := h.commentUseCase.ListComments(postID, limit, offset)
+	comments, err := h.commentUseCase.FindManyComments(postID, limit, offset)
 	if err != nil {
 		logger.LogOutput(input, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -216,7 +216,7 @@ func (h *CommentHandler) ListComments(c *fiber.Ctx) error {
 
 	// Fetch user information for each comment
 	for _, comment := range comments {
-		user, err := h.userUseCase.GetUserByID(comment.UserID.Hex())
+		user, err := h.userUseCase.FindUserByID(comment.UserID.Hex())
 		if err != nil {
 			logger.LogOutput(input, err)
 			continue

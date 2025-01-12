@@ -51,8 +51,8 @@ func (n *notificationUseCase) CreateNotification(recipientID, senderID, refID pr
 	return notification, nil
 }
 
-func (n *notificationUseCase) GetNotification(notificationID primitive.ObjectID) (*domain.NotificationResponse, error) {
-	logger := utils.NewLogger("NotificationUseCase.GetNotification")
+func (n *notificationUseCase) FindNotification(notificationID primitive.ObjectID) (*domain.NotificationResponse, error) {
+	logger := utils.NewLogger("NotificationUseCase.FindNotification")
 	logger.LogInput(notificationID)
 
 	notification, err := n.notificationRepo.FindByID(notificationID)
@@ -61,7 +61,7 @@ func (n *notificationUseCase) GetNotification(notificationID primitive.ObjectID)
 		return nil, err
 	}
 
-	// Get sender information
+	// Find sender information
 	sender, err := n.userRepo.FindByID(notification.SenderID.Hex())
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -82,8 +82,8 @@ func (n *notificationUseCase) GetNotification(notificationID primitive.ObjectID)
 	return response, nil
 }
 
-func (n *notificationUseCase) ListNotifications(recipientID primitive.ObjectID, limit, offset int) ([]domain.NotificationResponse, error) {
-	logger := utils.NewLogger("NotificationUseCase.ListNotifications")
+func (n *notificationUseCase) FindManyNotifications(recipientID primitive.ObjectID, limit, offset int) ([]domain.NotificationResponse, error) {
+	logger := utils.NewLogger("NotificationUseCase.FindManyNotifications")
 	input := map[string]interface{}{
 		"recipientID": recipientID.Hex(),
 		"limit":       limit,
@@ -172,8 +172,8 @@ func (n *notificationUseCase) DeleteNotification(notificationID primitive.Object
 	return nil
 }
 
-func (n *notificationUseCase) GetUnreadCount(recipientID primitive.ObjectID) (int64, error) {
-	logger := utils.NewLogger("NotificationUseCase.GetUnreadCount")
+func (n *notificationUseCase) FindUnreadCount(recipientID primitive.ObjectID) (int64, error) {
+	logger := utils.NewLogger("NotificationUseCase.FindUnreadCount")
 	input := map[string]interface{}{
 		"recipientID": recipientID.Hex(),
 	}

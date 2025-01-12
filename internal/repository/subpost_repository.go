@@ -102,7 +102,7 @@ func (r *subPostRepository) Delete(id primitive.ObjectID) error {
 	logger := utils.NewLogger("SubPostRepository.Delete")
 	logger.LogInput(id)
 
-	// Get subpost first to get parentID for cache invalidation
+	// Find subpost first to get parentID for cache invalidation
 	var subPost domain.SubPost
 	err := r.collection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&subPost)
 	if err != nil {
@@ -329,7 +329,7 @@ func (r *subPostRepository) DeleteByParentID(parentID primitive.ObjectID) error 
 	logger := utils.NewLogger("SubPostRepository.DeleteByParentID")
 	logger.LogInput(parentID)
 
-	// Get all subposts first to invalidate their individual caches
+	// Find all subposts first to invalidate their individual caches
 	var subPosts []domain.SubPost
 	cursor, err := r.collection.Find(context.Background(), bson.M{"parentId": parentID})
 	if err != nil {

@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -76,38 +77,38 @@ const (
 
 // Repository interface
 type PostRepository interface {
-	Create(post *Post) error
-	Update(post *Post) error
-	Delete(id primitive.ObjectID) error
-	FindByID(id primitive.ObjectID) (*Post, error)
-	FindByUserID(userID primitive.ObjectID, limit, offset int, hasMedia bool, mediaType string) ([]Post, error)
+	Create(ctx context.Context, post *Post) error
+	Update(ctx context.Context, post *Post) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+	FindByID(ctx context.Context, id primitive.ObjectID) (*Post, error)
+	FindByUserID(ctx context.Context, userID primitive.ObjectID, limit, offset int, hasMedia bool, mediaType string) ([]Post, error)
 }
 
 type SubPostRepository interface {
-	Create(subPost *SubPost) error
-	Update(subPost *SubPost) error
-	Delete(id primitive.ObjectID) error
-	FindByID(id primitive.ObjectID) (*SubPost, error)
-	FindByParentID(parentID primitive.ObjectID, limit, offset int) ([]SubPost, error)
-	UpdateOrder(parentID primitive.ObjectID, orders map[primitive.ObjectID]int) error
+	Create(ctx context.Context, subPost *SubPost) error
+	Update(ctx context.Context, subPost *SubPost) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+	FindByID(ctx context.Context, id primitive.ObjectID) (*SubPost, error)
+	FindByParentID(ctx context.Context, parentID primitive.ObjectID, limit, offset int) ([]SubPost, error)
+	UpdateOrder(ctx context.Context, parentID primitive.ObjectID, orders map[primitive.ObjectID]int) error
 }
 
 // UseCase interface
 type PostUseCase interface {
-	CreatePost(userID primitive.ObjectID, content string, media []Media, tags []string, location *Location, visibility string, subPosts []SubPostInput) (*Post, error)
-	UpdatePost(postID primitive.ObjectID, content string, media []Media, tags []string, location *Location, visibility string) (*Post, error)
-	DeletePost(postID primitive.ObjectID) error
-	GetPost(postID primitive.ObjectID, includeSubPosts bool) (*PostWithDetails, error)
-	ListPosts(userID primitive.ObjectID, limit, offset int, includeSubPosts bool, hasMedia bool, mediaType string) ([]PostWithDetails, error)
+	CreatePost(ctx context.Context, userID primitive.ObjectID, content string, media []Media, tags []string, location *Location, visibility string, subPosts []SubPostInput) (*Post, error)
+	UpdatePost(ctx context.Context, postID primitive.ObjectID, content string, media []Media, tags []string, location *Location, visibility string) (*Post, error)
+	DeletePost(ctx context.Context, postID primitive.ObjectID) error
+	FindPost(ctx context.Context, postID primitive.ObjectID, includeSubPosts bool) (*PostWithDetails, error)
+	FindManyPosts(ctx context.Context, userID primitive.ObjectID, limit, offset int, includeSubPosts bool, hasMedia bool, mediaType string) ([]PostWithDetails, error)
 }
 
 type SubPostUseCase interface {
-	CreateSubPost(parentID, userID primitive.ObjectID, content string, media []Media, order int) (*SubPost, error)
-	UpdateSubPost(subPostID primitive.ObjectID, content string, media []Media) (*SubPost, error)
-	DeleteSubPost(subPostID primitive.ObjectID) error
-	GetSubPost(subPostID primitive.ObjectID) (*SubPost, error)
-	ListSubPosts(parentID primitive.ObjectID, limit, offset int) ([]SubPost, error)
-	ReorderSubPosts(parentID primitive.ObjectID, orders map[primitive.ObjectID]int) error
+	CreateSubPost(ctx context.Context, parentID, userID primitive.ObjectID, content string, media []Media, order int) (*SubPost, error)
+	UpdateSubPost(ctx context.Context, subPostID primitive.ObjectID, content string, media []Media) (*SubPost, error)
+	DeleteSubPost(ctx context.Context, subPostID primitive.ObjectID) error
+	FindSubPost(ctx context.Context, subPostID primitive.ObjectID) (*SubPost, error)
+	FindManySubPosts(ctx context.Context, parentID primitive.ObjectID, limit, offset int) ([]SubPost, error)
+	ReorderSubPosts(ctx context.Context, parentID primitive.ObjectID, orders map[primitive.ObjectID]int) error
 }
 
 // PostUser represents limited user data for post owner

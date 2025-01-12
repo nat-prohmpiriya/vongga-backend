@@ -23,8 +23,8 @@ func NewFriendshipHandler(router fiber.Router, fu domain.FriendshipUseCase) *Fri
 	router.Post("/accept/:userId", handler.AcceptFriendRequest)
 	router.Post("/reject/:userId", handler.RejectFriendRequest)
 	router.Delete("/:userId", handler.RemoveFriend)
-	router.Get("/", handler.ListFriends)
-	router.Get("/requests", handler.ListFriendRequests)
+	router.Find("/", handler.FindManyFriends)
+	router.Find("/requests", handler.FindManyFriendRequests)
 
 	return handler
 }
@@ -32,7 +32,7 @@ func NewFriendshipHandler(router fiber.Router, fu domain.FriendshipUseCase) *Fri
 func (h *FriendshipHandler) SendFriendRequest(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.SendFriendRequest")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -64,7 +64,7 @@ func (h *FriendshipHandler) SendFriendRequest(c *fiber.Ctx) error {
 func (h *FriendshipHandler) AcceptFriendRequest(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.AcceptFriendRequest")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -91,7 +91,7 @@ func (h *FriendshipHandler) AcceptFriendRequest(c *fiber.Ctx) error {
 func (h *FriendshipHandler) RejectFriendRequest(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.RejectFriendRequest")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -118,7 +118,7 @@ func (h *FriendshipHandler) RejectFriendRequest(c *fiber.Ctx) error {
 func (h *FriendshipHandler) RemoveFriend(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FriendshipHandler.RemoveFriend")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -142,10 +142,10 @@ func (h *FriendshipHandler) RemoveFriend(c *fiber.Ctx) error {
 	return utils.SendSuccess(c, "Friend removed successfully")
 }
 
-func (h *FriendshipHandler) ListFriends(c *fiber.Ctx) error {
-	logger := utils.NewLogger("FriendshipHandler.ListFriends")
+func (h *FriendshipHandler) FindManyFriends(c *fiber.Ctx) error {
+	logger := utils.NewLogger("FriendshipHandler.FindManyFriends")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -153,10 +153,10 @@ func (h *FriendshipHandler) ListFriends(c *fiber.Ctx) error {
 		})
 	}
 
-	limit, offset := utils.GetPaginationParams(c)
+	limit, offset := utils.FindPaginationParams(c)
 	logger.LogInput(userID, limit, offset)
 
-	friends, err := h.friendshipUseCase.ListFriends(userID, limit, offset)
+	friends, err := h.friendshipUseCase.FindManyFriends(userID, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return utils.HandleError(c, err)
@@ -166,10 +166,10 @@ func (h *FriendshipHandler) ListFriends(c *fiber.Ctx) error {
 	return c.JSON(friends)
 }
 
-func (h *FriendshipHandler) ListFriendRequests(c *fiber.Ctx) error {
-	logger := utils.NewLogger("FriendshipHandler.ListFriendRequests")
+func (h *FriendshipHandler) FindManyFriendRequests(c *fiber.Ctx) error {
+	logger := utils.NewLogger("FriendshipHandler.FindManyFriendRequests")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -177,10 +177,10 @@ func (h *FriendshipHandler) ListFriendRequests(c *fiber.Ctx) error {
 		})
 	}
 
-	limit, offset := utils.GetPaginationParams(c)
+	limit, offset := utils.FindPaginationParams(c)
 	logger.LogInput(userID, limit, offset)
 
-	requests, err := h.friendshipUseCase.ListFriendRequests(userID, limit, offset)
+	requests, err := h.friendshipUseCase.FindManyFriendRequests(userID, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return utils.HandleError(c, err)

@@ -2,6 +2,8 @@ package domain
 
 import (
 	"time"
+
+	"context"
 )
 
 type ChatRoom struct {
@@ -43,63 +45,62 @@ type ChatNotification struct {
 
 type ChatRepository interface {
 	// Room operations
-	SaveRoom(room *ChatRoom) error
-	GetRoom(roomID string) (*ChatRoom, error)
-	GetRoomsByUser(userID string) ([]*ChatRoom, error)
-	UpdateRoom(room *ChatRoom) error
-	DeleteRoom(roomID string) error
+	CreateRoom(ctx context.Context, croom *ChatRoom) error
+	FindRoom(ctx context.Context, roomID string) (*ChatRoom, error)
+	FindRoomsByUser(ctx context.Context, userID string) ([]*ChatRoom, error)
+	UpdateRoom(ctx context.Context, room *ChatRoom) error
+	DeleteRoom(ctx context.Context, roomID string) error
 
 	// Message operations
-	SaveMessage(message *ChatMessage) error
-	GetMessage(messageID string) (*ChatMessage, error)
-	GetRoomMessages(roomID string, limit int64, offset int64) ([]*ChatMessage, error)
-	DeleteMessage(messageID string) error
-	MarkMessageAsRead(messageID string, userID string) error
-	GetUnreadMessages(userID string, roomID string) ([]*ChatMessage, error)
+	CreateMessage(ctx context.Context, message *ChatMessage) error
+	FindMessage(ctx context.Context, messageID string) (*ChatMessage, error)
+	FindRoomMessages(ctx context.Context, roomID string, limit int64, offset int64) ([]*ChatMessage, error)
+	DeleteMessage(ctx context.Context, messageID string) error
+	MarkMessageAsRead(ctx context.Context, messageID string, userID string) error
+	FindUnreadMessages(ctx context.Context, userID string, roomID string) ([]*ChatMessage, error)
 
 	// Notification operations
-	CreateNotification(notification *ChatNotification) error
-	SaveNotification(notification *ChatNotification) error
-	GetUserNotifications(userID string) ([]*ChatNotification, error)
-	GetNotification(notificationID string) (*ChatNotification, error)
-	DeleteNotification(notificationID string) error
-	DeleteRoomNotifications(roomID string) error
-	MarkNotificationAsRead(notificationID string) error
+	CreateNotification(ctx context.Context, notification *ChatNotification) error
+	FindUserNotifications(ctx context.Context, userID string) ([]*ChatNotification, error)
+	FindNotification(ctx context.Context, notificationID string) (*ChatNotification, error)
+	DeleteNotification(ctx context.Context, notificationID string) error
+	DeleteRoomNotifications(ctx context.Context, roomID string) error
+	MarkNotificationAsRead(ctx context.Context, notificationID string) error
 
 	// User status operations
-	UpdateUserStatus(status *ChatUserStatus) error
-	GetUserStatus(userID string) (*ChatUserStatus, error)
-	GetOnlineUsers(userIDs []string) ([]*ChatUserStatus, error)
+	UpdateUserStatus(ctx context.Context, status *ChatUserStatus) error
+	FindUserStatus(ctx context.Context, userID string) (*ChatUserStatus, error)
+	FindOnlineUsers(ctx context.Context, userIDs []string) ([]*ChatUserStatus, error)
 }
 
 type ChatUsecase interface {
 	// Room operations
-	CreatePrivateChat(userID1, userID2 string) (*ChatRoom, error)
-	CreateGroupChat(name string, memberIDs []string) (*ChatRoom, error)
-	GetUserChats(userID string) ([]*ChatRoom, error)
-	GetRoom(roomID string) (*ChatRoom, error)
-	GetRoomsByUserID(userID string) ([]*ChatRoom, error)
-	AddMemberToGroup(roomID, userID string) error
-	RemoveMemberFromGroup(roomID, userID string) error
-	UpdateRoom(room *ChatRoom) error
-	DeleteRoom(roomID string) error
+	CreatePrivateChat(ctx context.Context, userID1, userID2 string) (*ChatRoom, error)
+	CreateGroupChat(ctx context.Context, name string, memberIDs []string) (*ChatRoom, error)
+	FindUserChats(ctx context.Context, userID string) ([]*ChatRoom, error)
+	FindRoom(ctx context.Context, roomID string) (*ChatRoom, error)
+	FindRoomsByUserID(ctx context.Context, userID string) ([]*ChatRoom, error)
+	AddMemberToGroup(ctx context.Context, roomID, userID string) error
+	RemoveMemberFromGroup(ctx context.Context, roomID, userID string) error
+	UpdateRoom(ctx context.Context, room *ChatRoom) error
+	DeleteRoom(ctx context.Context, roomID string) error
 
 	// Message operations
-	SendMessage(roomID, senderID, messageType, content string) (*ChatMessage, error)
-	SendFileMessage(roomID, senderID string, fileType string, fileSize int64, fileURL string) (*ChatMessage, error)
-	GetChatMessages(roomID string, limit, offset int) ([]*ChatMessage, error)
-	MarkMessageRead(messageID, userID string) error
-	GetUnreadMessages(userID string, roomID string) ([]*ChatMessage, error)
-	DeleteMessage(messageID string) error
+	SendMessage(ctx context.Context, roomID, senderID, messageType, content string) (*ChatMessage, error)
+	SendFileMessage(ctx context.Context, roomID, senderID string, fileType string, fileSize int64, fileURL string) (*ChatMessage, error)
+	FindChatMessages(ctx context.Context, roomID string, limit, offset int) ([]*ChatMessage, error)
+	MarkMessageRead(ctx context.Context, messageID, userID string) error
+	FindUnreadMessages(ctx context.Context, userID string, roomID string) ([]*ChatMessage, error)
+	DeleteMessage(ctx context.Context, messageID string) error
 
 	// User status operations
-	UpdateUserOnlineStatus(userID string, isOnline bool) error
-	GetUserOnlineStatus(userID string) (*ChatUserStatus, error)
-	GetOnlineUsers(userIDs []string) ([]*ChatUserStatus, error)
+	UpdateUserOnlineStatus(ctx context.Context, userID string, isOnline bool) error
+	FindUserOnlineStatus(ctx context.Context, userID string) (*ChatUserStatus, error)
+	FindOnlineUsers(ctx context.Context, userIDs []string) ([]*ChatUserStatus, error)
 
 	// Notification operations
-	SendNotification(notification *ChatNotification) error
-	GetUserNotifications(userID string) ([]*ChatNotification, error)
-	MarkNotificationRead(notificationID string) error
-	DeleteNotification(notificationID string) error
+	SendNotification(ctx context.Context, notification *ChatNotification) error
+	FindUserNotifications(ctx context.Context, userID string) ([]*ChatNotification, error)
+	MarkNotificationRead(ctx context.Context, notificationID string) error
+	DeleteNotification(ctx context.Context, notificationID string) error
 }

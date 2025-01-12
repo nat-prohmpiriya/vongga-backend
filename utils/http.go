@@ -6,8 +6,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// GetQueryInt gets an integer value from query parameters with a default value
-func GetQueryInt(c *fiber.Ctx, key string, defaultValue int) int {
+// FindQueryInt gets an integer value from query parameters with a default value
+func FindQueryInt(c *fiber.Ctx, key string, defaultValue int) int {
 	value := c.Query(key)
 	if value == "" {
 		return defaultValue

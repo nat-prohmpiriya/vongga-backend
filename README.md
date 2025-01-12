@@ -70,7 +70,7 @@ The project follows Clean Architecture with the following layers:
   - Returns user data and tokens
 
 - **POST** `/api/auth/refresh`
-  - Get new access token using refresh token
+  - Find new access token using refresh token
   - Returns new token pair
 
 - **POST** `/api/auth/logout`
@@ -80,14 +80,14 @@ The project follows Clean Architecture with the following layers:
 ### Users
 
 - **GET** `/api/users/profile`
-  - Get user profile
+  - Find user profile
   - Requires authentication
 
 - **POST** `/api/users`
   - Create or update user
   - Requires authentication
 
-## Getting Started
+## Findting Started
 
 1. **Prerequisites**:
    - Go 1.21 or higher

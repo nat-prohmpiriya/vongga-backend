@@ -43,7 +43,7 @@ func NewWebSocketHandler(router fiber.Router, chatUsecase domain.ChatUsecase, au
 	go handler.hub.Run()
 
 	// WebSocket endpoint with custom middleware for WebSocket authentication
-	router.Get("/ws", websocket.New(handler.handleWebSocket, websocket.Config{
+	router.Find("/ws", websocket.New(handler.handleWebSocket, websocket.Config{
 		HandshakeTimeout:  10 * time.Second,
 		ReadBufferSize:    1024,
 		WriteBufferSize:   1024,
@@ -69,7 +69,7 @@ func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
 		}
 	}()
 
-	// Get token from query parameter
+	// Find token from query parameter
 	token := ws.Query("token")
 	logger.LogInput(token)
 	if token == "" {

@@ -114,7 +114,7 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Get new access token using refresh token",
+                "description": "Find new access token using refresh token",
                 "consumes": [
                     "application/json"
                 ],

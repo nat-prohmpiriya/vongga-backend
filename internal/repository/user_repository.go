@@ -14,23 +14,27 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type userRepository struct {
 	collection *mongo.Collection
 	rdb        *redis.Client
+	tracer     trace.Tracer
 }
 
-func NewUserRepository(db *mongo.Database, rdb *redis.Client) domain.UserRepository {
+func NewUserRepository(db *mongo.Database, rdb *redis.Client, trace trace.Tracer) domain.UserRepository {
 	return &userRepository{
 		collection: db.Collection("users"),
 		rdb:        rdb,
+		tracer:     trace,
 	}
 }
 
-func (r *userRepository) Create(user *domain.User) error {
-	logger := utils.NewLogger("UserRepository.Create")
-	logger.LogInput(user)
+func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
+	_, span := r.tracer.Start(ctx, "UserRepository.Create")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	// Generate a unique username
 	baseUsername := utils.GenerateUsername(user.Username, user.Email)
@@ -39,9 +43,9 @@ func (r *userRepository) Create(user *domain.User) error {
 	username := baseUsername
 	attempt := 1
 	for {
-		existingUser, err := r.FindByUsername(username)
+		existingUser, err := r.FindByUsername(ctx, username)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Error(err)
 			return err
 		}
 		if existingUser == nil {
@@ -62,14 +66,14 @@ func (r *userRepository) Create(user *domain.User) error {
 
 	_, err := r.collection.InsertOne(context.Background(), user)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return err
 	}
 
 	// Cache the new user
 	userBytes, err := json.Marshal(user)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return err
 	}
 
@@ -95,34 +99,36 @@ func (r *userRepository) Create(user *domain.User) error {
 
 	_, err = pipe.Exec(context.Background())
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return err
 	}
 
-	logger.LogOutput(user, nil)
+	logger.Output(user)
 	return nil
 }
 
-func (r *userRepository) FindByFirebaseUID(firebaseUID string) (*domain.User, error) {
-	logger := utils.NewLogger("UserRepository.FindByFirebaseUID")
-	logger.LogInput(firebaseUID)
-
+func (r *userRepository) FindByFirebaseUID(ctx context.Context, firebaseUID string) (*domain.User, error) {
+	_, span := r.tracer.Start(ctx, "UserRepository.FindByFirebaseUID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(firebaseUID)
 	// Try to get from Redis first
 	key := fmt.Sprintf("user:firebase:%s", firebaseUID)
-	userJSON, err := r.rdb.Get(context.Background(), key).Result()
+	userJSON, err := r.rdb.Get(ctx, key).Result()
 	if err == nil {
 		// Found in Redis
 		var user domain.User
 		err = json.Unmarshal([]byte(userJSON), &user)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Error(err)
+
 			return nil, err
 		}
-		logger.LogOutput(&user, nil)
+		logger.Output(&user)
 		return &user, nil
 	} else if err != redis.Nil {
 		// Redis error
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
@@ -130,51 +136,53 @@ func (r *userRepository) FindByFirebaseUID(firebaseUID string) (*domain.User, er
 	var user domain.User
 	err = r.collection.FindOne(context.Background(), bson.M{"firebaseUid": firebaseUID}).Decode(&user)
 	if err == mongo.ErrNoDocuments {
-		logger.LogOutput(nil, nil)
+		logger.Error(err)
 		return nil, nil
 	}
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
 	// Cache in Redis for 24 hours
 	userBytes, err := json.Marshal(user)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
 	err = r.rdb.Set(context.Background(), key, string(userBytes), 24*time.Hour).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 	}
 
-	logger.LogOutput(&user, nil)
+	logger.Output(&user)
 	return &user, nil
 }
 
-func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
-	logger := utils.NewLogger("UserRepository.FindByEmail")
-	logger.LogInput(email)
+func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
+	_, span := r.tracer.Start(ctx, "UserRepository.FindByEmail")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(email)
 
 	// Try to get from Redis first
 	key := fmt.Sprintf("user:email:%s", email)
-	userJSON, err := r.rdb.Get(context.Background(), key).Result()
+	userJSON, err := r.rdb.Get(ctx, key).Result()
 	if err == nil {
 		// Found in Redis
 		var user domain.User
 		err = json.Unmarshal([]byte(userJSON), &user)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Error(err)
 			return nil, err
 		}
-		logger.LogOutput(&user, nil)
+		logger.Output(&user)
 		return &user, nil
 	} else if err != redis.Nil {
 		// Redis error
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
@@ -182,57 +190,59 @@ func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
 	var user domain.User
 	err = r.collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&user)
 	if err == mongo.ErrNoDocuments {
-		logger.LogOutput(nil, nil)
+		logger.Error(err)
 		return nil, nil
 	}
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
 	// Cache in Redis for 24 hours
 	userBytes, err := json.Marshal(user)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
 	err = r.rdb.Set(context.Background(), key, string(userBytes), 24*time.Hour).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 	}
 
-	logger.LogOutput(&user, nil)
+	logger.Output(&user)
 	return &user, nil
 }
 
-func (r *userRepository) FindByID(id string) (*domain.User, error) {
-	logger := utils.NewLogger("UserRepository.FindByID")
-	logger.LogInput(id)
+func (r *userRepository) FindByID(ctx context.Context, id string) (*domain.User, error) {
+	_, span := r.tracer.Start(ctx, "UserRepository.FindByID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(id)
 
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
 	// Try to get from Redis first
 	key := fmt.Sprintf("user:id:%s", id)
-	userJSON, err := r.rdb.Get(context.Background(), key).Result()
+	userJSON, err := r.rdb.Get(ctx, key).Result()
 	if err == nil {
 		// Found in Redis
 		var user domain.User
 		err = json.Unmarshal([]byte(userJSON), &user)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Error(err)
 			return nil, err
 		}
-		logger.LogOutput(&user, nil)
+		logger.Output(&user)
 		return &user, nil
 	} else if err != redis.Nil {
 		// Redis error
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
@@ -240,51 +250,53 @@ func (r *userRepository) FindByID(id string) (*domain.User, error) {
 	var user domain.User
 	err = r.collection.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&user)
 	if err == mongo.ErrNoDocuments {
-		logger.LogOutput(nil, nil)
+		logger.Error(err)
 		return nil, nil
 	}
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
 	// Cache in Redis for 24 hours
 	userBytes, err := json.Marshal(user)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
 	err = r.rdb.Set(context.Background(), key, string(userBytes), 24*time.Hour).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 	}
 
-	logger.LogOutput(&user, nil)
+	logger.Output(&user)
 	return &user, nil
 }
 
-func (r *userRepository) FindByUsername(username string) (*domain.User, error) {
-	logger := utils.NewLogger("UserRepository.FindByUsername")
-	logger.LogInput(username)
+func (r *userRepository) FindByUsername(ctx context.Context, username string) (*domain.User, error) {
+	_, span := r.tracer.Start(ctx, "UserRepository.FindByUsername")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(username)
 
 	// Try to get from Redis first
 	key := fmt.Sprintf("user:username:%s", username)
-	userJSON, err := r.rdb.Get(context.Background(), key).Result()
+	userJSON, err := r.rdb.Get(ctx, key).Result()
 	if err == nil {
 		// Found in Redis
 		var user domain.User
 		err = json.Unmarshal([]byte(userJSON), &user)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Error(err)
 			return nil, err
 		}
-		logger.LogOutput(&user, nil)
+		logger.Output(&user)
 		return &user, nil
 	} else if err != redis.Nil {
 		// Redis error
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
@@ -292,34 +304,36 @@ func (r *userRepository) FindByUsername(username string) (*domain.User, error) {
 	var user domain.User
 	err = r.collection.FindOne(context.Background(), bson.M{"username": username, "deletedAt": bson.M{"$exists": false}}).Decode(&user)
 	if err == mongo.ErrNoDocuments {
-		logger.LogOutput(nil, nil)
+		logger.Error(err)
 		return nil, nil
 	}
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
 	// Cache in Redis for 24 hours
 	userBytes, err := json.Marshal(user)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
 	err = r.rdb.Set(context.Background(), key, string(userBytes), 24*time.Hour).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 	}
 
-	logger.LogOutput(&user, nil)
+	logger.Output(&user)
 	return &user, nil
 }
 
-func (r *userRepository) Update(user *domain.User) error {
-	logger := utils.NewLogger("UserRepository.Update")
-	logger.LogInput(user)
+func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
+	_, span := r.tracer.Start(ctx, "UserRepository.Update")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(user)
 
 	update := bson.M{
 		"$set": bson.M{
@@ -361,13 +375,13 @@ func (r *userRepository) Update(user *domain.User) error {
 	)
 
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return err
 	}
 
 	if result.MatchedCount == 0 {
 		err = fmt.Errorf("document not found or was modified by another request")
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return err
 	}
 
@@ -394,50 +408,54 @@ func (r *userRepository) Update(user *domain.User) error {
 
 	_, err = pipe.Exec(context.Background())
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return err
 	}
 
-	logger.LogOutput(user, nil)
+	logger.Output(user)
 	return nil
 }
 
-func (r *userRepository) GetUserByID(userID string) (*domain.User, error) {
-	logger := utils.NewLogger("UserRepository.GetUserByID")
-	logger.LogInput(userID)
+func (r *userRepository) FindUserByID(ctx context.Context, userID string) (*domain.User, error) {
+	_, span := r.tracer.Start(ctx, "UserRepository.FindUserByID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(userID)
 
 	objID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
 	var user domain.User
 	err = r.collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&user)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return nil, err
 	}
 
-	logger.LogOutput(&user, nil)
+	logger.Output(user)
 	return &user, nil
 }
 
-func (r *userRepository) SoftDelete(id string) error {
-	logger := utils.NewLogger("UserRepository.SoftDelete")
-	logger.LogInput(id)
+func (r *userRepository) SoftDelete(ctx context.Context, id string) error {
+	ctx, span := r.tracer.Start(ctx, "UserRepository.SoftDelete")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(id)
 
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return err
 	}
 
-	// Get user first to invalidate all caches
+	// Find user first to invalidate all caches
 	var user domain.User
-	err = r.collection.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&user)
+	err = r.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&user)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return err
 	}
 
@@ -448,15 +466,15 @@ func (r *userRepository) SoftDelete(id string) error {
 		},
 	}
 
-	result, err := r.collection.UpdateOne(context.Background(), bson.M{"_id": objectID}, update)
+	result, err := r.collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return err
 	}
 
 	if result.MatchedCount == 0 {
 		err = fmt.Errorf("user not found")
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return err
 	}
 
@@ -465,34 +483,37 @@ func (r *userRepository) SoftDelete(id string) error {
 
 	// Delete by ID
 	idKey := fmt.Sprintf("user:id:%s", user.ID.Hex())
-	pipe.Del(context.Background(), idKey)
+	pipe.Del(ctx, idKey)
 
 	// Delete by username
 	usernameKey := fmt.Sprintf("user:username:%s", user.Username)
-	pipe.Del(context.Background(), usernameKey)
+	pipe.Del(ctx, usernameKey)
 
 	// Delete by email
 	emailKey := fmt.Sprintf("user:email:%s", user.Email)
-	pipe.Del(context.Background(), emailKey)
+	pipe.Del(ctx, emailKey)
 
 	// Delete by firebase UID
 	if user.FirebaseUID != "" {
 		firebaseKey := fmt.Sprintf("user:firebase:%s", user.FirebaseUID)
-		pipe.Del(context.Background(), firebaseKey)
+		pipe.Del(ctx, firebaseKey)
 	}
 
-	_, err = pipe.Exec(context.Background())
+	_, err = pipe.Exec(ctx)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 		return err
 	}
 
-	logger.LogOutput(map[string]interface{}{"deleted": true}, nil)
+	logger.Output(map[string]interface{}{"deleted": true})
 	return nil
 }
 
-func (r *userRepository) GetUserList(req *domain.UserListRequest) ([]domain.User, int64, error) {
-	logger := utils.NewLogger("UserRepository.GetUserList")
+func (r *userRepository) FindUserFindMany(ctx context.Context, req *domain.UserFindManyRequest) ([]domain.User, int64, error) {
+	ctx, span := r.tracer.Start(ctx, "UserRepository.FindUserFindMany")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(req)
 
 	// Try to get from Redis first
 	cacheKey := fmt.Sprintf("user_list:%d:%d:%s:%s:%s:%s",
@@ -502,21 +523,20 @@ func (r *userRepository) GetUserList(req *domain.UserListRequest) ([]domain.User
 	var totalCount int64
 
 	// Try to get from cache
-	cachedData, err := r.rdb.Get(context.Background(), cacheKey).Result()
+	cachedData, err := r.rdb.Get(ctx, cacheKey).Result()
 	if err == nil {
 		var cachedResponse struct {
 			Users      []domain.User `json:"users"`
 			TotalCount int64         `json:"totalCount"`
 		}
 		if err := json.Unmarshal([]byte(cachedData), &cachedResponse); err == nil {
-			logger.LogOutput("Retrieved user list from cache", nil)
+			logger.Output("Retrieved user list from cache")
 			return cachedResponse.Users, cachedResponse.TotalCount, nil
 		}
 	}
 
 	// If not in cache, query from MongoDB
 	collection := r.collection
-	ctx := context.Background()
 
 	// Build filter
 	filter := bson.M{"deletedAt": nil}
@@ -531,10 +551,10 @@ func (r *userRepository) GetUserList(req *domain.UserListRequest) ([]domain.User
 		}
 	}
 
-	// Get total count
+	// Find total count
 	totalCount, err = collection.CountDocuments(ctx, filter)
 	if err != nil {
-		logger.LogOutput("Error counting documents:", err)
+		logger.Output(map[string]interface{}{"totalCount": 0, "err": err})
 		return nil, 0, err
 	}
 
@@ -559,13 +579,13 @@ func (r *userRepository) GetUserList(req *domain.UserListRequest) ([]domain.User
 
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
-		logger.LogOutput("Error finding users:", err)
+		logger.Output(map[string]interface{}{"message": "Error finding users", "err": err})
 		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 
 	if err = cursor.All(ctx, &users); err != nil {
-		logger.LogOutput("Error decoding users:", err)
+		logger.Output(map[string]interface{}{"message": "Error decoding users", "err": err})
 		return nil, 0, err
 	}
 
@@ -582,6 +602,6 @@ func (r *userRepository) GetUserList(req *domain.UserListRequest) ([]domain.User
 		// Cache for 5 minutes
 		r.rdb.Set(context.Background(), cacheKey, string(cacheBytes), 5*time.Minute)
 	}
-
+	logger.Output(map[string]interface{}{"totalCount": totalCount, "users": users})
 	return users, totalCount, nil
 }

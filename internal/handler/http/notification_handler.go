@@ -17,9 +17,9 @@ func NewNotificationHandler(router fiber.Router, notificationUseCase domain.Noti
 		notificationUseCase: notificationUseCase,
 	}
 
-	router.Get("/", handler.ListNotifications)
-	router.Get("/unread-count", handler.GetUnreadCount)
-	router.Get("/:id", handler.GetNotification)
+	router.Find("/", handler.FindManyNotifications)
+	router.Find("/unread-count", handler.FindUnreadCount)
+	router.Find("/:id", handler.FindNotification)
 	router.Post("/:id/read", handler.MarkAsRead)
 	router.Post("/read-all", handler.MarkAllAsRead)
 	router.Delete("/:id", handler.DeleteNotification)
@@ -27,9 +27,9 @@ func NewNotificationHandler(router fiber.Router, notificationUseCase domain.Noti
 	return handler
 }
 
-// ListNotifications godoc
-// @Summary List notifications for the authenticated user
-// @Description Get a list of notifications with pagination
+// FindManyNotifications godoc
+// @Summary FindMany notifications for the authenticated user
+// @Description Find a list of notifications with pagination
 // @Tags notifications
 // @Accept json
 // @Produce json
@@ -40,16 +40,16 @@ func NewNotificationHandler(router fiber.Router, notificationUseCase domain.Noti
 // @Failure 401 {object} utils.ErrorResponse
 // @Router /notifications [get]
 // @Security BearerAuth
-func (h *NotificationHandler) ListNotifications(c *fiber.Ctx) error {
-	userID, err := utils.GetUserIDFromContext(c)
+func (h *NotificationHandler) FindManyNotifications(c *fiber.Ctx) error {
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}
 
-	limit := utils.GetQueryInt(c, "limit", 10)
-	offset := utils.GetQueryInt(c, "offset", 0)
+	limit := utils.FindQueryInt(c, "limit", 10)
+	offset := utils.FindQueryInt(c, "offset", 0)
 
-	notifications, err := h.notificationUseCase.ListNotifications(userID, limit, offset)
+	notifications, err := h.notificationUseCase.FindManyNotifications(userID, limit, offset)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}
@@ -57,9 +57,9 @@ func (h *NotificationHandler) ListNotifications(c *fiber.Ctx) error {
 	return c.JSON(notifications)
 }
 
-// GetNotification godoc
-// @Summary Get a specific notification
-// @Description Get details of a specific notification
+// FindNotification godoc
+// @Summary Find a specific notification
+// @Description Find details of a specific notification
 // @Tags notifications
 // @Accept json
 // @Produce json
@@ -70,19 +70,19 @@ func (h *NotificationHandler) ListNotifications(c *fiber.Ctx) error {
 // @Failure 404 {object} utils.ErrorResponse
 // @Router /notifications/{id} [get]
 // @Security BearerAuth
-func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
+func (h *NotificationHandler) FindNotification(c *fiber.Ctx) error {
 	notificationID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
 		return utils.HandleError(c, domain.ErrInvalidID)
 	}
 
-	notification, err := h.notificationUseCase.GetNotification(notificationID)
+	notification, err := h.notificationUseCase.FindNotification(notificationID)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}
 
 	// Verify that the user owns this notification
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}
@@ -114,12 +114,12 @@ func (h *NotificationHandler) MarkAsRead(c *fiber.Ctx) error {
 	}
 
 	// Verify ownership before marking as read
-	notification, err := h.notificationUseCase.GetNotification(notificationID)
+	notification, err := h.notificationUseCase.FindNotification(notificationID)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}
@@ -149,7 +149,7 @@ func (h *NotificationHandler) MarkAsRead(c *fiber.Ctx) error {
 // @Router /notifications/read-all [post]
 // @Security BearerAuth
 func (h *NotificationHandler) MarkAllAsRead(c *fiber.Ctx) error {
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}
@@ -184,12 +184,12 @@ func (h *NotificationHandler) DeleteNotification(c *fiber.Ctx) error {
 	}
 
 	// Verify ownership before deletion
-	notification, err := h.notificationUseCase.GetNotification(notificationID)
+	notification, err := h.notificationUseCase.FindNotification(notificationID)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}
@@ -208,9 +208,9 @@ func (h *NotificationHandler) DeleteNotification(c *fiber.Ctx) error {
 	})
 }
 
-// GetUnreadCount godoc
-// @Summary Get count of unread notifications
-// @Description Get the number of unread notifications for the authenticated user
+// FindUnreadCount godoc
+// @Summary Find count of unread notifications
+// @Description Find the number of unread notifications for the authenticated user
 // @Tags notifications
 // @Accept json
 // @Produce json
@@ -218,13 +218,13 @@ func (h *NotificationHandler) DeleteNotification(c *fiber.Ctx) error {
 // @Failure 401 {object} utils.ErrorResponse
 // @Router /notifications/unread-count [get]
 // @Security BearerAuth
-func (h *NotificationHandler) GetUnreadCount(c *fiber.Ctx) error {
-	userID, err := utils.GetUserIDFromContext(c)
+func (h *NotificationHandler) FindUnreadCount(c *fiber.Ctx) error {
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}
 
-	count, err := h.notificationUseCase.GetUnreadCount(userID)
+	count, err := h.notificationUseCase.FindUnreadCount(userID)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}

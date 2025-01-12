@@ -30,8 +30,8 @@ func (l *Logger) LogInput(params ...interface{}) {
 		"function":    l.FunctionName,
 	}
 
-	paramsList := append(make([]interface{}, 0), params...)
-	logEntry["params"] = paramsList
+	paramsFindMany := append(make([]interface{}, 0), params...)
+	logEntry["params"] = paramsFindMany
 
 	jsonBytes, _ := json.Marshal(logEntry)
 	fmt.Printf("%s\n", string(jsonBytes))
@@ -47,8 +47,8 @@ func (l *Logger) LogInfo(params ...interface{}) {
 	}
 
 	// ยังคง loop เพื่อเก็บ params
-	paramsList := append(make([]interface{}, 0), params...)
-	logEntry["params"] = paramsList
+	paramsFindMany := append(make([]interface{}, 0), params...)
+	logEntry["params"] = paramsFindMany
 
 	jsonBytes, _ := json.Marshal(logEntry)
 	fmt.Printf("%s\n", string(jsonBytes))
@@ -64,8 +64,8 @@ func (l *Logger) LogWarning(err error, params ...interface{}) {
 		"error":       err.Error(),
 	}
 
-	paramsList := append(make([]interface{}, 0), params...)
-	logEntry["params"] = paramsList
+	paramsFindMany := append(make([]interface{}, 0), params...)
+	logEntry["params"] = paramsFindMany
 
 	jsonBytes, _ := json.Marshal(logEntry)
 	fmt.Printf("%s\n", string(jsonBytes))

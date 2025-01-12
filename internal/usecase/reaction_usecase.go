@@ -181,7 +181,7 @@ func (r *reactionUseCase) DeleteReaction(reactionID primitive.ObjectID) error {
 
 	// Update reaction counts
 	if reaction.CommentID == nil {
-		// Get post and update reaction count
+		// Find post and update reaction count
 		post, err := r.postRepo.FindByID(reaction.PostID)
 		if err != nil {
 			logger.LogOutput(nil, err)
@@ -196,7 +196,7 @@ func (r *reactionUseCase) DeleteReaction(reactionID primitive.ObjectID) error {
 			}
 		}
 	} else {
-		// Get comment and update reaction count
+		// Find comment and update reaction count
 		comment, err := r.commentRepo.FindByID(*reaction.CommentID)
 		if err != nil {
 			logger.LogOutput(nil, err)
@@ -223,8 +223,8 @@ func (r *reactionUseCase) DeleteReaction(reactionID primitive.ObjectID) error {
 	return nil
 }
 
-func (r *reactionUseCase) GetReaction(reactionID primitive.ObjectID) (*domain.Reaction, error) {
-	logger := utils.NewLogger("ReactionUseCase.GetReaction")
+func (r *reactionUseCase) FindReaction(reactionID primitive.ObjectID) (*domain.Reaction, error) {
+	logger := utils.NewLogger("ReactionUseCase.FindReaction")
 	logger.LogInput(reactionID)
 
 	reaction, err := r.reactionRepo.FindByID(reactionID)
@@ -237,8 +237,8 @@ func (r *reactionUseCase) GetReaction(reactionID primitive.ObjectID) (*domain.Re
 	return reaction, nil
 }
 
-func (r *reactionUseCase) ListReactions(targetID primitive.ObjectID, isComment bool, limit, offset int) ([]domain.Reaction, error) {
-	logger := utils.NewLogger("ReactionUseCase.ListReactions")
+func (r *reactionUseCase) FindManyReactions(targetID primitive.ObjectID, isComment bool, limit, offset int) ([]domain.Reaction, error) {
+	logger := utils.NewLogger("ReactionUseCase.FindManyReactions")
 	input := map[string]interface{}{
 		"targetID":  targetID,
 		"isComment": isComment,

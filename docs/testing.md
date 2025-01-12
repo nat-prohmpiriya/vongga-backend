@@ -45,7 +45,7 @@ This document outlines the test cases implemented in the Vongga Platform backend
    - Verifies deletion is prevented
    - Ensures appropriate error is returned
 
-### GetPost Tests
+### FindPost Tests
 1. **Success Without SubPosts Case**
    - Retrieves post without subposts
    - Verifies all post fields are correct
@@ -63,14 +63,14 @@ This document outlines the test cases implemented in the Vongga Platform backend
    - Tests error handling during subpost retrieval
    - Ensures error is propagated correctly
 
-### ListPosts Tests
+### FindManyPosts Tests
 1. **Success Without SubPosts Case**
-   - Lists posts for a user without subposts
+   - FindManys posts for a user without subposts
    - Verifies pagination (limit, offset)
    - Validates post data
 
 2. **Success With SubPosts Case**
-   - Lists posts with their subposts
+   - FindManys posts with their subposts
    - Verifies both post and subpost data
    - Validates subpost ordering for each post
 

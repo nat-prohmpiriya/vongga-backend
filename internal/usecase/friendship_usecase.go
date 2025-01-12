@@ -344,9 +344,9 @@ func (f *friendshipUseCase) UnblockFriend(userID, blockedID primitive.ObjectID) 
 	return nil
 }
 
-// GetFriends returns a list of accepted friends
-func (f *friendshipUseCase) GetFriends(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
-	logger := utils.NewLogger("FriendshipUseCase.GetFriends")
+// FindFriends returns a list of accepted friends
+func (f *friendshipUseCase) FindFriends(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
+	logger := utils.NewLogger("FriendshipUseCase.FindFriends")
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 		"limit":  limit,
@@ -364,9 +364,9 @@ func (f *friendshipUseCase) GetFriends(userID primitive.ObjectID, limit, offset 
 	return friends, nil
 }
 
-// GetPendingRequests returns a list of pending friend requests
-func (f *friendshipUseCase) GetPendingRequests(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
-	logger := utils.NewLogger("FriendshipUseCase.GetPendingRequests")
+// FindPendingRequests returns a list of pending friend requests
+func (f *friendshipUseCase) FindPendingRequests(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
+	logger := utils.NewLogger("FriendshipUseCase.FindPendingRequests")
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 		"limit":  limit,
@@ -408,9 +408,9 @@ func (f *friendshipUseCase) IsFriend(userID1, userID2 primitive.ObjectID) (bool,
 	return isFriend, nil
 }
 
-// GetFriendshipStatus returns the current friendship status between two users
-func (f *friendshipUseCase) GetFriendshipStatus(userID1, userID2 primitive.ObjectID) (string, error) {
-	logger := utils.NewLogger("FriendshipUseCase.GetFriendshipStatus")
+// FindFriendshipStatus returns the current friendship status between two users
+func (f *friendshipUseCase) FindFriendshipStatus(userID1, userID2 primitive.ObjectID) (string, error) {
+	logger := utils.NewLogger("FriendshipUseCase.FindFriendshipStatus")
 	input := map[string]interface{}{
 		"userID1": userID1.Hex(),
 		"userID2": userID2.Hex(),
@@ -431,13 +431,13 @@ func (f *friendshipUseCase) GetFriendshipStatus(userID1, userID2 primitive.Objec
 	return friendship.Status, nil
 }
 
-// ListFriends returns a list of friends
-func (f *friendshipUseCase) ListFriends(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
+// FindManyFriends returns a list of friends
+func (f *friendshipUseCase) FindManyFriends(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
 	return f.friendshipRepo.FindFriends(userID, limit, offset)
 }
 
-// ListFriendRequests returns a list of friend requests
-func (f *friendshipUseCase) ListFriendRequests(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
+// FindManyFriendRequests returns a list of friend requests
+func (f *friendshipUseCase) FindManyFriendRequests(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
 	return f.friendshipRepo.FindPendingRequests(userID, limit, offset)
 }
 

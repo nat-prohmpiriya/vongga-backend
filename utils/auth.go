@@ -7,8 +7,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// GetUserIDFromContext retrieves the user ID from the Fiber context
-func GetUserIDFromContext(c *fiber.Ctx) (primitive.ObjectID, error) {
+// FindUserIDFromContext retrieves the user ID from the Fiber context
+func FindUserIDFromContext(c *fiber.Ctx) (primitive.ObjectID, error) {
 	userIDValue := c.Locals("userId")
 	if userIDValue == nil {
 		return primitive.NilObjectID, errors.New("userId not found in context")

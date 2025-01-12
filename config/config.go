@@ -64,13 +64,13 @@ func LoadConfig() *Config {
 	return config
 }
 
-// GetJWTExpiry returns JWT expiry duration
-func (c *Config) GetJWTExpiry() time.Duration {
+// FindJWTExpiry returns JWT expiry duration
+func (c *Config) FindJWTExpiry() time.Duration {
 	return time.Duration(c.JWTExpiryHours) * time.Hour
 }
 
-// GetRefreshTokenExpiry returns refresh token expiry duration
-func (c *Config) GetRefreshTokenExpiry() time.Duration {
+// FindRefreshTokenExpiry returns refresh token expiry duration
+func (c *Config) FindRefreshTokenExpiry() time.Duration {
 	return time.Duration(c.RefreshTokenExpiry) * 24 * time.Hour
 }
 

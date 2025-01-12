@@ -106,7 +106,7 @@ func (r *commentRepository) Delete(id primitive.ObjectID) error {
 	logger := utils.NewLogger("CommentRepository.Delete")
 	logger.LogInput(id)
 
-	// Get comment first to get postID for cache invalidation
+	// Find comment first to get postID for cache invalidation
 	var comment domain.Comment
 	err := r.collection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&comment)
 	if err != nil {

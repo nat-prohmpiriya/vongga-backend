@@ -33,7 +33,7 @@ func (u *chatUsecase) CreatePrivateChat(userID1 string, userID2 string) (*domain
 	})
 
 	// Check if room already exists
-	rooms, err := u.chatRepo.GetRoomsByUser(userID1)
+	rooms, err := u.chatRepo.FindRoomsByUser(userID1)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -45,10 +45,10 @@ func (u *chatUsecase) CreatePrivateChat(userID1 string, userID2 string) (*domain
 			members := room.Members
 			if (members[0] == userID1 && members[1] == userID2) ||
 				(members[0] == userID2 && members[1] == userID1) {
-				// Get user details
+				// Find user details
 				var users []domain.User
 				for _, memberID := range room.Members {
-					user, err := u.userRepo.GetUserByID(memberID)
+					user, err := u.userRepo.FindUserByID(memberID)
 					if err != nil {
 						logger.LogOutput(nil, err)
 						continue
@@ -62,14 +62,14 @@ func (u *chatUsecase) CreatePrivateChat(userID1 string, userID2 string) (*domain
 		}
 	}
 
-	// Get user details for new room
-	user1, err := u.userRepo.GetUserByID(userID1)
+	// Find user details for new room
+	user1, err := u.userRepo.FindUserByID(userID1)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
 
-	user2, err := u.userRepo.GetUserByID(userID2)
+	user2, err := u.userRepo.FindUserByID(userID2)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -89,8 +89,8 @@ func (u *chatUsecase) CreatePrivateChat(userID1 string, userID2 string) (*domain
 		Users:   []domain.User{*user1, *user2},
 	}
 
-	// Save room
-	err = u.chatRepo.SaveRoom(room)
+	// Create room
+	err = u.chatRepo.CreateRoom(room)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -120,8 +120,8 @@ func (u *chatUsecase) CreateGroupChat(name string, memberIDs []string) (*domain.
 		Members: memberIDs,
 	}
 
-	// Save room
-	err := u.chatRepo.SaveRoom(room)
+	// Create room
+	err := u.chatRepo.CreateRoom(room)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -131,24 +131,24 @@ func (u *chatUsecase) CreateGroupChat(name string, memberIDs []string) (*domain.
 	return room, nil
 }
 
-func (u *chatUsecase) GetUserChats(userID string) ([]*domain.ChatRoom, error) {
-	logger := utils.NewLogger("ChatUsecase.GetUserChats")
+func (u *chatUsecase) FindUserChats(userID string) ([]*domain.ChatRoom, error) {
+	logger := utils.NewLogger("ChatUsecase.FindUserChats")
 	logger.LogInput(map[string]interface{}{
 		"userID": userID,
 	})
 
-	// Get rooms
-	rooms, err := u.chatRepo.GetRoomsByUser(userID)
+	// Find rooms
+	rooms, err := u.chatRepo.FindRoomsByUser(userID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
 
-	// Get user details for each room
+	// Find user details for each room
 	for _, room := range rooms {
 		var users []domain.User
 		for _, memberID := range room.Members {
-			user, err := u.userRepo.GetUserByID(memberID)
+			user, err := u.userRepo.FindUserByID(memberID)
 			if err != nil {
 				logger.LogOutput(nil, err)
 				continue
@@ -169,7 +169,7 @@ func (u *chatUsecase) AddMemberToGroup(roomID string, userID string) error {
 		"userID": userID,
 	})
 
-	room, err := u.chatRepo.GetRoom(roomID)
+	room, err := u.chatRepo.FindRoom(roomID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -197,7 +197,7 @@ func (u *chatUsecase) RemoveMemberFromGroup(roomID string, userID string) error 
 		"userID": userID,
 	})
 
-	room, err := u.chatRepo.GetRoom(roomID)
+	room, err := u.chatRepo.FindRoom(roomID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -223,7 +223,7 @@ func (u *chatUsecase) DeleteRoom(roomID string) error {
 	logger.LogInput(roomID)
 
 	// Check if room exists
-	room, err := u.chatRepo.GetRoom(roomID)
+	room, err := u.chatRepo.FindRoom(roomID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -245,11 +245,11 @@ func (u *chatUsecase) DeleteRoom(roomID string) error {
 	return nil
 }
 
-func (u *chatUsecase) GetRoom(roomID string) (*domain.ChatRoom, error) {
-	logger := utils.NewLogger("ChatUsecase.GetRoom")
+func (u *chatUsecase) FindRoom(roomID string) (*domain.ChatRoom, error) {
+	logger := utils.NewLogger("ChatUsecase.FindRoom")
 	logger.LogInput(roomID)
 
-	room, err := u.chatRepo.GetRoom(roomID)
+	room, err := u.chatRepo.FindRoom(roomID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -263,8 +263,8 @@ func (u *chatUsecase) UpdateRoom(room *domain.ChatRoom) error {
 	logger := utils.NewLogger("ChatUsecase.UpdateRoom")
 	logger.LogInput(room)
 
-	// Get existing room
-	existingRoom, err := u.GetRoom(room.ID.Hex())
+	// Find existing room
+	existingRoom, err := u.FindRoom(room.ID.Hex())
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -303,8 +303,8 @@ func (u *chatUsecase) SendMessage(roomID string, senderID string, messageType st
 		return nil, err
 	}
 
-	// Get room to verify it exists and sender is a member
-	room, err := u.chatRepo.GetRoom(roomID)
+	// Find room to verify it exists and sender is a member
+	room, err := u.chatRepo.FindRoom(roomID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -344,7 +344,7 @@ func (u *chatUsecase) SendMessage(roomID string, senderID string, messageType st
 		ReadBy:   []string{senderID},
 	}
 
-	if err := u.chatRepo.SaveMessage(message); err != nil {
+	if err := u.chatRepo.CreateMessage(message); err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
@@ -363,7 +363,7 @@ func (u *chatUsecase) SendMessage(roomID string, senderID string, messageType st
 
 		notification.Message = "New message received"
 
-		if err := u.chatRepo.SaveNotification(notification); err != nil {
+		if err := u.chatRepo.CreateNotification(notification); err != nil {
 			logger.LogOutput(nil, err)
 			return nil, err
 		}
@@ -412,13 +412,13 @@ func (u *chatUsecase) SendFileMessage(roomID string, senderID string, fileType s
 		ReadBy:   []string{senderID},
 	}
 
-	if err := u.chatRepo.SaveMessage(message); err != nil {
+	if err := u.chatRepo.CreateMessage(message); err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
 
 	// Create notifications for other members (similar to text message)
-	room, err := u.chatRepo.GetRoom(roomID)
+	room, err := u.chatRepo.FindRoom(roomID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -437,7 +437,7 @@ func (u *chatUsecase) SendFileMessage(roomID string, senderID string, fileType s
 
 		notification.Message = "New file received"
 
-		if err := u.chatRepo.SaveNotification(notification); err != nil {
+		if err := u.chatRepo.CreateNotification(notification); err != nil {
 			logger.LogOutput(nil, err)
 			return nil, err
 		}
@@ -447,15 +447,15 @@ func (u *chatUsecase) SendFileMessage(roomID string, senderID string, fileType s
 	return message, nil
 }
 
-func (u *chatUsecase) GetChatMessages(roomID string, limit int, offset int) ([]*domain.ChatMessage, error) {
-	logger := utils.NewLogger("ChatUsecase.GetChatMessages")
+func (u *chatUsecase) FindChatMessages(roomID string, limit int, offset int) ([]*domain.ChatMessage, error) {
+	logger := utils.NewLogger("ChatUsecase.FindChatMessages")
 	logger.LogInput(map[string]interface{}{
 		"roomID": roomID,
 		"limit":  limit,
 		"offset": offset,
 	})
 
-	messages, err := u.chatRepo.GetRoomMessages(roomID, int64(limit), int64(offset))
+	messages, err := u.chatRepo.FindRoomMessages(roomID, int64(limit), int64(offset))
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -486,7 +486,7 @@ func (u *chatUsecase) DeleteMessage(messageID string) error {
 	logger.LogInput(messageID)
 
 	// Check if message exists
-	message, err := u.chatRepo.GetMessage(messageID)
+	message, err := u.chatRepo.FindMessage(messageID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -508,15 +508,15 @@ func (u *chatUsecase) DeleteMessage(messageID string) error {
 	return nil
 }
 
-func (u *chatUsecase) GetUnreadMessages(roomID string, userID string) ([]*domain.ChatMessage, error) {
-	logger := utils.NewLogger("ChatUsecase.GetUnreadMessages")
+func (u *chatUsecase) FindUnreadMessages(roomID string, userID string) ([]*domain.ChatMessage, error) {
+	logger := utils.NewLogger("ChatUsecase.FindUnreadMessages")
 	logger.LogInput(map[string]interface{}{
 		"roomID": roomID,
 		"userID": userID,
 	})
 
-	// Get unread messages from the room
-	messages, err := u.chatRepo.GetUnreadMessages(roomID, userID)
+	// Find unread messages from the room
+	messages, err := u.chatRepo.FindUnreadMessages(roomID, userID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -526,11 +526,11 @@ func (u *chatUsecase) GetUnreadMessages(roomID string, userID string) ([]*domain
 	return messages, nil
 }
 
-func (u *chatUsecase) GetMessage(messageID string) (*domain.ChatMessage, error) {
-	logger := utils.NewLogger("ChatUsecase.GetMessage")
+func (u *chatUsecase) FindMessage(messageID string) (*domain.ChatMessage, error) {
+	logger := utils.NewLogger("ChatUsecase.FindMessage")
 	logger.LogInput(messageID)
 
-	message, err := u.chatRepo.GetMessage(messageID)
+	message, err := u.chatRepo.FindMessage(messageID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -540,11 +540,11 @@ func (u *chatUsecase) GetMessage(messageID string) (*domain.ChatMessage, error) 
 	return message, nil
 }
 
-func (u *chatUsecase) GetNotification(notificationID string) (*domain.ChatNotification, error) {
-	logger := utils.NewLogger("ChatUsecase.GetNotification")
+func (u *chatUsecase) FindNotification(notificationID string) (*domain.ChatNotification, error) {
+	logger := utils.NewLogger("ChatUsecase.FindNotification")
 	logger.LogInput(notificationID)
 
-	notification, err := u.chatRepo.GetNotification(notificationID)
+	notification, err := u.chatRepo.FindNotification(notificationID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -584,11 +584,11 @@ func (u *chatUsecase) UpdateUserOnlineStatus(userID string, isOnline bool) error
 	return nil
 }
 
-func (u *chatUsecase) GetUserOnlineStatus(userID string) (*domain.ChatUserStatus, error) {
-	logger := utils.NewLogger("ChatUsecase.GetUserOnlineStatus")
+func (u *chatUsecase) FindUserOnlineStatus(userID string) (*domain.ChatUserStatus, error) {
+	logger := utils.NewLogger("ChatUsecase.FindUserOnlineStatus")
 	logger.LogInput(userID)
 
-	status, err := u.chatRepo.GetUserStatus(userID)
+	status, err := u.chatRepo.FindUserStatus(userID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -598,13 +598,13 @@ func (u *chatUsecase) GetUserOnlineStatus(userID string) (*domain.ChatUserStatus
 	return status, nil
 }
 
-func (u *chatUsecase) GetOnlineUsers(userIDs []string) ([]*domain.ChatUserStatus, error) {
-	logger := utils.NewLogger("ChatUsecase.GetOnlineUsers")
+func (u *chatUsecase) FindOnlineUsers(userIDs []string) ([]*domain.ChatUserStatus, error) {
+	logger := utils.NewLogger("ChatUsecase.FindOnlineUsers")
 	logger.LogInput(userIDs)
 
 	statuses := make([]*domain.ChatUserStatus, 0)
 	for _, userID := range userIDs {
-		status, err := u.chatRepo.GetUserStatus(userID)
+		status, err := u.chatRepo.FindUserStatus(userID)
 		if err != nil {
 			logger.LogOutput(nil, err)
 			continue
@@ -643,8 +643,8 @@ func (u *chatUsecase) CreateNotification(userID string, notificationType string,
 		MessageID: messageID,
 	}
 
-	// Save notification
-	err := u.chatRepo.SaveNotification(notification)
+	// Create notification
+	err := u.chatRepo.CreateNotification(notification)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -654,11 +654,11 @@ func (u *chatUsecase) CreateNotification(userID string, notificationType string,
 	return notification, nil
 }
 
-func (u *chatUsecase) GetUserNotifications(userID string) ([]*domain.ChatNotification, error) {
-	logger := utils.NewLogger("ChatUsecase.GetUserNotifications")
+func (u *chatUsecase) FindUserNotifications(userID string) ([]*domain.ChatNotification, error) {
+	logger := utils.NewLogger("ChatUsecase.FindUserNotifications")
 	logger.LogInput(userID)
 
-	notifications, err := u.chatRepo.GetUserNotifications(userID)
+	notifications, err := u.chatRepo.FindUserNotifications(userID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -686,7 +686,7 @@ func (u *chatUsecase) DeleteNotification(notificationID string) error {
 	logger.LogInput(notificationID)
 
 	// Check if notification exists
-	notification, err := u.chatRepo.GetNotification(notificationID)
+	notification, err := u.chatRepo.FindNotification(notificationID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -712,7 +712,7 @@ func (u *chatUsecase) SendNotification(notification *domain.ChatNotification) er
 	logger := utils.NewLogger("ChatUsecase.SendNotification")
 	logger.LogInput(notification)
 
-	// Save notification
+	// Create notification
 	err := u.chatRepo.CreateNotification(notification)
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -730,8 +730,8 @@ func (u *chatUsecase) AddMemberToRoom(roomID string, userID string) error {
 		"userID": userID,
 	})
 
-	// Get room
-	room, err := u.GetRoom(roomID)
+	// Find room
+	room, err := u.FindRoom(roomID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -767,7 +767,7 @@ func (u *chatUsecase) AddMemberToRoom(roomID string, userID string) error {
 
 	notification.Message = fmt.Sprintf("You have been added to group: %s", room.Name)
 
-	if err := u.chatRepo.SaveNotification(notification); err != nil {
+	if err := u.chatRepo.CreateNotification(notification); err != nil {
 		logger.LogOutput(nil, err)
 		return err
 	}
@@ -783,8 +783,8 @@ func (u *chatUsecase) RemoveMemberFromRoom(roomID string, userID string) error {
 		"userID": userID,
 	})
 
-	// Get room
-	room, err := u.GetRoom(roomID)
+	// Find room
+	room, err := u.FindRoom(roomID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -822,11 +822,11 @@ func (u *chatUsecase) RemoveMemberFromRoom(roomID string, userID string) error {
 	return nil
 }
 
-func (u *chatUsecase) GetUserRooms(userID string) ([]*domain.ChatRoom, error) {
-	logger := utils.NewLogger("ChatUsecase.GetUserRooms")
+func (u *chatUsecase) FindUserRooms(userID string) ([]*domain.ChatRoom, error) {
+	logger := utils.NewLogger("ChatUsecase.FindUserRooms")
 	logger.LogInput(userID)
 
-	rooms, err := u.chatRepo.GetRoomsByUser(userID)
+	rooms, err := u.chatRepo.FindRoomsByUser(userID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -836,6 +836,6 @@ func (u *chatUsecase) GetUserRooms(userID string) ([]*domain.ChatRoom, error) {
 	return rooms, nil
 }
 
-func (u *chatUsecase) GetRoomsByUserID(userID string) ([]*domain.ChatRoom, error) {
-	return u.chatRepo.GetRoomsByUser(userID)
+func (u *chatUsecase) FindRoomsByUserID(userID string) ([]*domain.ChatRoom, error) {
+	return u.chatRepo.FindRoomsByUser(userID)
 }

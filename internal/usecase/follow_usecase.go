@@ -196,9 +196,9 @@ func (f *followUseCase) Unblock(userID, blockedID primitive.ObjectID) error {
 	return nil
 }
 
-// GetFollowers returns a list of followers for a user
-func (f *followUseCase) GetFollowers(userID primitive.ObjectID, limit, offset int) ([]domain.Follow, error) {
-	logger := utils.NewLogger("FollowUseCase.GetFollowers")
+// FindFollowers returns a list of followers for a user
+func (f *followUseCase) FindFollowers(userID primitive.ObjectID, limit, offset int) ([]domain.Follow, error) {
+	logger := utils.NewLogger("FollowUseCase.FindFollowers")
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 		"limit":  limit,
@@ -216,9 +216,9 @@ func (f *followUseCase) GetFollowers(userID primitive.ObjectID, limit, offset in
 	return followers, nil
 }
 
-// GetFollowing returns a list of users that a user is following
-func (f *followUseCase) GetFollowing(userID primitive.ObjectID, limit, offset int) ([]domain.Follow, error) {
-	logger := utils.NewLogger("FollowUseCase.GetFollowing")
+// FindFollowing returns a list of users that a user is following
+func (f *followUseCase) FindFollowing(userID primitive.ObjectID, limit, offset int) ([]domain.Follow, error) {
+	logger := utils.NewLogger("FollowUseCase.FindFollowing")
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 		"limit":  limit,

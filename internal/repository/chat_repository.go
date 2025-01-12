@@ -21,7 +21,7 @@ type chatRepository struct {
 	userStatusColl    *mongo.Collection
 }
 
-func NewChatRepository(db *mongo.Database) domain.ChatRepository {
+func NewChatRepository(ctx context.Context, db *mongo.Database) domain.ChatRepository {
 	return &chatRepository{
 		db:                db,
 		roomsColl:         db.Collection("chatRooms"),
@@ -32,13 +32,13 @@ func NewChatRepository(db *mongo.Database) domain.ChatRepository {
 }
 
 // Room operations
-func (r *chatRepository) SaveRoom(room *domain.ChatRoom) error {
-	logger := utils.NewLogger("ChatRepository.SaveRoom")
+func (r *chatRepository) CreateRoom(ctx context.Context, room *domain.ChatRoom) error {
+	logger := utils.NewLogger("ChatRepository.CreateRoom")
 	logger.LogInput(room)
 
 	room.CreatedAt = time.Now()
 	room.UpdatedAt = time.Now()
-	_, err := r.roomsColl.InsertOne(context.Background(), room)
+	_, err := r.roomsColl.InsertOne(ctx, room)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -48,8 +48,8 @@ func (r *chatRepository) SaveRoom(room *domain.ChatRoom) error {
 	return nil
 }
 
-func (r *chatRepository) GetRoom(roomID string) (*domain.ChatRoom, error) {
-	logger := utils.NewLogger("ChatRepository.GetRoom")
+func (r *chatRepository) FindRoom(ctx context.Context, roomID string) (*domain.ChatRoom, error) {
+	logger := utils.NewLogger("ChatRepository.FindRoom")
 	logger.LogInput(roomID)
 
 	// Convert string to ObjectID
@@ -75,11 +75,11 @@ func (r *chatRepository) GetRoom(roomID string) (*domain.ChatRoom, error) {
 	return &room, nil
 }
 
-func (r *chatRepository) GetRoomsByUser(userID string) ([]*domain.ChatRoom, error) {
-	logger := utils.NewLogger("ChatRepository.GetRoomsByUser")
+func (r *chatRepository) FindRoomsByUser(ctx context.Context, userID string) ([]*domain.ChatRoom, error) {
+	logger := utils.NewLogger("ChatRepository.FindRoomsByUser")
 	logger.LogInput(userID)
 
-	cursor, err := r.roomsColl.Find(context.Background(), bson.M{"members": userID})
+	cursor, err := r.roomsColl.Find(ctx, bson.M{"members": userID})
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
@@ -96,12 +96,12 @@ func (r *chatRepository) GetRoomsByUser(userID string) ([]*domain.ChatRoom, erro
 	return rooms, nil
 }
 
-func (r *chatRepository) AddMemberToRoom(roomID string, userID string) error {
+func (r *chatRepository) AddMemberToRoom(ctx context.Context, roomID string, userID string) error {
 	logger := utils.NewLogger("ChatRepository.AddMemberToRoom")
 	logger.LogInput(map[string]string{"roomID": roomID, "userID": userID})
 
 	_, err := r.roomsColl.UpdateOne(
-		context.Background(),
+		ctx,
 		bson.M{"_id": roomID},
 		bson.M{"$addToSet": bson.M{"members": userID}},
 	)
@@ -114,12 +114,12 @@ func (r *chatRepository) AddMemberToRoom(roomID string, userID string) error {
 	return nil
 }
 
-func (r *chatRepository) RemoveMemberFromRoom(roomID string, userID string) error {
+func (r *chatRepository) RemoveMemberFromRoom(ctx context.Context, roomID string, userID string) error {
 	logger := utils.NewLogger("ChatRepository.RemoveMemberFromRoom")
 	logger.LogInput(map[string]string{"roomID": roomID, "userID": userID})
 
 	_, err := r.roomsColl.UpdateOne(
-		context.Background(),
+		ctx,
 		bson.M{"_id": roomID},
 		bson.M{"$pull": bson.M{"members": userID}},
 	)
@@ -132,12 +132,12 @@ func (r *chatRepository) RemoveMemberFromRoom(roomID string, userID string) erro
 	return nil
 }
 
-func (r *chatRepository) DeleteRoom(roomID string) error {
+func (r *chatRepository) DeleteRoom(ctx context.Context, roomID string) error {
 	logger := utils.NewLogger("ChatRepository.DeleteRoom")
 	logger.LogInput(roomID)
 
 	filter := bson.M{"_id": roomID}
-	_, err := r.roomsColl.DeleteOne(context.Background(), filter)
+	_, err := r.roomsColl.DeleteOne(ctx, filter)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -163,7 +163,7 @@ func (r *chatRepository) DeleteRoom(roomID string) error {
 	return nil
 }
 
-func (r *chatRepository) UpdateRoom(room *domain.ChatRoom) error {
+func (r *chatRepository) UpdateRoom(ctx context.Context, room *domain.ChatRoom) error {
 	logger := utils.NewLogger("ChatRepository.UpdateRoom")
 	logger.LogInput(room)
 
@@ -177,7 +177,7 @@ func (r *chatRepository) UpdateRoom(room *domain.ChatRoom) error {
 		},
 	}
 
-	_, err := r.roomsColl.UpdateOne(context.Background(), filter, update)
+	_, err := r.roomsColl.UpdateOne(ctx, filter, update)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -188,13 +188,13 @@ func (r *chatRepository) UpdateRoom(room *domain.ChatRoom) error {
 }
 
 // Message operations
-func (r *chatRepository) SaveMessage(message *domain.ChatMessage) error {
-	logger := utils.NewLogger("ChatRepository.SaveMessage")
+func (r *chatRepository) CreateMessage(ctx context.Context, message *domain.ChatMessage) error {
+	logger := utils.NewLogger("ChatRepository.CreateMessage")
 	logger.LogInput(message)
 
 	message.CreatedAt = time.Now()
 	message.UpdatedAt = time.Now()
-	_, err := r.messagesColl.InsertOne(context.Background(), message)
+	_, err := r.messagesColl.InsertOne(ctx, message)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -204,8 +204,8 @@ func (r *chatRepository) SaveMessage(message *domain.ChatMessage) error {
 	return nil
 }
 
-func (r *chatRepository) GetRoomMessages(roomID string, limit, offset int64) ([]*domain.ChatMessage, error) {
-	logger := utils.NewLogger("ChatRepository.GetRoomMessages")
+func (r *chatRepository) FindRoomMessages(ctx context.Context, roomID string, limit, offset int64) ([]*domain.ChatMessage, error) {
+	logger := utils.NewLogger("ChatRepository.FindRoomMessages")
 	logger.LogInput(map[string]interface{}{
 		"roomID": roomID,
 		"limit":  limit,
@@ -234,7 +234,7 @@ func (r *chatRepository) GetRoomMessages(roomID string, limit, offset int64) ([]
 	return messages, nil
 }
 
-func (r *chatRepository) MarkMessageAsRead(messageID string, userID string) error {
+func (r *chatRepository) MarkMessageAsRead(ctx context.Context, messageID string, userID string) error {
 	logger := utils.NewLogger("ChatRepository.MarkMessageAsRead")
 	logger.LogInput(map[string]string{
 		"messageID": messageID,
@@ -255,8 +255,8 @@ func (r *chatRepository) MarkMessageAsRead(messageID string, userID string) erro
 	return nil
 }
 
-func (r *chatRepository) GetUnreadMessages(userID string, roomID string) ([]*domain.ChatMessage, error) {
-	logger := utils.NewLogger("ChatRepository.GetUnreadMessages")
+func (r *chatRepository) FindUnreadMessages(ctx context.Context, userID string, roomID string) ([]*domain.ChatMessage, error) {
+	logger := utils.NewLogger("ChatRepository.FindUnreadMessages")
 	logger.LogInput(map[string]string{
 		"userID": userID,
 		"roomID": roomID,
@@ -294,12 +294,12 @@ func (r *chatRepository) GetUnreadMessages(userID string, roomID string) ([]*dom
 	return messages, nil
 }
 
-func (r *chatRepository) DeleteMessage(messageID string) error {
+func (r *chatRepository) DeleteMessage(ctx context.Context, messageID string) error {
 	logger := utils.NewLogger("ChatRepository.DeleteMessage")
 	logger.LogInput(messageID)
 
 	filter := bson.M{"_id": messageID}
-	_, err := r.messagesColl.DeleteOne(context.Background(), filter)
+	_, err := r.messagesColl.DeleteOne(ctx, filter)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -309,8 +309,8 @@ func (r *chatRepository) DeleteMessage(messageID string) error {
 	return nil
 }
 
-func (r *chatRepository) GetMessage(messageID string) (*domain.ChatMessage, error) {
-	logger := utils.NewLogger("ChatRepository.GetMessage")
+func (r *chatRepository) FindMessage(ctx context.Context, messageID string) (*domain.ChatMessage, error) {
+	logger := utils.NewLogger("ChatRepository.FindMessage")
 	logger.LogInput(messageID)
 
 	// Convert string to ObjectID
@@ -337,7 +337,7 @@ func (r *chatRepository) GetMessage(messageID string) (*domain.ChatMessage, erro
 }
 
 // User status operations
-func (r *chatRepository) UpdateUserStatus(status *domain.ChatUserStatus) error {
+func (r *chatRepository) UpdateUserStatus(ctx context.Context, status *domain.ChatUserStatus) error {
 	logger := utils.NewLogger("ChatRepository.UpdateUserStatus")
 	logger.LogInput(status)
 
@@ -355,13 +355,13 @@ func (r *chatRepository) UpdateUserStatus(status *domain.ChatUserStatus) error {
 	return nil
 }
 
-func (r *chatRepository) GetUserStatus(userID string) (*domain.ChatUserStatus, error) {
-	logger := utils.NewLogger("ChatRepository.GetUserStatus")
+func (r *chatRepository) FindUserStatus(ctx context.Context, userID string) (*domain.ChatUserStatus, error) {
+	logger := utils.NewLogger("ChatRepository.FindUserStatus")
 	logger.LogInput(userID)
 
 	filter := bson.M{"userId": userID}
 	var status domain.ChatUserStatus
-	err := r.userStatusColl.FindOne(context.Background(), filter).Decode(&status)
+	err := r.userStatusColl.FindOne(ctx, filter).Decode(&status)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			logger.LogOutput(nil, nil)
@@ -375,12 +375,12 @@ func (r *chatRepository) GetUserStatus(userID string) (*domain.ChatUserStatus, e
 	return &status, nil
 }
 
-func (r *chatRepository) GetOnlineUsers(userIDs []string) ([]*domain.ChatUserStatus, error) {
-	logger := utils.NewLogger("ChatRepository.GetOnlineUsers")
+func (r *chatRepository) FindOnlineUsers(ctx context.Context, userIDs []string) ([]*domain.ChatUserStatus, error) {
+	logger := utils.NewLogger("ChatRepository.FindOnlineUsers")
 	logger.LogInput(userIDs)
 
 	cursor, err := r.userStatusColl.Find(
-		context.Background(),
+		ctx,
 		bson.M{
 			"_id":       bson.M{"$in": userIDs},
 			"is_online": true,
@@ -403,12 +403,12 @@ func (r *chatRepository) GetOnlineUsers(userIDs []string) ([]*domain.ChatUserSta
 }
 
 // Notification operations
-func (r *chatRepository) CreateNotification(notification *domain.ChatNotification) error {
+func (r *chatRepository) CreateNotification(ctx context.Context, notification *domain.ChatNotification) error {
 	logger := utils.NewLogger("ChatRepository.CreateNotification")
 	logger.LogInput(notification)
 
 	notification.CreatedAt = time.Now()
-	_, err := r.notificationsColl.InsertOne(context.Background(), notification)
+	_, err := r.notificationsColl.InsertOne(ctx, notification)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -418,12 +418,12 @@ func (r *chatRepository) CreateNotification(notification *domain.ChatNotificatio
 	return nil
 }
 
-func (r *chatRepository) GetUserNotifications(userID string) ([]*domain.ChatNotification, error) {
-	logger := utils.NewLogger("ChatRepository.GetUserNotifications")
+func (r *chatRepository) FindUserNotifications(ctx context.Context, userID string) ([]*domain.ChatNotification, error) {
+	logger := utils.NewLogger("ChatRepository.FindUserNotifications")
 	logger.LogInput(userID)
 
 	cursor, err := r.notificationsColl.Find(
-		context.Background(),
+		ctx,
 		bson.M{"userId": userID},
 	)
 	if err != nil {
@@ -442,12 +442,12 @@ func (r *chatRepository) GetUserNotifications(userID string) ([]*domain.ChatNoti
 	return notifications, nil
 }
 
-func (r *chatRepository) MarkNotificationAsRead(notificationID string) error {
+func (r *chatRepository) MarkNotificationAsRead(ctx context.Context, notificationID string) error {
 	logger := utils.NewLogger("ChatRepository.MarkNotificationAsRead")
 	logger.LogInput(notificationID)
 
 	_, err := r.notificationsColl.UpdateOne(
-		context.Background(),
+		ctx,
 		bson.M{"_id": notificationID},
 		bson.M{"$set": bson.M{"is_read": true}},
 	)
@@ -460,12 +460,12 @@ func (r *chatRepository) MarkNotificationAsRead(notificationID string) error {
 	return nil
 }
 
-func (r *chatRepository) DeleteNotification(notificationID string) error {
+func (r *chatRepository) DeleteNotification(ctx context.Context, notificationID string) error {
 	logger := utils.NewLogger("ChatRepository.DeleteNotification")
 	logger.LogInput(notificationID)
 
 	filter := bson.M{"_id": notificationID}
-	_, err := r.notificationsColl.DeleteOne(context.Background(), filter)
+	_, err := r.notificationsColl.DeleteOne(ctx, filter)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
@@ -475,8 +475,8 @@ func (r *chatRepository) DeleteNotification(notificationID string) error {
 	return nil
 }
 
-func (r *chatRepository) GetNotification(notificationID string) (*domain.ChatNotification, error) {
-	logger := utils.NewLogger("ChatRepository.GetNotification")
+func (r *chatRepository) FindNotification(ctx context.Context, notificationID string) (*domain.ChatNotification, error) {
+	logger := utils.NewLogger("ChatRepository.FindNotification")
 	logger.LogInput(notificationID)
 
 	// Convert string to ObjectID
@@ -502,8 +502,8 @@ func (r *chatRepository) GetNotification(notificationID string) (*domain.ChatNot
 	return &notification, nil
 }
 
-func (r *chatRepository) SaveNotification(notification *domain.ChatNotification) error {
-	logger := utils.NewLogger("ChatRepository.SaveNotification")
+func (r *chatRepository) CreateNotification(ctx context.Context, notification *domain.ChatNotification) error {
+	logger := utils.NewLogger("ChatRepository.CreateNotification")
 	logger.LogInput(notification)
 
 	notification.UpdatedAt = time.Now()
@@ -522,7 +522,7 @@ func (r *chatRepository) SaveNotification(notification *domain.ChatNotification)
 	return nil
 }
 
-func (r *chatRepository) DeleteRoomNotifications(roomID string) error {
+func (r *chatRepository) DeleteRoomNotifications(ctx context.Context, roomID string) error {
 	logger := utils.NewLogger("ChatRepository.DeleteRoomNotifications")
 	logger.LogInput(roomID)
 

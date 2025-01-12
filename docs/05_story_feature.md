@@ -54,9 +54,9 @@ Story repository จัดการการเข้าถึงข้อมู
 ## Usecase Layer
 Story usecase จัดการ business logic โดยมีฟังก์ชันหลักดังนี้:
 - `CreateStory`: สร้าง story ใหม่พร้อมตรวจสอบความถูกต้องของข้อมูล
-- `GetStoryByID`: ดึงข้อมูล story ตาม ID
-- `GetUserStories`: ดึง stories ทั้งหมดของผู้ใช้
-- `GetActiveStories`: ดึง stories ที่ยังใช้งานได้
+- `FindStoryByID`: ดึงข้อมูล story ตาม ID
+- `FindUserStories`: ดึง stories ทั้งหมดของผู้ใช้
+- `FindActiveStories`: ดึง stories ที่ยังใช้งานได้
 - `ViewStory`: บันทึกการดู story พร้อมตรวจสอบว่าผู้ดูมีอยู่จริงและยังไม่เคยดู
 - `DeleteStory`: ลบ story พร้อมตรวจสอบสิทธิ์การลบ
 - `ArchiveExpiredStories`: เก็บ stories ที่หมดอายุเข้า archive

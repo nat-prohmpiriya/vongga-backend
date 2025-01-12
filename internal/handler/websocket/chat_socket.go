@@ -216,7 +216,7 @@ func (c *Client) ReadPump() {
 	}
 
 	// ดึงข้อมูลห้องแชทที่ user เป็นสมาชิกและเพิ่มเข้าไปใน RoomIDs
-	rooms, err := c.Hub.ChatUsecase.GetRoomsByUserID(c.UserID)
+	rooms, err := c.Hub.ChatUsecase.FindRoomsByUserID(c.UserID)
 	if err != nil {
 		logger.LogOutput(nil, fmt.Errorf("error getting user rooms: %v", err))
 	} else {

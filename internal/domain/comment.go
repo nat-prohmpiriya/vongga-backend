@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"context"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -16,30 +18,30 @@ type Comment struct {
 
 // Repository interface
 type CommentRepository interface {
-	Create(comment *Comment) error
-	Update(comment *Comment) error
-	Delete(id primitive.ObjectID) error
-	FindByID(id primitive.ObjectID) (*Comment, error)
-	FindByPostID(postID primitive.ObjectID, limit, offset int) ([]Comment, error)
+	Create(ctx context.Context, comment *Comment) error
+	Update(ctx context.Context, comment *Comment) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+	FindByID(ctx context.Context, id primitive.ObjectID) (*Comment, error)
+	FindByPostID(ctx context.Context, postID primitive.ObjectID, limit, offset int) ([]Comment, error)
 }
 
 // UseCase interface
 type CommentUseCase interface {
-	CreateComment(userID, postID primitive.ObjectID, content string, media []Media, replyTo *primitive.ObjectID) (*Comment, error)
-	UpdateComment(commentID primitive.ObjectID, content string, media []Media) (*Comment, error)
-	DeleteComment(commentID primitive.ObjectID) error
-	GetComment(commentID primitive.ObjectID) (*Comment, error)
-	ListComments(postID primitive.ObjectID, limit, offset int) ([]Comment, error)
+	CreateComment(ctx context.Context, userID, postID primitive.ObjectID, content string, media []Media, replyTo *primitive.ObjectID) (*Comment, error)
+	UpdateComment(ctx context.Context, commentID primitive.ObjectID, content string, media []Media) (*Comment, error)
+	DeleteComment(ctx context.Context, commentID primitive.ObjectID) error
+	FindComment(ctx context.Context, commentID primitive.ObjectID) (*Comment, error)
+	FindManyComments(ctx context.Context, postID primitive.ObjectID, limit, offset int) ([]Comment, error)
 }
 
 // CommentUser represents limited user data for comment owner
 type CommentUser struct {
 	ID           primitive.ObjectID `json:"userId"`
-	Username     string            `json:"username"`
-	DisplayName  string            `json:"displayName"`
-	PhotoProfile string            `json:"photoProfile"`
-	FirstName    string            `json:"firstName"`
-	LastName     string            `json:"lastName"`
+	Username     string             `json:"username"`
+	DisplayName  string             `json:"displayName"`
+	PhotoProfile string             `json:"photoProfile"`
+	FirstName    string             `json:"firstName"`
+	LastName     string             `json:"lastName"`
 }
 
 // CommentWithUser includes Comment and its related user data

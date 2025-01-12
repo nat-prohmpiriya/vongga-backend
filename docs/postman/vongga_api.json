@@ -171,7 +171,7 @@
 								"refresh"
 							]
 						},
-						"description": "Get a new access token using refresh token"
+						"description": "Find a new access token using refresh token"
 					},
 					"response": [
 						{
@@ -436,7 +436,7 @@
 					"response": []
 				},
 				{
-					"name": "Get Profile",
+					"name": "Find Profile",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -466,11 +466,11 @@
 								"me"
 							]
 						},
-						"description": "Get the current user's profile"
+						"description": "Find the current user's profile"
 					},
 					"response": [
 						{
-							"name": "Get Profile",
+							"name": "Find Profile",
 							"originalRequest": {
 								"method": "GET",
 								"header": [
@@ -690,7 +690,7 @@
 					]
 				},
 				{
-					"name": "Get User By Username",
+					"name": "Find User By Username",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -716,7 +716,7 @@
 								}
 							]
 						},
-						"description": "Get a user's profile by username"
+						"description": "Find a user's profile by username"
 					},
 					"response": []
 				},
@@ -874,7 +874,7 @@
 					"response": []
 				},
 				{
-					"name": "Get Followers",
+					"name": "Find Followers",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -899,7 +899,7 @@
 					"response": []
 				},
 				{
-					"name": "Get Following",
+					"name": "Find Following",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -1122,7 +1122,7 @@
 					"response": []
 				},
 				{
-					"name": "List Friends",
+					"name": "FindMany Friends",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -1145,7 +1145,7 @@
 					"response": []
 				},
 				{
-					"name": "List Friend Requests",
+					"name": "FindMany Friend Requests",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -1289,7 +1289,7 @@
 							"response": []
 						},
 						{
-							"name": "Get SubPost",
+							"name": "Find SubPost",
 							"request": {
 								"method": "GET",
 								"header": [
@@ -1316,12 +1316,12 @@
 										}
 									]
 								},
-								"description": "Get a specific subpost"
+								"description": "Find a specific subpost"
 							},
 							"response": []
 						},
 						{
-							"name": "List SubPosts",
+							"name": "FindMany SubPosts",
 							"request": {
 								"method": "GET",
 								"header": [
@@ -1348,7 +1348,7 @@
 										}
 									]
 								},
-								"description": "List all subposts of a post"
+								"description": "FindMany all subposts of a post"
 							},
 							"response": []
 						},
@@ -1552,7 +1552,7 @@
 					"response": []
 				},
 				{
-					"name": "Get Post",
+					"name": "Find Post",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -1584,11 +1584,11 @@
 								}
 							]
 						},
-						"description": "Get a post by ID"
+						"description": "Find a post by ID"
 					},
 					"response": [
 						{
-							"name": "Get Post",
+							"name": "Find Post",
 							"originalRequest": {
 								"method": "GET",
 								"header": [
@@ -1648,7 +1648,7 @@
 					]
 				},
 				{
-					"name": "List Posts",
+					"name": "FindMany Posts",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -1699,11 +1699,11 @@
 								}
 							]
 						},
-						"description": "Get posts for a specific user with optional filtering and pagination"
+						"description": "Find posts for a specific user with optional filtering and pagination"
 					},
 					"response": [
 						{
-							"name": "List Posts",
+							"name": "FindMany Posts",
 							"originalRequest": {
 								"method": "GET",
 								"header": [
@@ -1907,7 +1907,7 @@
 					"response": []
 				},
 				{
-					"name": "List Comments",
+					"name": "FindMany Comments",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -1940,11 +1940,11 @@
 								}
 							]
 						},
-						"description": "List comments for a post with pagination"
+						"description": "FindMany comments for a post with pagination"
 					},
 					"response": [
 						{
-							"name": "List Comments",
+							"name": "FindMany Comments",
 							"originalRequest": {
 								"method": "GET",
 								"header": [
@@ -2073,7 +2073,7 @@
 					"response": []
 				},
 				{
-					"name": "List Reactions",
+					"name": "FindMany Reactions",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2106,7 +2106,7 @@
 								}
 							]
 						},
-						"description": "List reactions for a post with pagination"
+						"description": "FindMany reactions for a post with pagination"
 					},
 					"response": []
 				}
@@ -2191,7 +2191,7 @@
 			"name": "Notifications",
 			"item": [
 				{
-					"name": "List Notifications",
+					"name": "FindMany Notifications",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2222,12 +2222,12 @@
 								}
 							]
 						},
-						"description": "Get a list of notifications with pagination"
+						"description": "Find a list of notifications with pagination"
 					},
 					"response": []
 				},
 				{
-					"name": "Get Notification",
+					"name": "Find Notification",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2254,7 +2254,7 @@
 								}
 							]
 						},
-						"description": "Get details of a specific notification"
+						"description": "Find details of a specific notification"
 					},
 					"response": []
 				},
@@ -2349,7 +2349,7 @@
 					"response": []
 				},
 				{
-					"name": "Get Unread Count",
+					"name": "Find Unread Count",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2369,7 +2369,7 @@
 								"unread-count"
 							]
 						},
-						"description": "Get the number of unread notifications"
+						"description": "Find the number of unread notifications"
 					},
 					"response": []
 				}
@@ -2411,7 +2411,7 @@
 					"response": []
 				},
 				{
-					"name": "Get Active Stories",
+					"name": "Find Active Stories",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2431,12 +2431,12 @@
 								"active"
 							]
 						},
-						"description": "Get all active stories"
+						"description": "Find all active stories"
 					},
 					"response": []
 				},
 				{
-					"name": "Get User Stories",
+					"name": "Find User Stories",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2464,12 +2464,12 @@
 								}
 							]
 						},
-						"description": "Get all stories for a specific user"
+						"description": "Find all stories for a specific user"
 					},
 					"response": []
 				},
 				{
-					"name": "Get Story",
+					"name": "Find Story",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2496,7 +2496,7 @@
 								}
 							]
 						},
-						"description": "Get details of a specific story"
+						"description": "Find details of a specific story"
 					},
 					"response": []
 				},
@@ -2639,7 +2639,7 @@
 					"response": []
 				},
 				{
-					"name": "Get User Chats",
+					"name": "Find User Chats",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2659,7 +2659,7 @@
 								"rooms"
 							]
 						},
-						"description": "Get all chat rooms for the current user"
+						"description": "Find all chat rooms for the current user"
 					},
 					"response": []
 				},
@@ -2820,7 +2820,7 @@
 					"response": []
 				},
 				{
-					"name": "Get Chat Messages",
+					"name": "Find Chat Messages",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2849,7 +2849,7 @@
 								}
 							]
 						},
-						"description": "Get messages from a chat room"
+						"description": "Find messages from a chat room"
 					},
 					"response": []
 				},
@@ -2921,7 +2921,7 @@
 					"response": []
 				},
 				{
-					"name": "Get User Status",
+					"name": "Find User Status",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2949,12 +2949,12 @@
 								}
 							]
 						},
-						"description": "Get user's chat status"
+						"description": "Find user's chat status"
 					},
 					"response": []
 				},
 				{
-					"name": "Get User Notifications",
+					"name": "Find User Notifications",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2974,7 +2974,7 @@
 								"notifications"
 							]
 						},
-						"description": "Get user's chat notifications"
+						"description": "Find user's chat notifications"
 					},
 					"response": []
 				},

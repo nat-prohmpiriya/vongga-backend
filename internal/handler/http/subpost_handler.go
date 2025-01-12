@@ -22,8 +22,8 @@ func NewSubPostHandler(router fiber.Router, su domain.SubPostUseCase) {
 	router.Post("/:postId/subposts", handler.CreateSubPost)
 	router.Put("/subposts/:id", handler.UpdateSubPost)
 	router.Delete("/subposts/:id", handler.DeleteSubPost)
-	router.Get("/subposts/:id", handler.GetSubPost)
-	router.Get("/:postId/subposts", handler.ListSubPosts)
+	router.Find("/subposts/:id", handler.FindSubPost)
+	router.Find("/:postId/subposts", handler.FindManySubPosts)
 	router.Put("/:postId/subposts/reorder", handler.ReorderSubPosts)
 }
 
@@ -52,7 +52,7 @@ func (h *SubPostHandler) CreateSubPost(c *fiber.Ctx) error {
 		})
 	}
 
-	// TODO: Get userID from auth context
+	// TODO: Find userID from auth context
 	userID := primitive.NewObjectID()
 
 	input := map[string]interface{}{
@@ -140,8 +140,8 @@ func (h *SubPostHandler) DeleteSubPost(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-func (h *SubPostHandler) GetSubPost(c *fiber.Ctx) error {
-	logger := utils.NewLogger("SubPostHandler.GetSubPost")
+func (h *SubPostHandler) FindSubPost(c *fiber.Ctx) error {
+	logger := utils.NewLogger("SubPostHandler.FindSubPost")
 
 	subPostID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
@@ -152,7 +152,7 @@ func (h *SubPostHandler) GetSubPost(c *fiber.Ctx) error {
 	}
 	logger.LogInput(subPostID)
 
-	subPost, err := h.subPostUseCase.GetSubPost(subPostID)
+	subPost, err := h.subPostUseCase.FindSubPost(subPostID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -164,8 +164,8 @@ func (h *SubPostHandler) GetSubPost(c *fiber.Ctx) error {
 	return c.JSON(subPost)
 }
 
-func (h *SubPostHandler) ListSubPosts(c *fiber.Ctx) error {
-	logger := utils.NewLogger("SubPostHandler.ListSubPosts")
+func (h *SubPostHandler) FindManySubPosts(c *fiber.Ctx) error {
+	logger := utils.NewLogger("SubPostHandler.FindManySubPosts")
 
 	parentID, err := primitive.ObjectIDFromHex(c.Params("postId"))
 	if err != nil {
@@ -185,7 +185,7 @@ func (h *SubPostHandler) ListSubPosts(c *fiber.Ctx) error {
 	}
 	logger.LogInput(input)
 
-	subPosts, err := h.subPostUseCase.ListSubPosts(parentID, limit, offset)
+	subPosts, err := h.subPostUseCase.FindManySubPosts(parentID, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

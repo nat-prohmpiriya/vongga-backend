@@ -97,7 +97,7 @@ func (fs *fileStorage) Upload(file *domain.File, fileData multipart.File) (*doma
 		return nil, fmt.Errorf("error closing writer: %v", err)
 	}
 
-	// Get object attributes
+	// Find object attributes
 	attrs, err := obj.Attrs(ctx)
 	if err != nil {
 		logger.LogOutput(nil, fmt.Errorf("error getting object attributes: %v", err))

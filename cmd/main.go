@@ -17,6 +17,7 @@ import (
 
 	"vongga-api/infrastucture/firebase"
 	"vongga-api/infrastucture/mongodb"
+	"vongga-api/infrastucture/otel"
 	"vongga-api/infrastucture/redis"
 
 	// เพิ่มตรงนี้
@@ -64,6 +65,18 @@ func main() {
 		log.Fatal(err)
 	}
 
+	tracerProvider, err := otel.TraceProvider()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err := tracerProvider.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
+	tracer := tracerProvider.Tracer("vongga-api")
+
 	// Initialize MongoDB
 	db, err := mongodb.InitMongo(cfg)
 	if err != nil {
@@ -84,16 +97,16 @@ func main() {
 	log.Println("Connected to Redis successfully")
 
 	// Initialize repositories
-	userRepo := repository.NewUserRepository(db, redisClient)
-	postRepo := repository.NewPostRepository(db, redisClient)
-	followRepo := repository.NewFollowRepository(db)
-	friendshipRepo := repository.NewFriendshipRepository(db)
-	notificationRepo := repository.NewNotificationRepository(db, redisClient)
-	commentRepo := repository.NewCommentRepository(db, redisClient)
-	reactionRepo := repository.NewReactionRepository(db)
-	subPostRepo := repository.NewSubPostRepository(db, redisClient)
-	storyRepo := repository.NewStoryRepository(db, redisClient)
-	chatRepo := repository.NewChatRepository(db)
+	userRepo := repository.NewUserRepository(db, redisClient, tracer)
+	postRepo := repository.NewPostRepository(db, redisClient, tracer)
+	followRepo := repository.NewFollowRepository(db, tracer)
+	friendshipRepo := repository.NewFriendshipRepository(db, tracer)
+	notificationRepo := repository.NewNotificationRepository(db, redisClient, tracer)
+	commentRepo := repository.NewCommentRepository(db, redisClient, tracer)
+	reactionRepo := repository.NewReactionRepository(db, tracer)
+	subPostRepo := repository.NewSubPostRepository(db, redisClient, tracer)
+	storyRepo := repository.NewStoryRepository(db, redisClient, tracer)
+	chatRepo := repository.NewChatRepository(db, tracer)
 	fileRepo, err := repository.NewFileStorage(cfg.FirebaseCredentialsPath, cfg.FirebaseStorageBucket)
 	if err != nil {
 		log.Fatal(err)
@@ -110,8 +123,8 @@ func main() {
 		redisClient,
 		cfg.JWTSecret,
 		cfg.RefreshTokenSecret,
-		cfg.GetJWTExpiry(),
-		cfg.GetRefreshTokenExpiry(),
+		cfg.FindJWTExpiry(),
+		cfg.FindRefreshTokenExpiry(),
 	)
 	followUseCase := usecase.NewFollowUseCase(followRepo, notificationUseCase)
 	friendshipUseCase := usecase.NewFriendshipUseCase(friendshipRepo, notificationUseCase)
@@ -206,5 +219,5 @@ func main() {
 	handler.NewChatHandler(chats, chatUseCase)
 
 	// Start server
-	log.Fatal(app.Listen(cfg.ServerAddress))
+	log.Fatal(app.FindManyen(cfg.ServerAddress))
 }

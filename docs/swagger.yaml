@@ -150,7 +150,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Get new access token using refresh token
+      description: Find new access token using refresh token
       parameters:
       - description: Refresh token request
         in: body

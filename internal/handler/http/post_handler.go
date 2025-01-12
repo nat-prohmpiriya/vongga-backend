@@ -20,8 +20,8 @@ func NewPostHandler(router fiber.Router, pu domain.PostUseCase) *PostHandler {
 	}
 
 	router.Post("/", handler.CreatePost)
-	router.Get("/", handler.ListPosts)
-	router.Get("/:id", handler.GetPost)
+	router.Find("/", handler.FindManyPosts)
+	router.Find("/:id", handler.FindPost)
 	router.Put("/:id", handler.UpdatePost)
 	router.Delete("/:id", handler.DeletePost)
 
@@ -56,7 +56,7 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 		})
 	}
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -145,8 +145,8 @@ func (h *PostHandler) DeletePost(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-func (h *PostHandler) GetPost(c *fiber.Ctx) error {
-	logger := utils.NewLogger("PostHandler.GetPost")
+func (h *PostHandler) FindPost(c *fiber.Ctx) error {
+	logger := utils.NewLogger("PostHandler.FindPost")
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
@@ -163,7 +163,7 @@ func (h *PostHandler) GetPost(c *fiber.Ctx) error {
 	}
 	logger.LogInput(input)
 
-	post, err := h.postUseCase.GetPost(postID, includeSubPosts)
+	post, err := h.postUseCase.FindPost(postID, includeSubPosts)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		if domain.IsNotFoundError(err) {
@@ -180,8 +180,8 @@ func (h *PostHandler) GetPost(c *fiber.Ctx) error {
 	return c.JSON(post)
 }
 
-func (h *PostHandler) ListPosts(c *fiber.Ctx) error {
-	logger := utils.NewLogger("PostHandler.ListPosts")
+func (h *PostHandler) FindManyPosts(c *fiber.Ctx) error {
+	logger := utils.NewLogger("PostHandler.FindManyPosts")
 
 	userIDStr := c.Query("userId")
 	if userIDStr == "" {
@@ -222,7 +222,7 @@ func (h *PostHandler) ListPosts(c *fiber.Ctx) error {
 	}
 	logger.LogInput(input)
 
-	posts, err := h.postUseCase.ListPosts(userID, limit, offset, includeSubPosts, hasMedia, mediaType)
+	posts, err := h.postUseCase.FindManyPosts(userID, limit, offset, includeSubPosts, hasMedia, mediaType)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

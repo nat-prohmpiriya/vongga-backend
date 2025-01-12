@@ -402,7 +402,7 @@ func (r *storyRepository) DeleteStory(id string) error {
 		return err
 	}
 
-	// Get story first to get userID for cache invalidation
+	// Find story first to get userID for cache invalidation
 	var story domain.Story
 	err = r.collection.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&story)
 	if err != nil {

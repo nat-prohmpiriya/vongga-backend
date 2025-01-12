@@ -85,12 +85,12 @@ Each notification contains:
 // NotificationUseCase interface
 type NotificationUseCase interface {
     CreateNotification(recipientID, senderID, refID primitive.ObjectID, nType NotificationType, refType, message string) (*Notification, error)
-    GetNotification(notificationID primitive.ObjectID) (*Notification, error)
-    ListNotifications(recipientID primitive.ObjectID, limit, offset int) ([]Notification, error)
+    FindNotification(notificationID primitive.ObjectID) (*Notification, error)
+    FindManyNotifications(recipientID primitive.ObjectID, limit, offset int) ([]Notification, error)
     MarkAsRead(notificationID primitive.ObjectID) error
     MarkAllAsRead(recipientID primitive.ObjectID) error
     DeleteNotification(notificationID primitive.ObjectID) error
-    GetUnreadCount(recipientID primitive.ObjectID) (int64, error)
+    FindUnreadCount(recipientID primitive.ObjectID) (int64, error)
 }
 ```
 

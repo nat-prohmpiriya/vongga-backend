@@ -46,7 +46,7 @@ Content-Type: application/json
 }
 ```
 
-#### Get User's Chat Rooms
+#### Find User's Chat Rooms
 ```http
 GET /api/chat/rooms
 ```
@@ -88,7 +88,7 @@ roomId: string
 file: File
 ```
 
-#### Get Chat Messages
+#### Find Chat Messages
 ```http
 GET /api/chat/rooms/:roomId/messages?limit=20&offset=0
 ```

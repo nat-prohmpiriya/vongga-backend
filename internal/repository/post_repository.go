@@ -110,7 +110,7 @@ func (r *postRepository) Delete(id primitive.ObjectID) error {
 	filter := bson.M{"_id": id}
 	update := bson.M{"$set": bson.M{"deletedAt": now}}
 
-	// Get post first to get userID for cache invalidation
+	// Find post first to get userID for cache invalidation
 	var post domain.Post
 	err := r.collection.FindOne(context.Background(), filter).Decode(&post)
 	if err != nil {

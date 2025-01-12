@@ -22,10 +22,10 @@ func NewUserHandler(router fiber.Router, userUseCase domain.UserUseCase) *UserHa
 	router.Patch("/", handler.UpdateUser)
 	router.Delete("/", handler.DeleteAccount)
 	router.Post("/", handler.CreateOrUpdateUser)
-	router.Get("/me", handler.GetProfile)
-	router.Get("/check-username", handler.CheckUsername)
-	router.Get("/list", handler.GetUserList)
-	router.Get("/:username", handler.GetUserByUsername)
+	router.Find("/me", handler.FindProfile)
+	router.Find("/check-username", handler.CheckUsername)
+	router.Find("/list", handler.FindUserFindMany)
+	router.Find("/:username", handler.FindUserByUsername)
 
 	return handler
 }
@@ -33,7 +33,7 @@ func NewUserHandler(router fiber.Router, userUseCase domain.UserUseCase) *UserHa
 func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.CreateOrUpdateUser")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -93,10 +93,10 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 	})
 }
 
-func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
-	logger := utils.NewLogger("UserHandler.GetProfile")
+func (h *UserHandler) FindProfile(c *fiber.Ctx) error {
+	logger := utils.NewLogger("UserHandler.FindProfile")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -105,7 +105,7 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 	}
 	logger.LogInput(userID)
 
-	user, err := h.userUseCase.GetUserByID(userID.Hex())
+	user, err := h.userUseCase.FindUserByID(userID.Hex())
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -122,7 +122,7 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.UpdateUser")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -164,7 +164,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	logger.LogInput(userID, req)
-	user, err := h.userUseCase.GetUserByID(userID.Hex())
+	user, err := h.userUseCase.FindUserByID(userID.Hex())
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -196,7 +196,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 			})
 		}
 		// Check if username is already taken by another user
-		existingUser, err := h.userUseCase.GetUserByUsername(*req.Username)
+		existingUser, err := h.userUseCase.FindUserByUsername(*req.Username)
 		if err != nil {
 			logger.LogOutput(nil, err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -296,8 +296,8 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	})
 }
 
-func (h *UserHandler) GetUserByUsername(c *fiber.Ctx) error {
-	logger := utils.NewLogger("UserHandler.GetUserByUsername")
+func (h *UserHandler) FindUserByUsername(c *fiber.Ctx) error {
+	logger := utils.NewLogger("UserHandler.FindUserByUsername")
 
 	username := c.Params("username")
 	if username == "" {
@@ -310,7 +310,7 @@ func (h *UserHandler) GetUserByUsername(c *fiber.Ctx) error {
 	}
 
 	logger.LogInput(username)
-	user, err := h.userUseCase.GetUserByUsername(username)
+	user, err := h.userUseCase.FindUserByUsername(username)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -332,11 +332,11 @@ func (h *UserHandler) GetUserByUsername(c *fiber.Ctx) error {
 	})
 }
 
-func (h *UserHandler) GetUserList(c *fiber.Ctx) error {
-	logger := utils.NewLogger("UserHandler.GetUserList")
+func (h *UserHandler) FindUserFindMany(c *fiber.Ctx) error {
+	logger := utils.NewLogger("UserHandler.FindUserFindMany")
 
 	// Parse query parameters
-	req := &domain.UserListRequest{
+	req := &domain.UserFindManyRequest{
 		Page:     c.QueryInt("page", 1),
 		PageSize: c.QueryInt("pageSize", 10),
 		Search:   c.Query("search"),
@@ -347,8 +347,8 @@ func (h *UserHandler) GetUserList(c *fiber.Ctx) error {
 
 	logger.LogInput(req)
 
-	// Get user list from use case
-	response, err := h.userUseCase.GetUserList(req)
+	// Find user list from use case
+	response, err := h.userUseCase.FindUserFindMany(req)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -394,7 +394,7 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 	}
 
 	logger.LogInput(username)
-	user, err := h.userUseCase.GetUserByUsername(username)
+	user, err := h.userUseCase.FindUserByUsername(username)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -411,7 +411,7 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 func (h *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 	logger := utils.NewLogger("UserHandler.DeleteAccount")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{

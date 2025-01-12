@@ -19,7 +19,7 @@ sequenceDiagram
     Firebase-->>Client: 2. Firebase ID Token
     Client->>Backend: 3. POST /auth/login
     Note over Backend: 4. Verify Firebase Token
-    Backend->>MongoDB: 5. Get/Create User
+    Backend->>MongoDB: 5. Find/Create User
     Backend->>Redis: 6. Store Refresh Token
     Backend-->>Client: 7. {Access Token, Refresh Token}
 

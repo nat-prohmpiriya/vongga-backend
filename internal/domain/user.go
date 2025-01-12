@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 )
 
@@ -62,7 +63,7 @@ type Live struct {
 	Country string `bson:"country" json:"country"`
 }
 
-type UserListItem struct {
+type UserFindManyItem struct {
 	ID             string `json:"id"`
 	Username       string `json:"username"`
 	DisplayName    string `json:"displayName"`
@@ -77,7 +78,7 @@ type UserListItem struct {
 	FriendsCount   int    `json:"friendsCount"`
 }
 
-type UserListRequest struct {
+type UserFindManyRequest struct {
 	Page     int    `json:"page" query:"page"`
 	PageSize int    `json:"pageSize" query:"pageSize"`
 	Search   string `json:"search" query:"search"`
@@ -86,31 +87,31 @@ type UserListRequest struct {
 	Status   string `json:"status" query:"status"`
 }
 
-type UserListResponse struct {
-	Users      []UserListItem `json:"users"`
-	TotalCount int64         `json:"totalCount"`
-	Page       int           `json:"page"`
-	PageSize   int          `json:"pageSize"`
+type UserFindManyResponse struct {
+	Users      []UserFindManyItem `json:"users"`
+	TotalCount int64              `json:"totalCount"`
+	Page       int                `json:"page"`
+	PageSize   int                `json:"pageSize"`
 }
 
 type UserRepository interface {
-	Create(user *User) error
-	FindByFirebaseUID(firebaseUID string) (*User, error)
-	FindByEmail(email string) (*User, error)
-	FindByID(id string) (*User, error)
-	FindByUsername(username string) (*User, error)
-	Update(user *User) error
-	SoftDelete(id string) error
-	GetUserList(req *UserListRequest) ([]User, int64, error)
-	GetUserByID(userID string) (*User, error)
+	Create(ctx context.Context, user *User) error
+	FindByFirebaseUID(ctx context.Context, firebaseUID string) (*User, error)
+	FindByEmail(ctx context.Context, email string) (*User, error)
+	FindByID(ctx context.Context, id string) (*User, error)
+	FindByUsername(ctx context.Context, username string) (*User, error)
+	Update(ctx context.Context, user *User) error
+	SoftDelete(ctx context.Context, id string) error
+	FindUserFindMany(ctx context.Context, req *UserFindManyRequest) ([]User, int64, error)
+	FindUserByID(ctx context.Context, userID string) (*User, error)
 }
 
 type UserUseCase interface {
-	CreateOrUpdateUser(firebaseUID, email, firstName, lastName, photoURL string) (*User, error)
-	GetUserByID(id string) (*User, error)
-	GetUserByFirebaseUID(firebaseUID string) (*User, error)
-	GetUserByUsername(username string) (*User, error)
-	UpdateUser(user *User) error
-	DeleteAccount(userID string, authClient interface{}) error
-	GetUserList(req *UserListRequest) (*UserListResponse, error)
+	CreateOrUpdateUser(ctx context.Context, firebaseUID, email, firstName, lastName, photoURL string) (*User, error)
+	FindUserByID(ctx context.Context, id string) (*User, error)
+	FindUserByFirebaseUID(ctx context.Context, firebaseUID string) (*User, error)
+	FindUserByUsername(ctx context.Context, username string) (*User, error)
+	UpdateUser(ctx context.Context, user *User) error
+	DeleteAccount(ctx context.Context, userID string, authClient interface{}) error
+	FindUserFindMany(ctx context.Context, req *UserFindManyRequest) (*UserFindManyResponse, error)
 }

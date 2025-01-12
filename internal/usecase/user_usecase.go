@@ -79,8 +79,8 @@ func (u *userUseCase) CreateOrUpdateUser(firebaseUID, email, firstName, lastName
 	return user, nil
 }
 
-func (u *userUseCase) GetUserByFirebaseUID(firebaseUID string) (*domain.User, error) {
-	logger := utils.NewLogger("UserUseCase.GetUserByFirebaseUID")
+func (u *userUseCase) FindUserByFirebaseUID(firebaseUID string) (*domain.User, error) {
+	logger := utils.NewLogger("UserUseCase.FindUserByFirebaseUID")
 	logger.LogInput(firebaseUID)
 
 	user, err := u.userRepo.FindByFirebaseUID(firebaseUID)
@@ -99,8 +99,8 @@ func (u *userUseCase) GetUserByFirebaseUID(firebaseUID string) (*domain.User, er
 	return user, nil
 }
 
-func (u *userUseCase) GetUserByID(id string) (*domain.User, error) {
-	logger := utils.NewLogger("UserUseCase.GetUserByID")
+func (u *userUseCase) FindUserByID(id string) (*domain.User, error) {
+	logger := utils.NewLogger("UserUseCase.FindUserByID")
 	logger.LogInput(id)
 
 	user, err := u.userRepo.FindByID(id)
@@ -119,8 +119,8 @@ func (u *userUseCase) GetUserByID(id string) (*domain.User, error) {
 	return user, nil
 }
 
-func (u *userUseCase) GetUserByUsername(username string) (*domain.User, error) {
-	logger := utils.NewLogger("UserUseCase.GetUserByUsername")
+func (u *userUseCase) FindUserByUsername(username string) (*domain.User, error) {
+	logger := utils.NewLogger("UserUseCase.FindUserByUsername")
 	logger.LogInput(username)
 
 	user, err := u.userRepo.FindByUsername(username)
@@ -151,7 +151,7 @@ func (u *userUseCase) DeleteAccount(userID string, authClient interface{}) error
 	logger := utils.NewLogger("UserUseCase.DeleteAccount")
 	logger.LogInput(userID)
 
-	// Get user to get Firebase UID
+	// Find user to get Firebase UID
 	user, err := u.userRepo.FindByID(userID)
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -182,8 +182,8 @@ func (u *userUseCase) DeleteAccount(userID string, authClient interface{}) error
 	return nil
 }
 
-func (u *userUseCase) GetUserList(req *domain.UserListRequest) (*domain.UserListResponse, error) {
-	logger := utils.NewLogger("UserUseCase.GetUserList")
+func (u *userUseCase) FindUserFindMany(req *domain.UserFindManyRequest) (*domain.UserFindManyResponse, error) {
+	logger := utils.NewLogger("UserUseCase.FindUserFindMany")
 	logger.LogInput(req)
 
 	// Validate request
@@ -211,17 +211,17 @@ func (u *userUseCase) GetUserList(req *domain.UserListRequest) (*domain.UserList
 		req.SortDir = "desc"
 	}
 
-	// Get users from repository
-	users, totalCount, err := u.userRepo.GetUserList(req)
+	// Find users from repository
+	users, totalCount, err := u.userRepo.FindUserFindMany(req)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return nil, err
 	}
 
-	// Convert User to UserListItem
-	userItems := make([]domain.UserListItem, len(users))
+	// Convert User to UserFindManyItem
+	userItems := make([]domain.UserFindManyItem, len(users))
 	for i, user := range users {
-		userItems[i] = domain.UserListItem{
+		userItems[i] = domain.UserFindManyItem{
 			ID:             user.ID.Hex(),
 			Username:       user.Username,
 			DisplayName:    user.DisplayName,
@@ -237,7 +237,7 @@ func (u *userUseCase) GetUserList(req *domain.UserListRequest) (*domain.UserList
 		}
 	}
 
-	response := &domain.UserListResponse{
+	response := &domain.UserFindManyResponse{
 		Users:      userItems,
 		TotalCount: totalCount,
 		Page:       req.Page,

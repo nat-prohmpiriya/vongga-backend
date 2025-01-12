@@ -41,7 +41,7 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 	}
 	logger.LogInput(input)
 
-	// Get post to increment comment count and get post owner
+	// Find post to increment comment count and get post owner
 	post, err := c.postRepo.FindByID(postID)
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -186,14 +186,14 @@ func (c *commentUseCase) DeleteComment(commentID primitive.ObjectID) error {
 	logger := utils.NewLogger("CommentUseCase.DeleteComment")
 	logger.LogInput(commentID)
 
-	// Get comment to get postID
+	// Find comment to get postID
 	comment, err := c.commentRepo.FindByID(commentID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
 	}
 
-	// Get post to decrement comment count
+	// Find post to decrement comment count
 	post, err := c.postRepo.FindByID(comment.PostID)
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -220,8 +220,8 @@ func (c *commentUseCase) DeleteComment(commentID primitive.ObjectID) error {
 	return nil
 }
 
-func (c *commentUseCase) GetComment(commentID primitive.ObjectID) (*domain.Comment, error) {
-	logger := utils.NewLogger("CommentUseCase.GetComment")
+func (c *commentUseCase) FindComment(commentID primitive.ObjectID) (*domain.Comment, error) {
+	logger := utils.NewLogger("CommentUseCase.FindComment")
 	logger.LogInput(commentID)
 
 	comment, err := c.commentRepo.FindByID(commentID)
@@ -234,8 +234,8 @@ func (c *commentUseCase) GetComment(commentID primitive.ObjectID) (*domain.Comme
 	return comment, nil
 }
 
-func (c *commentUseCase) ListComments(postID primitive.ObjectID, limit, offset int) ([]domain.Comment, error) {
-	logger := utils.NewLogger("CommentUseCase.ListComments")
+func (c *commentUseCase) FindManyComments(postID primitive.ObjectID, limit, offset int) ([]domain.Comment, error) {
+	logger := utils.NewLogger("CommentUseCase.FindManyComments")
 	input := map[string]interface{}{
 		"postID": postID,
 		"limit":  limit,

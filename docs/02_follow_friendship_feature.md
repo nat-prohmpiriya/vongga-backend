@@ -30,29 +30,29 @@ The follow feature allows users to follow other users without requiring mutual c
   - Error (400): Invalid user ID
   - Error (500): Internal server error
 
-#### 3. Get Followers
+#### 3. Find Followers
 - Endpoint: `GET /api/v1/followers/:id`
-- Description: Get list of users who follow the specified user
+- Description: Find list of users who follow the specified user
 - Authentication: Optional
 - Parameters:
   - `id`: User ID
   - `limit`: Number of results per page (default: 10)
   - `offset`: Pagination offset (default: 0)
 - Response:
-  - Success (200): List of followers
+  - Success (200): FindMany of followers
   - Error (400): Invalid user ID
   - Error (500): Internal server error
 
-#### 4. Get Following
+#### 4. Find Following
 - Endpoint: `GET /api/v1/following/:id`
-- Description: Get list of users that the specified user follows
+- Description: Find list of users that the specified user follows
 - Authentication: Optional
 - Parameters:
   - `id`: User ID
   - `limit`: Number of results per page (default: 10)
   - `offset`: Pagination offset (default: 0)
 - Response:
-  - Success (200): List of following users
+  - Success (200): FindMany of following users
   - Error (400): Invalid user ID
   - Error (500): Internal server error
 
@@ -141,28 +141,28 @@ The friendship feature implements a bidirectional relationship between users, re
   - Error (400): Invalid user ID or not friends
   - Error (500): Internal server error
 
-#### 6. Get Friends
+#### 6. Find Friends
 - Endpoint: `GET /api/v1/friends/:id`
-- Description: Get list of user's friends
+- Description: Find list of user's friends
 - Authentication: Optional
 - Parameters:
   - `id`: User ID
   - `limit`: Number of results per page (default: 10)
   - `offset`: Pagination offset (default: 0)
 - Response:
-  - Success (200): List of friends
+  - Success (200): FindMany of friends
   - Error (400): Invalid user ID
   - Error (500): Internal server error
 
-#### 7. Get Friend Requests
+#### 7. Find Friend Requests
 - Endpoint: `GET /api/v1/friends/requests`
-- Description: Get list of pending friend requests
+- Description: Find list of pending friend requests
 - Authentication: Required
 - Parameters:
   - `limit`: Number of results per page (default: 10)
   - `offset`: Pagination offset (default: 0)
 - Response:
-  - Success (200): List of pending friend requests
+  - Success (200): FindMany of pending friend requests
   - Error (400): Invalid user ID
   - Error (500): Internal server error
 

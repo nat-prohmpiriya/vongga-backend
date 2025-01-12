@@ -2,6 +2,8 @@ package domain
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"context"
 )
 
 // Friendship represents a friendship relationship between two users
@@ -15,32 +17,32 @@ type Friendship struct {
 
 // FriendshipRepository interface defines methods for friendship persistence
 type FriendshipRepository interface {
-	Create(friendship *Friendship) error
-	Update(friendship *Friendship) error
-	Delete(userID1, userID2 primitive.ObjectID) error
-	FindByUsers(userID1, userID2 primitive.ObjectID) (*Friendship, error)
-	FindFriends(userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
-	FindPendingRequests(userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
-	CountFriends(userID primitive.ObjectID) (int64, error)
-	CountPendingRequests(userID primitive.ObjectID) (int64, error)
-	FindByID(id primitive.ObjectID) (*Friendship, error)
-	RemoveFriend(userID, targetID primitive.ObjectID) error
+	Create(ctx context.Context, friendship *Friendship) error
+	Update(ctx context.Context, friendship *Friendship) error
+	Delete(ctx context.Context, userID1, userID2 primitive.ObjectID) error
+	FindByUsers(ctx context.Context, userID1, userID2 primitive.ObjectID) (*Friendship, error)
+	FindFriends(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
+	FindPendingRequests(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
+	CountFriends(ctx context.Context, userID primitive.ObjectID) (int64, error)
+	CountPendingRequests(ctx context.Context, userID primitive.ObjectID) (int64, error)
+	FindByID(ctx context.Context, id primitive.ObjectID) (*Friendship, error)
+	RemoveFriend(ctx context.Context, userID, targetID primitive.ObjectID) error
 }
 
 // FriendshipUseCase interface defines business logic for friendships
 type FriendshipUseCase interface {
-	SendFriendRequest(fromID, toID primitive.ObjectID) error
-	AcceptFriendRequest(userID, friendID primitive.ObjectID) error
-	RejectFriendRequest(userID, friendID primitive.ObjectID) error
-	CancelFriendRequest(userID, friendID primitive.ObjectID) error
-	Unfriend(userID1, userID2 primitive.ObjectID) error
-	BlockFriend(userID, blockedID primitive.ObjectID) error
-	UnblockFriend(userID, blockedID primitive.ObjectID) error
-	GetFriends(userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
-	GetPendingRequests(userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
-	IsFriend(userID1, userID2 primitive.ObjectID) (bool, error)
-	GetFriendshipStatus(userID1, userID2 primitive.ObjectID) (string, error)
-	ListFriends(userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
-	ListFriendRequests(userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
-	RemoveFriend(userID, targetID primitive.ObjectID) error
+	SendFriendRequest(ctx context.Context, fromID, toID primitive.ObjectID) error
+	AcceptFriendRequest(ctx context.Context, userID, friendID primitive.ObjectID) error
+	RejectFriendRequest(ctx context.Context, userID, friendID primitive.ObjectID) error
+	CancelFriendRequest(ctx context.Context, userID, friendID primitive.ObjectID) error
+	Unfriend(ctx context.Context, userID1, userID2 primitive.ObjectID) error
+	BlockFriend(ctx context.Context, userID, blockedID primitive.ObjectID) error
+	UnblockFriend(ctx context.Context, userID, blockedID primitive.ObjectID) error
+	FindFriends(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
+	FindPendingRequests(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
+	IsFriend(ctx context.Context, userID1, userID2 primitive.ObjectID) (bool, error)
+	FindFriendshipStatus(ctx context.Context, userID1, userID2 primitive.ObjectID) (string, error)
+	FindManyFriends(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
+	FindManyFriendRequests(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]Friendship, error)
+	RemoveFriend(ctx context.Context, userID, targetID primitive.ObjectID) error
 }

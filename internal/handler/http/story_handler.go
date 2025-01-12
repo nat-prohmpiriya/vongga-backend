@@ -17,9 +17,9 @@ func NewStoryHandler(router fiber.Router, storyUseCase domain.StoryUseCase) *Sto
 	}
 
 	router.Post("/", handler.CreateStory)
-	router.Get("/active", handler.GetActiveStories)
-	router.Get("/user/:userId", handler.GetUserStories)
-	router.Get("/:storyId", handler.GetStoryByID)
+	router.Find("/active", handler.FindActiveStories)
+	router.Find("/user/:userId", handler.FindUserStories)
+	router.Find("/:storyId", handler.FindStoryByID)
 	router.Post("/:storyId/view", handler.ViewStory)
 	router.Delete("/:storyId", handler.DeleteStory)
 
@@ -29,7 +29,7 @@ func NewStoryHandler(router fiber.Router, storyUseCase domain.StoryUseCase) *Sto
 func (h *StoryHandler) CreateStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.CreateStory")
 
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -93,8 +93,8 @@ func (h *StoryHandler) CreateStory(c *fiber.Ctx) error {
 	})
 }
 
-func (h *StoryHandler) GetStoryByID(c *fiber.Ctx) error {
-	logger := utils.NewLogger("StoryHandler.GetStoryByID")
+func (h *StoryHandler) FindStoryByID(c *fiber.Ctx) error {
+	logger := utils.NewLogger("StoryHandler.FindStoryByID")
 
 	storyID := c.Params("storyId")
 	logger.LogInput(storyID)
@@ -105,7 +105,7 @@ func (h *StoryHandler) GetStoryByID(c *fiber.Ctx) error {
 		})
 	}
 
-	story, err := h.storyUseCase.GetStoryByID(storyID)
+	story, err := h.storyUseCase.FindStoryByID(storyID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -119,13 +119,13 @@ func (h *StoryHandler) GetStoryByID(c *fiber.Ctx) error {
 	})
 }
 
-func (h *StoryHandler) GetUserStories(c *fiber.Ctx) error {
-	logger := utils.NewLogger("StoryHandler.GetUserStories")
+func (h *StoryHandler) FindUserStories(c *fiber.Ctx) error {
+	logger := utils.NewLogger("StoryHandler.FindUserStories")
 
 	userID := c.Params("userId")
 	logger.LogInput(userID)
 
-	stories, err := h.storyUseCase.GetUserStories(userID)
+	stories, err := h.storyUseCase.FindUserStories(userID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -139,10 +139,10 @@ func (h *StoryHandler) GetUserStories(c *fiber.Ctx) error {
 	})
 }
 
-func (h *StoryHandler) GetActiveStories(c *fiber.Ctx) error {
-	logger := utils.NewLogger("StoryHandler.GetActiveStories")
+func (h *StoryHandler) FindActiveStories(c *fiber.Ctx) error {
+	logger := utils.NewLogger("StoryHandler.FindActiveStories")
 
-	stories, err := h.storyUseCase.GetActiveStories()
+	stories, err := h.storyUseCase.FindActiveStories()
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -160,7 +160,7 @@ func (h *StoryHandler) ViewStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.ViewStory")
 
 	storyID := c.Params("storyId")
-	viewerID, err := utils.GetUserIDFromContext(c)
+	viewerID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -190,7 +190,7 @@ func (h *StoryHandler) DeleteStory(c *fiber.Ctx) error {
 	logger := utils.NewLogger("StoryHandler.DeleteStory")
 
 	storyID := c.Params("storyId")
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{

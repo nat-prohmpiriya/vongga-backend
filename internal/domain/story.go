@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 )
 
@@ -30,7 +31,7 @@ type Story struct {
 	Media        StoryMedia    `bson:"media" json:"media"`
 	Caption      string        `bson:"caption" json:"caption"`
 	Location     string        `bson:"location" json:"location"`
-	ViewersCount int          `bson:"viewersCount" json:"viewersCount"`
+	ViewersCount int           `bson:"viewersCount" json:"viewersCount"`
 	Viewers      []StoryViewer `bson:"viewers" json:"viewers"`
 	ExpiresAt    time.Time     `bson:"expiresAt" json:"expiresAt"`
 	IsArchive    bool          `bson:"isArchive" json:"isArchive"`
@@ -50,22 +51,22 @@ type StoryResponse struct {
 }
 
 type StoryRepository interface {
-	Create(story *Story) error
-	FindByID(id string) (*Story, error)
-	FindByUserID(userID string) ([]*Story, error)
-	FindActiveStories() ([]*Story, error)
-	Update(story *Story) error
-	AddViewer(storyID string, viewer StoryViewer) error
-	DeleteStory(id string) error
+	Create(ctx context.Context, story *Story) error
+	FindByID(ctx context.Context, id string) (*Story, error)
+	FindByUserID(ctx context.Context, userID string) ([]*Story, error)
+	FindActiveStories(ctx context.Context) ([]*Story, error)
+	Update(ctx context.Context, story *Story) error
+	AddViewer(ctx context.Context, storyID string, viewer StoryViewer) error
+	DeleteStory(ctx context.Context, id string) error
 	ArchiveExpiredStories() error
 }
 
 type StoryUseCase interface {
-	CreateStory(story *Story) error
-	GetStoryByID(id string) (*StoryResponse, error)
-	GetUserStories(userID string) ([]*StoryResponse, error)
-	GetActiveStories() ([]*StoryResponse, error)
-	ViewStory(storyID string, viewerID string) error
-	DeleteStory(storyID string, userID string) error
-	ArchiveExpiredStories() error
+	CreateStory(ctx context.Context, story *Story) error
+	FindStoryByID(ctx context.Context, id string) (*StoryResponse, error)
+	FindUserStories(ctx context.Context, userID string) ([]*StoryResponse, error)
+	FindActiveStories(ctx context.Context) ([]*StoryResponse, error)
+	ViewStory(ctx context.Context, storyID string, viewerID string) error
+	DeleteStory(ctx context.Context, storyID string, userID string) error
+	ArchiveExpiredStories(ctx context.Context) error
 }

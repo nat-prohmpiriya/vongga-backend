@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"context"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -21,19 +23,19 @@ type Reaction struct {
 
 // Repository interface
 type ReactionRepository interface {
-	Create(reaction *Reaction) error
-	Update(reaction *Reaction) error
-	Delete(id primitive.ObjectID) error
-	FindByID(id primitive.ObjectID) (*Reaction, error)
-	FindByPostID(postID primitive.ObjectID, limit, offset int) ([]Reaction, error)
-	FindByCommentID(commentID primitive.ObjectID, limit, offset int) ([]Reaction, error)
-	FindByUserAndTarget(userID, postID primitive.ObjectID, commentID *primitive.ObjectID) (*Reaction, error)
+	Create(ctx context.Context, reaction *Reaction) error
+	Update(ctx context.Context, reaction *Reaction) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+	FindByID(ctx context.Context, id primitive.ObjectID) (*Reaction, error)
+	FindByPostID(ctx context.Context, postID primitive.ObjectID, limit, offset int) ([]Reaction, error)
+	FindByCommentID(ctx context.Context, commentID primitive.ObjectID, limit, offset int) ([]Reaction, error)
+	FindByUserAndTarget(ctx context.Context, userID, postID primitive.ObjectID, commentID *primitive.ObjectID) (*Reaction, error)
 }
 
 // UseCase interface
 type ReactionUseCase interface {
-	CreateReaction(userID, postID primitive.ObjectID, commentID *primitive.ObjectID, reactionType string) (*Reaction, error)
-	DeleteReaction(reactionID primitive.ObjectID) error
-	GetReaction(reactionID primitive.ObjectID) (*Reaction, error)
-	ListReactions(targetID primitive.ObjectID, isComment bool, limit, offset int) ([]Reaction, error)
+	CreateReaction(ctx context.Context, userID, postID primitive.ObjectID, commentID *primitive.ObjectID, reactionType string) (*Reaction, error)
+	DeleteReaction(ctx context.Context, reactionID primitive.ObjectID) error
+	FindReaction(ctx context.Context, reactionID primitive.ObjectID) (*Reaction, error)
+	FindManyReactions(ctx context.Context, targetID primitive.ObjectID, isComment bool, limit, offset int) ([]Reaction, error)
 }

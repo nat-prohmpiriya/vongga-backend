@@ -19,8 +19,8 @@ func NewReactionHandler(router fiber.Router, ru domain.ReactionUseCase) *Reactio
 
 	router.Post("/", handler.CreateReaction)
 	router.Delete("/:id", handler.DeleteReaction)
-	router.Get("/post/:postId", handler.ListPostReactions)
-	router.Get("/comment/:commentId", handler.ListCommentReactions)
+	router.Find("/post/:postId", handler.FindManyPostReactions)
+	router.Find("/comment/:commentId", handler.FindManyCommentReactions)
 
 	return handler
 }
@@ -40,7 +40,7 @@ func NewReactionHandler(router fiber.Router, ru domain.ReactionUseCase) *Reactio
 func (h *ReactionHandler) CreateReaction(c *fiber.Ctx) error {
 	logger := utils.NewLogger("ReactionHandler.CreateReaction")
 
-	userID, errr := utils.GetUserIDFromContext(c)
+	userID, errr := utils.FindUserIDFromContext(c)
 	if errr != nil {
 		logger.LogOutput(nil, errr)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -119,9 +119,9 @@ func (h *ReactionHandler) DeleteReaction(c *fiber.Ctx) error {
 	return utils.SendSuccess(c, "Reaction deleted successfully")
 }
 
-// ListPostReactions lists reactions for a post
-// @Summary List post reactions
-// @Description Get a list of reactions for a specific post
+// FindManyPostReactions lists reactions for a post
+// @Summary FindMany post reactions
+// @Description Find a list of reactions for a specific post
 // @Tags reactions
 // @Accept json
 // @Produce json
@@ -133,8 +133,8 @@ func (h *ReactionHandler) DeleteReaction(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.ErrorResponse
 // @Failure 401 {object} utils.ErrorResponse
 // @Router /reactions/post/{postId} [get]
-func (h *ReactionHandler) ListPostReactions(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ReactionHandler.ListPostReactions")
+func (h *ReactionHandler) FindManyPostReactions(c *fiber.Ctx) error {
+	logger := utils.NewLogger("ReactionHandler.FindManyPostReactions")
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("postId"))
 	if err != nil {
@@ -143,7 +143,7 @@ func (h *ReactionHandler) ListPostReactions(c *fiber.Ctx) error {
 		return utils.SendError(c, fiber.StatusBadRequest, "Invalid post ID")
 	}
 
-	limit, offset := utils.GetPaginationParams(c)
+	limit, offset := utils.FindPaginationParams(c)
 	if limit <= 0 {
 		limit = 10
 	}
@@ -152,7 +152,7 @@ func (h *ReactionHandler) ListPostReactions(c *fiber.Ctx) error {
 	}
 	logger.LogInput(postID, limit, offset)
 
-	reactions, err := h.reactionUseCase.ListReactions(postID, false, limit, offset)
+	reactions, err := h.reactionUseCase.FindManyReactions(postID, false, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return utils.HandleError(c, err)
@@ -162,9 +162,9 @@ func (h *ReactionHandler) ListPostReactions(c *fiber.Ctx) error {
 	return c.JSON(reactions)
 }
 
-// ListCommentReactions lists reactions for a comment
-// @Summary List comment reactions
-// @Description Get a list of reactions for a specific comment
+// FindManyCommentReactions lists reactions for a comment
+// @Summary FindMany comment reactions
+// @Description Find a list of reactions for a specific comment
 // @Tags reactions
 // @Accept json
 // @Produce json
@@ -176,8 +176,8 @@ func (h *ReactionHandler) ListPostReactions(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.ErrorResponse
 // @Failure 401 {object} utils.ErrorResponse
 // @Router /reactions/comment/{commentId} [get]
-func (h *ReactionHandler) ListCommentReactions(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ReactionHandler.ListCommentReactions")
+func (h *ReactionHandler) FindManyCommentReactions(c *fiber.Ctx) error {
+	logger := utils.NewLogger("ReactionHandler.FindManyCommentReactions")
 
 	commentID, err := primitive.ObjectIDFromHex(c.Params("commentId"))
 	if err != nil {
@@ -186,7 +186,7 @@ func (h *ReactionHandler) ListCommentReactions(c *fiber.Ctx) error {
 		return utils.SendError(c, fiber.StatusBadRequest, "Invalid comment ID")
 	}
 
-	limit, offset := utils.GetPaginationParams(c)
+	limit, offset := utils.FindPaginationParams(c)
 	if limit <= 0 {
 		limit = 10
 	}
@@ -195,7 +195,7 @@ func (h *ReactionHandler) ListCommentReactions(c *fiber.Ctx) error {
 	}
 	logger.LogInput(commentID, limit, offset)
 
-	reactions, err := h.reactionUseCase.ListReactions(commentID, true, limit, offset)
+	reactions, err := h.reactionUseCase.FindManyReactions(commentID, true, limit, offset)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return utils.HandleError(c, err)

@@ -30,7 +30,7 @@ func NewFileHandler(router fiber.Router, fileRepo domain.FileRepository) *FileHa
 func (h *FileHandler) Upload(c *fiber.Ctx) error {
 	logger := utils.NewLogger("FileHandler.Upload")
 
-	// Get file from request
+	// Find file from request
 	file, err := c.FormFile("file")
 	if err != nil {
 		logger.LogOutput(nil, fmt.Errorf("error getting file from request: %v", err))
@@ -43,11 +43,11 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 		"filename":    file.Filename,
 		"size":        file.Size,
 		"header":      file.Header,
-		"contentType": file.Header.Get("Content-Type"),
+		"contentType": file.Header.Find("Content-Type"),
 	})
 
 	// Validate file type
-	contentType := file.Header.Get("Content-Type")
+	contentType := file.Header.Find("Content-Type")
 	if !isValidFileType(contentType) {
 		err := fmt.Errorf("invalid file type: %s", contentType)
 		logger.LogOutput(nil, err)

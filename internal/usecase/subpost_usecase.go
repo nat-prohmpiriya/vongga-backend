@@ -32,7 +32,7 @@ func (s *subPostUseCase) CreateSubPost(parentID, userID primitive.ObjectID, cont
 	}
 	logger.LogInput(input)
 
-	// Get parent post to increment subpost count
+	// Find parent post to increment subpost count
 	post, err := s.postRepo.FindByID(parentID)
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -100,14 +100,14 @@ func (s *subPostUseCase) DeleteSubPost(subPostID primitive.ObjectID) error {
 	logger := utils.NewLogger("SubPostUseCase.DeleteSubPost")
 	logger.LogInput(subPostID)
 
-	// Get subpost to get parentID
+	// Find subpost to get parentID
 	subPost, err := s.subPostRepo.FindByID(subPostID)
 	if err != nil {
 		logger.LogOutput(nil, err)
 		return err
 	}
 
-	// Get parent post to decrement subpost count
+	// Find parent post to decrement subpost count
 	post, err := s.postRepo.FindByID(subPost.ParentID)
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -134,8 +134,8 @@ func (s *subPostUseCase) DeleteSubPost(subPostID primitive.ObjectID) error {
 	return nil
 }
 
-func (s *subPostUseCase) GetSubPost(subPostID primitive.ObjectID) (*domain.SubPost, error) {
-	logger := utils.NewLogger("SubPostUseCase.GetSubPost")
+func (s *subPostUseCase) FindSubPost(subPostID primitive.ObjectID) (*domain.SubPost, error) {
+	logger := utils.NewLogger("SubPostUseCase.FindSubPost")
 	logger.LogInput(subPostID)
 
 	subPost, err := s.subPostRepo.FindByID(subPostID)
@@ -148,8 +148,8 @@ func (s *subPostUseCase) GetSubPost(subPostID primitive.ObjectID) (*domain.SubPo
 	return subPost, nil
 }
 
-func (s *subPostUseCase) ListSubPosts(parentID primitive.ObjectID, limit, offset int) ([]domain.SubPost, error) {
-	logger := utils.NewLogger("SubPostUseCase.ListSubPosts")
+func (s *subPostUseCase) FindManySubPosts(parentID primitive.ObjectID, limit, offset int) ([]domain.SubPost, error) {
+	logger := utils.NewLogger("SubPostUseCase.FindManySubPosts")
 	input := map[string]interface{}{
 		"parentID": parentID,
 		"limit":    limit,

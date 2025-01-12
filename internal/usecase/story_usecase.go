@@ -60,8 +60,8 @@ func (u *storyUseCase) CreateStory(story *domain.Story) error {
 	return nil
 }
 
-func (u *storyUseCase) GetStoryByID(id string) (*domain.StoryResponse, error) {
-	logger := utils.NewLogger("StoryUseCase.GetStoryByID")
+func (u *storyUseCase) FindStoryByID(id string) (*domain.StoryResponse, error) {
+	logger := utils.NewLogger("StoryUseCase.FindStoryByID")
 	logger.LogInput(id)
 
 	story, err := u.storyRepo.FindByID(id)
@@ -76,7 +76,7 @@ func (u *storyUseCase) GetStoryByID(id string) (*domain.StoryResponse, error) {
 		return nil, err
 	}
 
-	// Get user information
+	// Find user information
 	user, err := u.userRepo.FindByID(story.UserID)
 	if err != nil {
 		logger.LogOutput(nil, err)
@@ -97,8 +97,8 @@ func (u *storyUseCase) GetStoryByID(id string) (*domain.StoryResponse, error) {
 	return response, nil
 }
 
-func (u *storyUseCase) GetUserStories(userID string) ([]*domain.StoryResponse, error) {
-	logger := utils.NewLogger("StoryUseCase.GetUserStories")
+func (u *storyUseCase) FindUserStories(userID string) ([]*domain.StoryResponse, error) {
+	logger := utils.NewLogger("StoryUseCase.FindUserStories")
 	logger.LogInput(userID)
 
 	// Validate user exists
@@ -137,8 +137,8 @@ func (u *storyUseCase) GetUserStories(userID string) ([]*domain.StoryResponse, e
 	return responses, nil
 }
 
-func (u *storyUseCase) GetActiveStories() ([]*domain.StoryResponse, error) {
-	logger := utils.NewLogger("StoryUseCase.GetActiveStories")
+func (u *storyUseCase) FindActiveStories() ([]*domain.StoryResponse, error) {
+	logger := utils.NewLogger("StoryUseCase.FindActiveStories")
 
 	stories, err := u.storyRepo.FindActiveStories()
 	if err != nil {
