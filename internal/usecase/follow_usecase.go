@@ -1,30 +1,41 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 
 	"vongga-api/internal/domain"
 	"vongga-api/utils"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type followUseCase struct {
 	followRepo          domain.FollowRepository
 	notificationUseCase domain.NotificationUseCase
+	tracer              trace.Tracer
 }
 
 // NewFollowUseCase creates a new instance of FollowUseCase
-func NewFollowUseCase(fr domain.FollowRepository, nu domain.NotificationUseCase) domain.FollowUseCase {
+func NewFollowUseCase(
+	followRepo domain.FollowRepository,
+	notificationUseCase domain.NotificationUseCase,
+	tracer trace.Tracer,
+) domain.FollowUseCase {
 	return &followUseCase{
-		followRepo:          fr,
-		notificationUseCase: nu,
+		followRepo:          followRepo,
+		notificationUseCase: notificationUseCase,
+		tracer:              tracer,
 	}
 }
 
 // Follow creates a new follow relationship
-func (f *followUseCase) Follow(followerID, followingID primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("FollowUseCase.Follow")
+func (f *followUseCase) Follow(ctx context.Context, followerID, followingID primitive.ObjectID) error {
+	ctx, span := f.tracer.Start(ctx, "FollowUseCase.Follow")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"followerID":  followerID.Hex(),
 		"followingID": followingID.Hex(),
@@ -33,24 +44,24 @@ func (f *followUseCase) Follow(followerID, followingID primitive.ObjectID) error
 
 	if followerID == followingID {
 		err := errors.New("cannot follow yourself")
-		logger.Output(nil, err)
+		logger.Output("error following yourself 1", err)
 		return err
 	}
 
 	// Check if already following
-	existing, err := f.followRepo.FindByFollowerAndFollowing(followerID, followingID)
+	existing, err := f.followRepo.FindByFollowerAndFollowing(ctx, followerID, followingID)
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
-		logger.Output(nil, err)
+		logger.Output("error checking follow status 2", err)
 		return err
 	}
 	if existing != nil {
 		if existing.Status == "blocked" {
 			err := errors.New("cannot follow blocked user")
-			logger.Output(nil, err)
+			logger.Output("error following blocked user 3", err)
 			return err
 		}
 		err := errors.New("already following this user")
-		logger.Output(nil, err)
+		logger.Output("already following 4", err)
 		return err
 	}
 
@@ -60,14 +71,15 @@ func (f *followUseCase) Follow(followerID, followingID primitive.ObjectID) error
 		Status:      "active",
 	}
 
-	err = f.followRepo.Create(follow)
+	err = f.followRepo.Create(ctx, follow)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error creating follow 5", err)
 		return err
 	}
 
 	// Create notification for the user being followed
 	_, err = f.notificationUseCase.CreateNotification(
+		ctx,
 		followingID, // recipientID (user being followed)
 		followerID,  // senderID (user who followed)
 		followerID,  // refID (reference to the follower)
@@ -76,7 +88,7 @@ func (f *followUseCase) Follow(followerID, followingID primitive.ObjectID) error
 		"started following you", // message
 	)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error creating notification 6", err)
 		// Don't return error here as the follow action was successful
 		// Just log the notification error
 	}
@@ -86,27 +98,30 @@ func (f *followUseCase) Follow(followerID, followingID primitive.ObjectID) error
 }
 
 // Unfollow removes a follow relationship
-func (f *followUseCase) Unfollow(followerID, followingID primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("FollowUseCase.Unfollow")
+func (f *followUseCase) Unfollow(ctx context.Context, followerID, followingID primitive.ObjectID) error {
+	ctx, span := f.tracer.Start(ctx, "FollowUseCase.Unfollow")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"followerID":  followerID.Hex(),
 		"followingID": followingID.Hex(),
 	}
 	logger.Input(input)
 
-	_, err := f.followRepo.FindByFollowerAndFollowing(followerID, followingID)
+	_, err := f.followRepo.FindByFollowerAndFollowing(ctx, followerID, followingID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			err = errors.New("not following this user")
-			logger.Output(nil, err)
+			logger.Output("not following 1", err)
 			return err
 		}
-		logger.Output(nil, err)
+		logger.Output("error checking follow status 2", err)
 		return err
 	}
 
-	if err := f.followRepo.Delete(followerID, followingID); err != nil {
-		logger.Output(nil, err)
+	if err := f.followRepo.Delete(ctx, followerID, followingID); err != nil {
+		logger.Output("error deleting follow 3", err)
 		return err
 	}
 
@@ -115,8 +130,11 @@ func (f *followUseCase) Unfollow(followerID, followingID primitive.ObjectID) err
 }
 
 // Block updates the follow status to blocked
-func (f *followUseCase) Block(userID, blockedID primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("FollowUseCase.Block")
+func (f *followUseCase) Block(ctx context.Context, userID, blockedID primitive.ObjectID) error {
+	ctx, span := f.tracer.Start(ctx, "FollowUseCase.Block")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"userID":    userID.Hex(),
 		"blockedID": blockedID.Hex(),
@@ -125,20 +143,20 @@ func (f *followUseCase) Block(userID, blockedID primitive.ObjectID) error {
 
 	if userID == blockedID {
 		err := errors.New("cannot block yourself")
-		logger.Output(nil, err)
+		logger.Output("error blocking yourself 1", err)
 		return err
 	}
 
 	// Check existing relationship
-	existing, err := f.followRepo.FindByFollowerAndFollowing(blockedID, userID)
+	existing, err := f.followRepo.FindByFollowerAndFollowing(ctx, blockedID, userID)
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
-		logger.Output(nil, err)
+		logger.Output("error checking follow status 2", err)
 		return err
 	}
 
 	if existing != nil {
-		if err := f.followRepo.UpdateStatus(blockedID, userID, "blocked"); err != nil {
-			logger.Output(nil, err)
+		if err := f.followRepo.UpdateStatus(ctx, blockedID, userID, "blocked"); err != nil {
+			logger.Output("error updating follow status 3", err)
 			return err
 		}
 		logger.Output(nil, nil)
@@ -152,8 +170,8 @@ func (f *followUseCase) Block(userID, blockedID primitive.ObjectID) error {
 		Status:      "blocked",
 	}
 
-	if err := f.followRepo.Create(follow); err != nil {
-		logger.Output(nil, err)
+	if err := f.followRepo.Create(ctx, follow); err != nil {
+		logger.Output("error creating blocked follow 4", err)
 		return err
 	}
 
@@ -162,33 +180,36 @@ func (f *followUseCase) Block(userID, blockedID primitive.ObjectID) error {
 }
 
 // Unblock removes the blocked status
-func (f *followUseCase) Unblock(userID, blockedID primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("FollowUseCase.Unblock")
+func (f *followUseCase) Unblock(ctx context.Context, userID, blockedID primitive.ObjectID) error {
+	ctx, span := f.tracer.Start(ctx, "FollowUseCase.Unblock")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"userID":    userID.Hex(),
 		"blockedID": blockedID.Hex(),
 	}
 	logger.Input(input)
 
-	existing, err := f.followRepo.FindByFollowerAndFollowing(blockedID, userID)
+	existing, err := f.followRepo.FindByFollowerAndFollowing(ctx, blockedID, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			err = errors.New("user is not blocked")
-			logger.Output(nil, err)
+			logger.Output("user is not blocked 1", err)
 			return err
 		}
-		logger.Output(nil, err)
+		logger.Output("error checking follow status 2", err)
 		return err
 	}
 
 	if existing.Status != "blocked" {
 		err = errors.New("user is not blocked")
-		logger.Output(nil, err)
+		logger.Output("user is not blocked 3", err)
 		return err
 	}
 
-	if err := f.followRepo.Delete(blockedID, userID); err != nil {
-		logger.Output(nil, err)
+	if err := f.followRepo.Delete(ctx, blockedID, userID); err != nil {
+		logger.Output("error deleting blocked follow 4", err)
 		return err
 	}
 
@@ -197,8 +218,11 @@ func (f *followUseCase) Unblock(userID, blockedID primitive.ObjectID) error {
 }
 
 // FindFollowers returns a list of followers for a user
-func (f *followUseCase) FindFollowers(userID primitive.ObjectID, limit, offset int) ([]domain.Follow, error) {
-	logger := utils.NewTraceLogger("FollowUseCase.FindFollowers")
+func (f *followUseCase) FindFollowers(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]domain.Follow, error) {
+	ctx, span := f.tracer.Start(ctx, "FollowUseCase.FindFollowers")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 		"limit":  limit,
@@ -206,9 +230,9 @@ func (f *followUseCase) FindFollowers(userID primitive.ObjectID, limit, offset i
 	}
 	logger.Input(input)
 
-	followers, err := f.followRepo.FindFollowers(userID, limit, offset)
+	followers, err := f.followRepo.FindFollowers(ctx, userID, limit, offset)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding followers 1", err)
 		return nil, err
 	}
 
@@ -217,8 +241,11 @@ func (f *followUseCase) FindFollowers(userID primitive.ObjectID, limit, offset i
 }
 
 // FindFollowing returns a list of users that a user is following
-func (f *followUseCase) FindFollowing(userID primitive.ObjectID, limit, offset int) ([]domain.Follow, error) {
-	logger := utils.NewTraceLogger("FollowUseCase.FindFollowing")
+func (f *followUseCase) FindFollowing(ctx context.Context, userID primitive.ObjectID, limit, offset int) ([]domain.Follow, error) {
+	ctx, span := f.tracer.Start(ctx, "FollowUseCase.FindFollowing")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 		"limit":  limit,
@@ -226,9 +253,9 @@ func (f *followUseCase) FindFollowing(userID primitive.ObjectID, limit, offset i
 	}
 	logger.Input(input)
 
-	following, err := f.followRepo.FindFollowing(userID, limit, offset)
+	following, err := f.followRepo.FindFollowing(ctx, userID, limit, offset)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding following users 1", err)
 		return nil, err
 	}
 
@@ -237,21 +264,24 @@ func (f *followUseCase) FindFollowing(userID primitive.ObjectID, limit, offset i
 }
 
 // IsFollowing checks if a user is following another user
-func (f *followUseCase) IsFollowing(followerID, followingID primitive.ObjectID) (bool, error) {
-	logger := utils.NewTraceLogger("FollowUseCase.IsFollowing")
+func (f *followUseCase) IsFollowing(ctx context.Context, followerID, followingID primitive.ObjectID) (bool, error) {
+	ctx, span := f.tracer.Start(ctx, "FollowUseCase.IsFollowing")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"followerID":  followerID.Hex(),
 		"followingID": followingID.Hex(),
 	}
 	logger.Input(input)
 
-	follow, err := f.followRepo.FindByFollowerAndFollowing(followerID, followingID)
+	follow, err := f.followRepo.FindByFollowerAndFollowing(ctx, followerID, followingID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			logger.Output(false, nil)
 			return false, nil
 		}
-		logger.Output(nil, err)
+		logger.Output("error checking follow status 1", err)
 		return false, err
 	}
 
@@ -261,21 +291,24 @@ func (f *followUseCase) IsFollowing(followerID, followingID primitive.ObjectID) 
 }
 
 // IsBlocked checks if a user is blocked by another user
-func (f *followUseCase) IsBlocked(userID, blockedID primitive.ObjectID) (bool, error) {
-	logger := utils.NewTraceLogger("FollowUseCase.IsBlocked")
+func (f *followUseCase) IsBlocked(ctx context.Context, userID, blockedID primitive.ObjectID) (bool, error) {
+	ctx, span := f.tracer.Start(ctx, "FollowUseCase.IsBlocked")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"userID":    userID.Hex(),
 		"blockedID": blockedID.Hex(),
 	}
 	logger.Input(input)
 
-	follow, err := f.followRepo.FindByFollowerAndFollowing(blockedID, userID)
+	follow, err := f.followRepo.FindByFollowerAndFollowing(ctx, blockedID, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			logger.Output(false, nil)
 			return false, nil
 		}
-		logger.Output(nil, err)
+		logger.Output("error checking follow status 1", err)
 		return false, err
 	}
 
