@@ -1,43 +1,75 @@
 package middleware
 
 import (
+	"fmt"
+	"time"
+	"vongga-api/utils"
+
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func OtelMiddleware(serviceName string) fiber.Handler {
 	tracer := otel.Tracer(serviceName)
 
 	return func(c *fiber.Ctx) error {
+		// สร้าง span และ context
 		spanName := c.Path()
 		ctx, span := tracer.Start(c.Context(), spanName)
 		defer span.End()
+		requestInfo := map[string]interface{}{
+			// Request Basic Info
+			"http.method":   c.Method(),
+			"http.url":      c.OriginalURL(),
+			"http.path":     c.Path(),
+			"http.host":     c.Hostname(),
+			"http.protocol": c.Protocol(),
 
-		// Add basic HTTP attributes to the span
-		span.SetAttributes(
-			attribute.String("http.method", c.Method()),
-			attribute.String("http.route", c.Path()),
-			attribute.String("http.url", c.OriginalURL()),
-			attribute.String("http.host", c.Hostname()),
-		)
+			// Client Info
+			"http.client_ip":  c.IP(),
+			"http.user_agent": c.Get("User-Agent"),
+			"http.referer":    c.Get("Referer"),
 
-		// Store the span context in fiber context
-		c.Locals("ctx", ctx)
+			// Request ID & Correlation
+			"request.id": c.Get("X-Request-ID"),
+			"trace.id":   c.Get("X-Trace-ID"),
 
-		// Continue with the next middleware/handler
+			// Performance
+			"request.start_time": time.Now(),
+
+			// Request Size
+			"request.content_length": len(c.Body()),
+			"request.content_type":   c.Get("Content-Type"),
+		}
+
+		// สร้าง span attributes
+		span = trace.SpanFromContext(ctx)
+		for key, value := range requestInfo {
+			span.SetAttributes(attribute.String(key, fmt.Sprint(value)))
+		}
+
+		span.AddEvent(fmt.Sprintf("INPUT # $%s", utils.ToJSONString(requestInfo)))
+
+		// เก็บไว้ใช้ต่อใน handler
+		c.Locals("requestInfo", requestInfo)
+
+		// Execute handler
 		err := c.Next()
 
-		// Add response status to span
-		span.SetAttributes(attribute.Int("http.status_code", c.Response().StatusCode()))
+		// Response Info
+		responseInfo := map[string]interface{}{
+			"response.status":         c.Response().StatusCode(),
+			"response.content_type":   c.GetRespHeader("Content-Type"),
+			"response.content_length": len(c.Response().Body()),
+			"response.time":           time.Since(requestInfo["request.start_time"].(time.Time)),
+		}
+		span.AddEvent(fmt.Sprintf("OUTPUT # $%s", utils.ToJSONString(responseInfo)))
 
-		// If there was an error, record it
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-		} else {
-			span.SetStatus(codes.Ok, "")
+		// Add response attributes to span
+		for key, value := range responseInfo {
+			span.SetAttributes(attribute.String(key, fmt.Sprint(value)))
 		}
 
 		return err
