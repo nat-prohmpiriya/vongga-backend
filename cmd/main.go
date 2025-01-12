@@ -152,8 +152,13 @@ func main() {
 	// Swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
+	app.Static("/", "/app")
 	// Health check - public endpoint
 	app.Get("/api", handler.NewHealthHandler(db, redisClient).Health)
+	webGroup := app.Group("api/web")
+	jaeger := app.Group("/jaeger")
+	handler.NewJeagerHandler(jaeger)
+	handler.NewWebHandler(webGroup)
 	// Health check - Ping
 	app.Get("/api/ping", handler.NewHealthHandler(db, redisClient).Ping)
 

@@ -1,25 +1,61 @@
 networks:
+  vongga-network:
+    driver: bridge
 
 volumes:
+  jaeger-badger:
+    driver: local
 
 services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "4000:4000"
     environment:
       - env_file=.env
+    volumes:
+      - ./config/firebase-credentials.json:/app/firebase-credentials.json:ro
+      - ./:/app
+    networks:
+      - vongga-network
 
-  mongodb: 
-
-  redis:
-
-  otelc: 
+  otelc:
+    image: otel/opentelemetry-collector-contrib:0.88.0
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
+    volumes:
+      - ./config/otelc-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    depends_on:
+      - backend
+    networks:
+      - vongga-network
 
   jaeger:
+    image: jaegertracing/jaeger:2.2.0
+    ports:
+      - "16686:16686"
+      # - "4317:4317"
+      # - "4318:4318"
+      - "5778:5778"
+      - "9411:9411"
+    networks:
+      - vongga-network
+    environment:
+      - SPAN_STORAGE_TYPE=badger
+      - BADGER_EPHEMERAL=false
+      - BADGER_DIRECTORY_VALUE=/badger/data
+      - BADGER_DIRECTORY_KEY=/badger/key
+      - BADGER_CONSISTENCY=true
+      - BADGER_TRUNCATE=true
+    depends_on:
+      - otelc
+    volumes:
+      - jaeger-badger:/badger
+      - ./data/jaeger:/badger/data
+      - ./data/jaeger-key:/badger/key
+    user: "1000:1000"
 
-  loki:
-
-  gafana:

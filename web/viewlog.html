@@ -140,9 +140,9 @@
             <!-- Sidbar -->
             <div class="col-2 bg-body-secondary p-2">
                 <button v-for="time in listTime" @click="setTimeRange(time.time)" :key="time.number"
-                :class="{ 'btn btn-outline-secondary w-100 mb-2': !time.isActive, 'btn btn-primary w-100 mb-2': time.isActive }">
-                {{ time.number }} {{ time.unit }}
-            </button>
+                    :class="{ 'btn btn-outline-secondary w-100 mb-2': !time.isActive, 'btn btn-primary w-100 mb-2': time.isActive }">
+                    {{ time.number }} {{ time.unit }}
+                </button>
             </div>
             <!-- Main Content -->
             <div class="col-10">
@@ -168,17 +168,22 @@
                             </tr>
                             <!-- Expanded Row -->
                             <tr v-if="log.expanded">
-                                <td class="text-nowrap pointer fs-12" @click="log.expanded = !log.expanded">{{(currentPage - 1) * itemsPerPage + index + 1 }}</td>
-                                <td class="text-nowrap fs-12" @click="log.expanded = !log.expanded">{{ formatTime(log.timestamp) }}</td>
-                                <td class="pointer fs-12" @click="log.expanded = !log.expanded">{{ log.operationName }}</td>
-                                <td class="text-nowrap pointer fs-12" @click="log.expanded = !log.expanded">{{ log.level }}</td>
+                                <td class="text-nowrap pointer fs-12" @click="log.expanded = !log.expanded">
+                                    {{(currentPage - 1) * itemsPerPage + index + 1 }}</td>
+                                <td class="text-nowrap fs-12" @click="log.expanded = !log.expanded">{{
+                                    formatTime(log.timestamp) }}</td>
+                                <td class="pointer fs-12" @click="log.expanded = !log.expanded">{{ log.operationName }}
+                                </td>
+                                <td class="text-nowrap pointer fs-12" @click="log.expanded = !log.expanded">{{ log.level
+                                    }}</td>
                                 <td class="d-flex justify-content-between" style="width: 100%;">
                                     <div class="w-100">
                                         <pre class="fs-12">{{ JSON.stringify(JSON.parse(log?.data), null, 2) }}</pre>
                                         <p class="fs-12 m-0">Trace ID: {{ log?.traceId }}</p>
                                         <p class="fs-12 m-0">Span ID: {{ log?.spanId }}</p>
                                     </div>
-                                    <i class="bi bi-box-arrow-in-up-right fs-5 pointer"@click="log.expanded = !log.expanded"></i>
+                                    <i class="bi bi-box-arrow-in-up-right fs-5 pointer"
+                                        @click="log.expanded = !log.expanded"></i>
                                 </td>
                             </tr>
                         </template>
@@ -245,6 +250,8 @@
                     searchText: '',  // เพิ่ม searchText
                     currentPage: 1,
                     itemsPerPage: 1000,
+                    accessToken: '',
+                    refreshToken: ''
                 }
             },
             computed: {
@@ -283,6 +290,12 @@
                 },
                 totalItems() {
                     return this.filteredLogs.length;
+                },
+                isLogined() {
+                    return this.accessToken && this.refreshToken
+                },
+                endpoint() {
+                    return window.location.origin
                 }
             },
             mounted() {
@@ -293,13 +306,14 @@
             methods: {
                 async fetchLogs() {
                     try {
-                        let url = 'http://localhost:4000/jaeger/traces?service=todo-service';
+                        const endpoint = this.endpoint
+                        let url = `${endpoint}/jaeger/traces?service=todo-service`;
                         if (this.startDate && this.endDate) {
                             url += `&start=${this.toMicroseconds(this.startDate)}&end=${this.toMicroseconds(this.endDate)}`;
                         }
                         // เพิ่ม limit parameter
                         url += '&limit=1000';  // เพิ่ม limit เป็น 1000 traces
-                        
+
                         const resultFetch = await axios.get(url);
                         const tempLogs = resultFetch.data.data.flatMap(trace => {
                             const logs = trace.spans.flatMap((span, index) => {

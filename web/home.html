@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Home</title>
+    <link rel="icon" href="data:;base64,=">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+</head>
+
+<body class="">
+    <div id="app">
+        <div v-if="isLoggedIn">
+            <div class="alert alert-success d-flex justify-content-center" role="alert">
+                You are logged in
+            </div>
+            <div class="d-flex justify-content-center align-items-cente gap-3">
+                <a href="/api/web/logs">Go to Logs</a>
+                <a href="/api/web/socket">Go to Web Socket</a>
+                <button class="btn btn-danger" @click="refreshToken = ''">Logout</button>
+            </div>
+        </div>
+        <div class="d-flex justify-content-center align-items-center " style="height: 100vh;">
+            <form>
+                <div class="form-group" style="width: 300px;">
+                    <label for="exampleInputEmail1">ID</label>
+                    <input type="text" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp"
+                        v-model="userId" />
+                </div>
+                <div class="form-group mt-3">
+                    <button type="submit" class="btn btn-primary " style="width: 300px;"
+                        @click.prevent="submit">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+<script>
+    const app = Vue.createApp({
+        data() {
+            return {
+                userId: '',
+                accessToken: '',
+                refreshToken: ''
+            }
+        },
+        created() {
+            this.accessToken = localStorage.getItem('accessToken')
+            this.refreshToken = localStorage.getItem('refreshToken')
+
+        },
+        computed: {
+            isLoggedIn() {
+                return !!this.refreshToken
+            },
+            endpoint() {
+                return window.location.origin
+            }
+        },
+        methods: {
+            async submit() {
+                try {
+                    const endpoint = this.endpoint
+                    const path = '/api/auth/createTestToken'
+                    const body = {
+                        userId: this.userId
+                    }
+                    const response = await axios.post(endpoint + path, body)
+                    const token = response.data
+                    if (token) {
+                        localStorage.setItem('accessToken', token.accessToken)
+                        localStorage.setItem('refreshToken', token.refreshToken)
+                        this.accessToken = token.accessToken
+                        this.refreshToken = token.refreshToken
+                    }
+
+                } catch (error) {
+                    console.error(error)
+                }
+            },
+            logout() {
+                localStorage.removeItem('accessToken')
+                localStorage.removeItem('refreshToken')
+                this.accessToken = ''
+                this.refreshToken = ''
+            }
+        }
+
+    });
+    app.mount('#app');
+</script>
+
+</html>
