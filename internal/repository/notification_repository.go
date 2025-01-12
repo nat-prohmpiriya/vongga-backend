@@ -14,33 +14,37 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type notificationRepository struct {
 	collection *mongo.Collection
 	rdb        *redis.Client
+	tracer     trace.Tracer
 }
 
-func NewNotificationRepository(db *mongo.Database, rdb *redis.Client) domain.NotificationRepository {
+func NewNotificationRepository(db *mongo.Database, rdb *redis.Client, tracer trace.Tracer) domain.NotificationRepository {
 	return &notificationRepository{
 		collection: db.Collection("notifications"),
 		rdb:        rdb,
+		tracer:     tracer,
 	}
 }
 
-func (r *notificationRepository) Create(notification *domain.Notification) error {
-	logger := utils.NewTraceLogger("NotificationRepository.Create")
+func (r *notificationRepository) Create(ctx context.Context, notification *domain.Notification) error {
+	ctx, span := r.tracer.Start(ctx, "NotificationRepository.Create")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(notification)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-
 	notification.CreatedAt = time.Now()
 	notification.UpdatedAt = time.Now()
 
 	result, err := r.collection.InsertOne(ctx, notification)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to insert notification 1", err)
 		return err
 	}
 
@@ -52,13 +56,13 @@ func (r *notificationRepository) Create(notification *domain.Notification) error
 
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to get cache keys 2", err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to invalidate cache 3", err)
 			return err
 		}
 	}
@@ -66,7 +70,7 @@ func (r *notificationRepository) Create(notification *domain.Notification) error
 	// Delete unread count cache
 	err = r.rdb.Del(ctx, unreadKey).Err()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to delete unread count cache 4", err)
 		return err
 	}
 
@@ -74,13 +78,14 @@ func (r *notificationRepository) Create(notification *domain.Notification) error
 	return nil
 }
 
-func (r *notificationRepository) Update(notification *domain.Notification) error {
-	logger := utils.NewTraceLogger("NotificationRepository.Update")
+func (r *notificationRepository) Update(ctx context.Context, notification *domain.Notification) error {
+	ctx, span := r.tracer.Start(ctx, "NotificationRepository.Update")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(notification)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-
 	notification.UpdatedAt = time.Now()
 
 	filter := bson.M{"_id": notification.ID}
@@ -88,13 +93,13 @@ func (r *notificationRepository) Update(notification *domain.Notification) error
 
 	result, err := r.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to update notification 1", err)
 		return err
 	}
 
 	if result.MatchedCount == 0 {
 		err := domain.ErrNotFound
-		logger.Output(nil, err)
+		logger.Output("notification not found 2", err)
 		return err
 	}
 
@@ -104,13 +109,13 @@ func (r *notificationRepository) Update(notification *domain.Notification) error
 
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to get cache keys 3", err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to invalidate cache 4", err)
 			return err
 		}
 	}
@@ -118,7 +123,7 @@ func (r *notificationRepository) Update(notification *domain.Notification) error
 	// Delete unread count cache
 	err = r.rdb.Del(ctx, unreadKey).Err()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to delete unread count cache 5", err)
 		return err
 	}
 
@@ -126,23 +131,24 @@ func (r *notificationRepository) Update(notification *domain.Notification) error
 	return nil
 }
 
-func (r *notificationRepository) Delete(id primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("NotificationRepository.Delete")
+func (r *notificationRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
+	ctx, span := r.tracer.Start(ctx, "NotificationRepository.Delete")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(map[string]interface{}{"id": id.Hex()})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-
 	filter := bson.M{"_id": id}
 	result, err := r.collection.DeleteOne(ctx, filter)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to delete notification 1", err)
 		return err
 	}
 
 	if result.DeletedCount == 0 {
 		err := domain.ErrNotFound
-		logger.Output(nil, err)
+		logger.Output("notification not found 2", err)
 		return err
 	}
 
@@ -150,7 +156,7 @@ func (r *notificationRepository) Delete(id primitive.ObjectID) error {
 	notification := &domain.Notification{}
 	err = r.collection.FindOne(ctx, filter).Decode(notification)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to find notification 3", err)
 		return err
 	}
 	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID.Hex())
@@ -158,13 +164,13 @@ func (r *notificationRepository) Delete(id primitive.ObjectID) error {
 
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to get cache keys 4", err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to invalidate cache 5", err)
 			return err
 		}
 	}
@@ -172,7 +178,7 @@ func (r *notificationRepository) Delete(id primitive.ObjectID) error {
 	// Delete unread count cache
 	err = r.rdb.Del(ctx, unreadKey).Err()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to delete unread count cache 6", err)
 		return err
 	}
 
@@ -180,20 +186,23 @@ func (r *notificationRepository) Delete(id primitive.ObjectID) error {
 	return nil
 }
 
-func (r *notificationRepository) FindByID(id primitive.ObjectID) (*domain.Notification, error) {
-	logger := utils.NewTraceLogger("NotificationRepository.FindByID")
+func (r *notificationRepository) FindByID(ctx context.Context, id primitive.ObjectID) (*domain.Notification, error) {
+	ctx, span := r.tracer.Start(ctx, "NotificationRepository.FindByID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(map[string]interface{}{"id": id.Hex()})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-
 	var notification domain.Notification
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&notification)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			err = domain.ErrNotFound
+			logger.Output("notification not found 1", err)
+			return nil, err
 		}
-		logger.Output(nil, err)
+		logger.Output("failed to find notification 2", err)
 		return nil, err
 	}
 
@@ -201,17 +210,18 @@ func (r *notificationRepository) FindByID(id primitive.ObjectID) (*domain.Notifi
 	return &notification, nil
 }
 
-func (r *notificationRepository) FindByRecipient(recipientID primitive.ObjectID, limit, offset int) ([]domain.Notification, error) {
-	logger := utils.NewTraceLogger("NotificationRepository.FindByRecipient")
+func (r *notificationRepository) FindByRecipient(ctx context.Context, recipientID primitive.ObjectID, limit, offset int) ([]domain.Notification, error) {
+	ctx, span := r.tracer.Start(ctx, "NotificationRepository.FindByRecipient")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(map[string]interface{}{
 		"recipientID": recipientID.Hex(),
 		"limit":       limit,
 		"offset":      offset,
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-
 	opts := options.Find().
 		SetSort(bson.M{"createdAt": -1}).
 		SetSkip(int64(offset)).
@@ -219,14 +229,14 @@ func (r *notificationRepository) FindByRecipient(recipientID primitive.ObjectID,
 
 	cursor, err := r.collection.Find(ctx, bson.M{"recipientId": recipientID}, opts)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to find notifications 1", err)
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
 	var notifications []domain.Notification
 	if err = cursor.All(ctx, &notifications); err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to decode notifications 2", err)
 		return nil, err
 	}
 
@@ -234,12 +244,12 @@ func (r *notificationRepository) FindByRecipient(recipientID primitive.ObjectID,
 	notificationsKey := fmt.Sprintf("user_notifications:%s:%d:%d", recipientID.Hex(), limit, offset)
 	notificationsJSON, err := json.Marshal(notifications)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to marshal notifications 3", err)
 		return nil, err
 	}
 	err = r.rdb.Set(ctx, notificationsKey, notificationsJSON, time.Hour*24).Err()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to cache notifications 4", err)
 		return nil, err
 	}
 
@@ -247,13 +257,14 @@ func (r *notificationRepository) FindByRecipient(recipientID primitive.ObjectID,
 	return notifications, nil
 }
 
-func (r *notificationRepository) MarkAsRead(notificationID primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("NotificationRepository.MarkAsRead")
+func (r *notificationRepository) MarkAsRead(ctx context.Context, notificationID primitive.ObjectID) error {
+	ctx, span := r.tracer.Start(ctx, "NotificationRepository.MarkAsRead")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(map[string]interface{}{"notificationID": notificationID.Hex()})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-
 	filter := bson.M{"_id": notificationID}
 	update := bson.M{
 		"$set": bson.M{
@@ -264,13 +275,13 @@ func (r *notificationRepository) MarkAsRead(notificationID primitive.ObjectID) e
 
 	result, err := r.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to mark notification as read 1", err)
 		return err
 	}
 
 	if result.MatchedCount == 0 {
 		err := domain.ErrNotFound
-		logger.Output(nil, err)
+		logger.Output("notification not found 2", err)
 		return err
 	}
 
@@ -278,7 +289,7 @@ func (r *notificationRepository) MarkAsRead(notificationID primitive.ObjectID) e
 	notification := &domain.Notification{}
 	err = r.collection.FindOne(ctx, filter).Decode(notification)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to find notification 3", err)
 		return err
 	}
 	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID.Hex())
@@ -286,13 +297,13 @@ func (r *notificationRepository) MarkAsRead(notificationID primitive.ObjectID) e
 
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to get cache keys 4", err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to invalidate cache 5", err)
 			return err
 		}
 	}
@@ -300,7 +311,7 @@ func (r *notificationRepository) MarkAsRead(notificationID primitive.ObjectID) e
 	// Delete unread count cache
 	err = r.rdb.Del(ctx, unreadKey).Err()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to delete unread count cache 6", err)
 		return err
 	}
 
@@ -308,13 +319,14 @@ func (r *notificationRepository) MarkAsRead(notificationID primitive.ObjectID) e
 	return nil
 }
 
-func (r *notificationRepository) MarkAllAsRead(recipientID primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("NotificationRepository.MarkAllAsRead")
+func (r *notificationRepository) MarkAllAsRead(ctx context.Context, recipientID primitive.ObjectID) error {
+	ctx, span := r.tracer.Start(ctx, "NotificationRepository.MarkAllAsRead")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(map[string]interface{}{"recipientID": recipientID.Hex()})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-
 	filter := bson.M{
 		"recipientId": recipientID,
 		"isRead":      false,
@@ -328,7 +340,7 @@ func (r *notificationRepository) MarkAllAsRead(recipientID primitive.ObjectID) e
 
 	result, err := r.collection.UpdateMany(ctx, filter, update)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to mark all notifications as read 1", err)
 		return err
 	}
 
@@ -338,13 +350,13 @@ func (r *notificationRepository) MarkAllAsRead(recipientID primitive.ObjectID) e
 
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to get cache keys 2", err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to invalidate cache 3", err)
 			return err
 		}
 	}
@@ -352,7 +364,7 @@ func (r *notificationRepository) MarkAllAsRead(recipientID primitive.ObjectID) e
 	// Delete unread count cache
 	err = r.rdb.Del(ctx, unreadKey).Err()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to delete unread count cache 4", err)
 		return err
 	}
 
@@ -360,17 +372,18 @@ func (r *notificationRepository) MarkAllAsRead(recipientID primitive.ObjectID) e
 	return nil
 }
 
-func (r *notificationRepository) CountUnread(recipientID primitive.ObjectID) (int64, error) {
-	logger := utils.NewTraceLogger("NotificationRepository.CountUnread")
+func (r *notificationRepository) CountUnread(ctx context.Context, recipientID primitive.ObjectID) (int64, error) {
+	ctx, span := r.tracer.Start(ctx, "NotificationRepository.CountUnread")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(map[string]interface{}{"recipientID": recipientID.Hex()})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-
 	unreadKey := fmt.Sprintf("unread_count:%s", recipientID.Hex())
 	unreadCount, err := r.rdb.Get(ctx, unreadKey).Int64()
 	if err != nil && err != redis.Nil {
-		logger.Output(nil, err)
+		logger.Output("failed to get unread count from cache 1", err)
 		return 0, err
 	}
 	if err == redis.Nil {
@@ -381,14 +394,14 @@ func (r *notificationRepository) CountUnread(recipientID primitive.ObjectID) (in
 
 		count, err := r.collection.CountDocuments(ctx, filter)
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to count unread notifications 2", err)
 			return 0, err
 		}
 
 		// Cache unread count
 		err = r.rdb.Set(ctx, unreadKey, count, time.Hour*24).Err()
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to cache unread count 3", err)
 			return 0, err
 		}
 

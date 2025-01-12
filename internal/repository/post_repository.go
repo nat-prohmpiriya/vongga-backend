@@ -14,44 +14,48 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type postRepository struct {
 	db         *mongo.Database
 	rdb        *redis.Client
 	collection *mongo.Collection
+	tracer     trace.Tracer
 }
 
-func NewPostRepository(db *mongo.Database, rdb *redis.Client) domain.PostRepository {
+func NewPostRepository(db *mongo.Database, rdb *redis.Client, tracer trace.Tracer) domain.PostRepository {
 	return &postRepository{
 		db:         db,
 		rdb:        rdb,
 		collection: db.Collection("posts"),
+		tracer:     tracer,
 	}
 }
 
-func (r *postRepository) Create(post *domain.Post) error {
-	logger := utils.NewTraceLogger("PostRepository.Create")
+func (r *postRepository) Create(ctx context.Context, post *domain.Post) error {
+	ctx, span := r.tracer.Start(ctx, "PostRepository.Create")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(post)
 
-	_, err := r.collection.InsertOne(context.Background(), post)
+	_, err := r.collection.InsertOne(ctx, post)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to insert post 1", err)
 		return err
 	}
 
 	// Invalidate user's posts cache
-	ctx := context.Background()
 	pattern := fmt.Sprintf("user_posts:%s:*", post.UserID.Hex())
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to get cache keys 2", err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to invalidate cache 3", err)
 			return err
 		}
 	}
@@ -60,40 +64,39 @@ func (r *postRepository) Create(post *domain.Post) error {
 	return nil
 }
 
-func (r *postRepository) Update(post *domain.Post) error {
-	logger := utils.NewTraceLogger("PostRepository.Update")
+func (r *postRepository) Update(ctx context.Context, post *domain.Post) error {
+	ctx, span := r.tracer.Start(ctx, "PostRepository.Update")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(post)
 
 	filter := bson.M{"_id": post.ID}
 	update := bson.M{"$set": post}
-	_, err := r.collection.UpdateOne(context.Background(), filter, update)
+	_, err := r.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to update post 1", err)
 		return err
 	}
 
 	// Invalidate post cache and user's posts cache
-	ctx := context.Background()
 	key := fmt.Sprintf("post:%s", post.ID.Hex())
 	pattern := fmt.Sprintf("user_posts:%s:*", post.UserID.Hex())
 
-	// Delete post cache
 	err = r.rdb.Del(ctx, key).Err()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to delete post cache 2", err)
 		return err
 	}
 
-	// Delete user's posts cache
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to get user posts cache keys 3", err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to delete user posts cache 4", err)
 			return err
 		}
 	}
@@ -102,8 +105,10 @@ func (r *postRepository) Update(post *domain.Post) error {
 	return nil
 }
 
-func (r *postRepository) Delete(id primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("PostRepository.Delete")
+func (r *postRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
+	ctx, span := r.tracer.Start(ctx, "PostRepository.Delete")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(id)
 
 	now := time.Now()
@@ -112,40 +117,37 @@ func (r *postRepository) Delete(id primitive.ObjectID) error {
 
 	// Find post first to get userID for cache invalidation
 	var post domain.Post
-	err := r.collection.FindOne(context.Background(), filter).Decode(&post)
+	err := r.collection.FindOne(ctx, filter).Decode(&post)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to find post 1", err)
 		return err
 	}
 
-	_, err = r.collection.UpdateOne(context.Background(), filter, update)
+	_, err = r.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to soft delete post 2", err)
 		return err
 	}
 
 	// Invalidate post cache and user's posts cache
-	ctx := context.Background()
 	key := fmt.Sprintf("post:%s", id.Hex())
 	pattern := fmt.Sprintf("user_posts:%s:*", post.UserID.Hex())
 
-	// Delete post cache
 	err = r.rdb.Del(ctx, key).Err()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to delete post cache 3", err)
 		return err
 	}
 
-	// Delete user's posts cache
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to get user posts cache keys 4", err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to delete user posts cache 5", err)
 			return err
 		}
 	}
@@ -154,11 +156,12 @@ func (r *postRepository) Delete(id primitive.ObjectID) error {
 	return nil
 }
 
-func (r *postRepository) FindByID(id primitive.ObjectID) (*domain.Post, error) {
-	logger := utils.NewTraceLogger("PostRepository.FindByID")
+func (r *postRepository) FindByID(ctx context.Context, id primitive.ObjectID) (*domain.Post, error) {
+	ctx, span := r.tracer.Start(ctx, "PostRepository.FindByID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(id)
 
-	ctx := context.Background()
 	key := fmt.Sprintf("post:%s", id.Hex())
 
 	// Try to get from Redis first
@@ -168,14 +171,14 @@ func (r *postRepository) FindByID(id primitive.ObjectID) (*domain.Post, error) {
 		var post domain.Post
 		err = json.Unmarshal([]byte(postJSON), &post)
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to unmarshal cached post 1", err)
 			return nil, err
 		}
 		logger.Output(&post, nil)
 		return &post, nil
 	} else if err != redis.Nil {
 		// Redis error
-		logger.Output(nil, err)
+		logger.Output("redis error 2", err)
 		return nil, err
 	}
 
@@ -190,41 +193,41 @@ func (r *postRepository) FindByID(id primitive.ObjectID) (*domain.Post, error) {
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			notFoundErr := domain.NewNotFoundError("post", id.Hex())
-			logger.Output(nil, notFoundErr)
+			logger.Output("post not found 3", notFoundErr)
 			return nil, notFoundErr
 		}
-		logger.Output(nil, err)
+		logger.Output("failed to find post 4", err)
 		return nil, err
 	}
 
 	// Cache in Redis for 1 hour
 	postBytes, err := json.Marshal(&post)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to marshal post 5", err)
 		return nil, err
 	}
 
 	err = r.rdb.Set(ctx, key, string(postBytes), time.Hour).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.Output(nil, err)
+		logger.Output("failed to cache post 6", err)
 	}
 
 	logger.Output(&post, nil)
 	return &post, nil
 }
 
-func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset int, hasMedia bool, mediaType string) ([]domain.Post, error) {
-	logger := utils.NewTraceLogger("PostRepository.FindByUserID")
-
-	input := map[string]interface{}{
+func (r *postRepository) FindByUserID(ctx context.Context, userID primitive.ObjectID, limit, offset int, hasMedia bool, mediaType string) ([]domain.Post, error) {
+	ctx, span := r.tracer.Start(ctx, "PostRepository.FindByUserID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(map[string]interface{}{
 		"userID":    userID,
 		"limit":     limit,
 		"offset":    offset,
 		"hasMedia":  hasMedia,
 		"mediaType": mediaType,
-	}
-	logger.Input(input)
+	})
 
 	filter := bson.M{
 		"userId":   userID,
@@ -270,16 +273,16 @@ func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset i
 	}
 	opts.SetSort(bson.M{"createdAt": -1})
 
-	cursor, err := r.collection.Find(context.Background(), filter, opts)
+	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to find posts 1", err)
 		return nil, err
 	}
-	defer cursor.Close(context.Background())
+	defer cursor.Close(ctx)
 
 	var posts []domain.Post
-	if err := cursor.All(context.Background(), &posts); err != nil {
-		logger.Output(nil, err)
+	if err := cursor.All(ctx, &posts); err != nil {
+		logger.Output("failed to decode posts 2", err)
 		return nil, err
 	}
 
