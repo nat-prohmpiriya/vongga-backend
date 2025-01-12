@@ -344,7 +344,7 @@ func generateRandomString(n int) string {
 }
 
 func getProviderFromFirebase(ctx context.Context, providerID string, u *authUseCase) domain.AuthProvider {
-	ctx, span := u.tracer.Start(ctx, "AuthUseCase.getProviderFromFirebase")
+	_, span := u.tracer.Start(ctx, "AuthUseCase.getProviderFromFirebase")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 	logger.Input(providerID)

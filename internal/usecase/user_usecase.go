@@ -9,20 +9,26 @@ import (
 	"vongga-api/utils"
 
 	"firebase.google.com/go/v4/auth"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type userUseCase struct {
 	userRepo domain.UserRepository
+	tracer   trace.Tracer
 }
 
-func NewUserUseCase(userRepo domain.UserRepository) domain.UserUseCase {
+func NewUserUseCase(userRepo domain.UserRepository, tracer trace.Tracer) domain.UserUseCase {
 	return &userUseCase{
 		userRepo: userRepo,
+		tracer:   tracer,
 	}
 }
 
-func (u *userUseCase) CreateOrUpdateUser(firebaseUID, email, firstName, lastName, photoURL string) (*domain.User, error) {
-	logger := utils.NewTraceLogger("UserUseCase.CreateOrUpdateUser")
+func (u *userUseCase) CreateOrUpdateUser(ctx context.Context, firebaseUID, email, firstName, lastName, photoURL string) (*domain.User, error) {
+	ctx, span := u.tracer.Start(ctx, "UserUseCase.CreateOrUpdateUser")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"firebaseUID": firebaseUID,
 		"email":       email,
@@ -33,9 +39,9 @@ func (u *userUseCase) CreateOrUpdateUser(firebaseUID, email, firstName, lastName
 	logger.Input(input)
 
 	// Check if user exists
-	user, err := u.userRepo.FindByFirebaseUID(firebaseUID)
+	user, err := u.userRepo.FindByFirebaseUID(ctx, firebaseUID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding user 1", err)
 		return nil, err
 	}
 
@@ -49,9 +55,9 @@ func (u *userUseCase) CreateOrUpdateUser(firebaseUID, email, firstName, lastName
 			Avatar:      photoURL,
 		}
 
-		err = u.userRepo.Create(user)
+		err = u.userRepo.Create(ctx, user)
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("error creating user 2", err)
 			return nil, err
 		}
 
@@ -68,9 +74,9 @@ func (u *userUseCase) CreateOrUpdateUser(firebaseUID, email, firstName, lastName
 		user.UpdatedAt = time.Now()
 		user.Version++
 
-		err = u.userRepo.Update(user)
+		err = u.userRepo.Update(ctx, user)
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("error updating user 3", err)
 			return nil, err
 		}
 	}
@@ -79,19 +85,22 @@ func (u *userUseCase) CreateOrUpdateUser(firebaseUID, email, firstName, lastName
 	return user, nil
 }
 
-func (u *userUseCase) FindUserByFirebaseUID(firebaseUID string) (*domain.User, error) {
-	logger := utils.NewTraceLogger("UserUseCase.FindUserByFirebaseUID")
+func (u *userUseCase) FindUserByFirebaseUID(ctx context.Context, firebaseUID string) (*domain.User, error) {
+	ctx, span := u.tracer.Start(ctx, "UserUseCase.FindUserByFirebaseUID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	logger.Input(firebaseUID)
 
-	user, err := u.userRepo.FindByFirebaseUID(firebaseUID)
+	user, err := u.userRepo.FindByFirebaseUID(ctx, firebaseUID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding user 1", err)
 		return nil, err
 	}
 
 	if user == nil {
 		err = fmt.Errorf("user not found")
-		logger.Output(nil, err)
+		logger.Output("user not found 2", err)
 		return nil, err
 	}
 
@@ -99,19 +108,22 @@ func (u *userUseCase) FindUserByFirebaseUID(firebaseUID string) (*domain.User, e
 	return user, nil
 }
 
-func (u *userUseCase) FindUserByID(id string) (*domain.User, error) {
-	logger := utils.NewTraceLogger("UserUseCase.FindUserByID")
+func (u *userUseCase) FindUserByID(ctx context.Context, id string) (*domain.User, error) {
+	ctx, span := u.tracer.Start(ctx, "UserUseCase.FindUserByID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	logger.Input(id)
 
-	user, err := u.userRepo.FindByID(id)
+	user, err := u.userRepo.FindByID(ctx, id)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding user 1", err)
 		return nil, err
 	}
 
 	if user == nil {
 		err = fmt.Errorf("user not found")
-		logger.Output(nil, err)
+		logger.Output("user not found 2", err)
 		return nil, err
 	}
 
@@ -119,13 +131,16 @@ func (u *userUseCase) FindUserByID(id string) (*domain.User, error) {
 	return user, nil
 }
 
-func (u *userUseCase) FindUserByUsername(username string) (*domain.User, error) {
-	logger := utils.NewTraceLogger("UserUseCase.FindUserByUsername")
+func (u *userUseCase) FindUserByUsername(ctx context.Context, username string) (*domain.User, error) {
+	ctx, span := u.tracer.Start(ctx, "UserUseCase.FindUserByUsername")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	logger.Input(username)
 
-	user, err := u.userRepo.FindByUsername(username)
+	user, err := u.userRepo.FindByUsername(ctx, username)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding user 1", err)
 		return nil, err
 	}
 
@@ -133,13 +148,16 @@ func (u *userUseCase) FindUserByUsername(username string) (*domain.User, error) 
 	return user, nil
 }
 
-func (u *userUseCase) UpdateUser(user *domain.User) error {
-	logger := utils.NewTraceLogger("UserUseCase.UpdateUser")
+func (u *userUseCase) UpdateUser(ctx context.Context, user *domain.User) error {
+	ctx, span := u.tracer.Start(ctx, "UserUseCase.UpdateUser")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	logger.Input(user)
 
-	err := u.userRepo.Update(user)
+	err := u.userRepo.Update(ctx, user)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error updating user 1", err)
 		return err
 	}
 
@@ -147,19 +165,22 @@ func (u *userUseCase) UpdateUser(user *domain.User) error {
 	return nil
 }
 
-func (u *userUseCase) DeleteAccount(userID string, authClient interface{}) error {
-	logger := utils.NewTraceLogger("UserUseCase.DeleteAccount")
+func (u *userUseCase) DeleteAccount(ctx context.Context, userID string, authClient interface{}) error {
+	ctx, span := u.tracer.Start(ctx, "UserUseCase.DeleteAccount")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	logger.Input(userID)
 
 	// Find user to get Firebase UID
-	user, err := u.userRepo.FindByID(userID)
+	user, err := u.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding user 1", err)
 		return err
 	}
 	if user == nil {
 		err = fmt.Errorf("user not found")
-		logger.Output(nil, err)
+		logger.Output("user not found 2", err)
 		return err
 	}
 
@@ -167,14 +188,14 @@ func (u *userUseCase) DeleteAccount(userID string, authClient interface{}) error
 	firebaseAuth := authClient.(*auth.Client)
 	err = firebaseAuth.DeleteUser(context.Background(), user.FirebaseUID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error deleting user from Firebase 3", err)
 		return err
 	}
 
 	// Soft delete user in our database
-	err = u.userRepo.SoftDelete(userID)
+	err = u.userRepo.SoftDelete(ctx, userID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error soft deleting user 4", err)
 		return err
 	}
 
@@ -182,8 +203,11 @@ func (u *userUseCase) DeleteAccount(userID string, authClient interface{}) error
 	return nil
 }
 
-func (u *userUseCase) FindUserFindMany(req *domain.UserFindManyRequest) (*domain.UserFindManyResponse, error) {
-	logger := utils.NewTraceLogger("UserUseCase.FindUserFindMany")
+func (u *userUseCase) FindUserFindMany(ctx context.Context, req *domain.UserFindManyRequest) (*domain.UserFindManyResponse, error) {
+	ctx, span := u.tracer.Start(ctx, "UserUseCase.FindUserFindMany")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	logger.Input(req)
 
 	// Validate request
@@ -212,9 +236,9 @@ func (u *userUseCase) FindUserFindMany(req *domain.UserFindManyRequest) (*domain
 	}
 
 	// Find users from repository
-	users, totalCount, err := u.userRepo.FindUserFindMany(req)
+	users, totalCount, err := u.userRepo.FindUserFindMany(ctx, req)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding users 1", err)
 		return nil, err
 	}
 

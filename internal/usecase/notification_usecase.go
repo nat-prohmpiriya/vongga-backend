@@ -1,26 +1,38 @@
 package usecase
 
 import (
+	"context"
+
 	"vongga-api/internal/domain"
 	"vongga-api/utils"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type notificationUseCase struct {
 	notificationRepo domain.NotificationRepository
 	userRepo         domain.UserRepository
+	tracer           trace.Tracer
 }
 
-func NewNotificationUseCase(notificationRepo domain.NotificationRepository, userRepo domain.UserRepository) domain.NotificationUseCase {
+func NewNotificationUseCase(
+	notificationRepo domain.NotificationRepository,
+	userRepo domain.UserRepository,
+	tracer trace.Tracer,
+) domain.NotificationUseCase {
 	return &notificationUseCase{
 		notificationRepo: notificationRepo,
 		userRepo:         userRepo,
+		tracer:           tracer,
 	}
 }
 
-func (n *notificationUseCase) CreateNotification(recipientID, senderID, refID primitive.ObjectID, nType domain.NotificationType, refType, message string) (*domain.Notification, error) {
-	logger := utils.NewTraceLogger("NotificationUseCase.CreateNotification")
+func (n *notificationUseCase) CreateNotification(ctx context.Context, recipientID, senderID, refID primitive.ObjectID, nType domain.NotificationType, refType, message string) (*domain.Notification, error) {
+	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.CreateNotification")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"recipientID": recipientID.Hex(),
 		"senderID":    senderID.Hex(),
@@ -41,9 +53,9 @@ func (n *notificationUseCase) CreateNotification(recipientID, senderID, refID pr
 		IsRead:      false,
 	}
 
-	err := n.notificationRepo.Create(notification)
+	err := n.notificationRepo.Create(ctx, notification)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error creating notification 1", err)
 		return nil, err
 	}
 
@@ -51,20 +63,23 @@ func (n *notificationUseCase) CreateNotification(recipientID, senderID, refID pr
 	return notification, nil
 }
 
-func (n *notificationUseCase) FindNotification(notificationID primitive.ObjectID) (*domain.NotificationResponse, error) {
-	logger := utils.NewTraceLogger("NotificationUseCase.FindNotification")
+func (n *notificationUseCase) FindNotification(ctx context.Context, notificationID primitive.ObjectID) (*domain.NotificationResponse, error) {
+	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.FindNotification")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	logger.Input(notificationID)
 
-	notification, err := n.notificationRepo.FindByID(notificationID)
+	notification, err := n.notificationRepo.FindByID(ctx, notificationID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding notification 1", err)
 		return nil, err
 	}
 
 	// Find sender information
-	sender, err := n.userRepo.FindByID(notification.SenderID.Hex())
+	sender, err := n.userRepo.FindByID(ctx, notification.SenderID.Hex())
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding sender 2", err)
 		return nil, err
 	}
 
@@ -82,8 +97,11 @@ func (n *notificationUseCase) FindNotification(notificationID primitive.ObjectID
 	return response, nil
 }
 
-func (n *notificationUseCase) FindManyNotifications(recipientID primitive.ObjectID, limit, offset int) ([]domain.NotificationResponse, error) {
-	logger := utils.NewTraceLogger("NotificationUseCase.FindManyNotifications")
+func (n *notificationUseCase) FindManyNotifications(ctx context.Context, recipientID primitive.ObjectID, limit, offset int) ([]domain.NotificationResponse, error) {
+	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.FindManyNotifications")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"recipientID": recipientID.Hex(),
 		"limit":       limit,
@@ -91,18 +109,18 @@ func (n *notificationUseCase) FindManyNotifications(recipientID primitive.Object
 	}
 	logger.Input(input)
 
-	notifications, err := n.notificationRepo.FindByRecipient(recipientID, limit, offset)
+	notifications, err := n.notificationRepo.FindByRecipient(ctx, recipientID, limit, offset)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding notifications 1", err)
 		return nil, err
 	}
 
 	// Create response with user information
 	response := make([]domain.NotificationResponse, len(notifications))
 	for i, notification := range notifications {
-		sender, err := n.userRepo.FindByID(notification.SenderID.Hex())
+		sender, err := n.userRepo.FindByID(ctx, notification.SenderID.Hex())
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("error finding sender 2", err)
 			continue
 		}
 
@@ -121,70 +139,81 @@ func (n *notificationUseCase) FindManyNotifications(recipientID primitive.Object
 	return response, nil
 }
 
-func (n *notificationUseCase) MarkAsRead(notificationID primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("NotificationUseCase.MarkAsRead")
+func (n *notificationUseCase) MarkAsRead(ctx context.Context, notificationID primitive.ObjectID) error {
+	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.MarkAsRead")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"notificationID": notificationID.Hex(),
 	}
 	logger.Input(input)
 
-	err := n.notificationRepo.MarkAsRead(notificationID)
+	err := n.notificationRepo.MarkAsRead(ctx, notificationID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error marking notification as read 1", err)
 		return err
 	}
 
-	logger.Output(map[string]interface{}{"success": true}, nil)
+	logger.Output("notification marked as read successfully", nil)
 	return nil
 }
 
-func (n *notificationUseCase) MarkAllAsRead(recipientID primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("NotificationUseCase.MarkAllAsRead")
+func (n *notificationUseCase) MarkAllAsRead(ctx context.Context, recipientID primitive.ObjectID) error {
+	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.MarkAllAsRead")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"recipientID": recipientID.Hex(),
 	}
 	logger.Input(input)
 
-	err := n.notificationRepo.MarkAllAsRead(recipientID)
+	err := n.notificationRepo.MarkAllAsRead(ctx, recipientID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error marking all notifications as read 1", err)
 		return err
 	}
 
-	logger.Output(map[string]interface{}{"success": true}, nil)
+	logger.Output("all notifications marked as read successfully", nil)
 	return nil
 }
 
-func (n *notificationUseCase) DeleteNotification(notificationID primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("NotificationUseCase.DeleteNotification")
+func (n *notificationUseCase) DeleteNotification(ctx context.Context, notificationID primitive.ObjectID) error {
+	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.DeleteNotification")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"notificationID": notificationID.Hex(),
 	}
 	logger.Input(input)
 
-	err := n.notificationRepo.Delete(notificationID)
+	err := n.notificationRepo.Delete(ctx, notificationID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error deleting notification 1", err)
 		return err
 	}
 
-	logger.Output(map[string]interface{}{"success": true}, nil)
+	logger.Output("notification deleted successfully", nil)
 	return nil
 }
 
-func (n *notificationUseCase) FindUnreadCount(recipientID primitive.ObjectID) (int64, error) {
-	logger := utils.NewTraceLogger("NotificationUseCase.FindUnreadCount")
+func (n *notificationUseCase) FindUnreadCount(ctx context.Context, recipientID primitive.ObjectID) (int64, error) {
+	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.FindUnreadCount")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
 	input := map[string]interface{}{
 		"recipientID": recipientID.Hex(),
 	}
 	logger.Input(input)
 
-	count, err := n.notificationRepo.CountUnread(recipientID)
+	count, err := n.notificationRepo.CountUnread(ctx, recipientID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error counting unread notifications 1", err)
 		return 0, err
 	}
 
-	logger.Output(map[string]interface{}{"count": count}, nil)
 	return count, nil
 }
