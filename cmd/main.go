@@ -107,7 +107,7 @@ func main() {
 	subPostRepo := repository.NewSubPostRepository(db, redisClient, tracer)
 	storyRepo := repository.NewStoryRepository(db, redisClient, tracer)
 	chatRepo := repository.NewChatRepository(db, tracer)
-	fileRepo, err := repository.NewFileStorage(cfg.FirebaseCredentialsPath, cfg.FirebaseStorageBucket)
+	fileRepo, err := repository.NewFileStorage(cfg.FirebaseCredentialsPath, cfg.FirebaseStorageBucket, tracer)
 	if err != nil {
 		log.Fatal(err)
 	}

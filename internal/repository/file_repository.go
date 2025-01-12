@@ -14,15 +14,20 @@ import (
 	"cloud.google.com/go/storage"
 	firebase "firebase.google.com/go/v4"
 	"google.golang.org/api/option"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 type fileStorage struct {
 	bucket     *storage.BucketHandle
 	bucketName string
+	tracer     trace.Tracer
 }
 
-func NewFileStorage(credentialsFile string, bucketName string) (domain.FileRepository, error) {
-	logger := utils.NewTraceLogger("FileRepository.NewFileStorage")
+func NewFileStorage(credentialsFile string, bucketName string, tracer trace.Tracer) (domain.FileRepository, error) {
+	ctx, span := tracer.Start(context.Background(), "FileRepository.NewFileStorage")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(map[string]string{
 		"credentialsFile": credentialsFile,
 		"bucketName":      bucketName,
@@ -30,11 +35,10 @@ func NewFileStorage(credentialsFile string, bucketName string) (domain.FileRepos
 
 	if bucketName == "" {
 		err := fmt.Errorf("bucket name is required")
-		logger.Output(nil, err)
+		logger.Output("bucket name is required 0", err)
 		return nil, err
 	}
 
-	ctx := context.Background()
 	config := &firebase.Config{
 		StorageBucket: bucketName,
 	}
@@ -42,19 +46,19 @@ func NewFileStorage(credentialsFile string, bucketName string) (domain.FileRepos
 	opt := option.WithCredentialsFile(credentialsFile)
 	app, err := firebase.NewApp(ctx, config, opt)
 	if err != nil {
-		logger.Output(nil, fmt.Errorf("error initializing firebase app: %v", err))
+		logger.Output("error initializing firebase app 1", err)
 		return nil, fmt.Errorf("error initializing firebase app: %v", err)
 	}
 
 	client, err := app.Storage(ctx)
 	if err != nil {
-		logger.Output(nil, fmt.Errorf("error getting storage client: %v", err))
+		logger.Output("error getting storage clien 2", err)
 		return nil, fmt.Errorf("error getting storage client: %v", err)
 	}
 
 	bucket, err := client.DefaultBucket()
 	if err != nil {
-		logger.Output(nil, fmt.Errorf("error getting bucket: %v", err))
+		logger.Output("error getting bucket 3", err)
 		return nil, fmt.Errorf("error getting bucket: %v", err)
 	}
 
@@ -67,14 +71,14 @@ func NewFileStorage(credentialsFile string, bucketName string) (domain.FileRepos
 	return storage, nil
 }
 
-func (fs *fileStorage) Upload(file *domain.File, fileData multipart.File) (*domain.File, error) {
-	logger := utils.NewTraceLogger("FileRepository.Upload")
+func (fs *fileStorage) Upload(ctx context.Context, file *domain.File, fileData multipart.File) (*domain.File, error) {
+	ctx, span := fs.tracer.Start(ctx, "FileRepository.Upload")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(map[string]interface{}{
 		"fileName":    file.FileName,
 		"contentType": file.ContentType,
 	})
-
-	ctx := context.Background()
 
 	// Generate unique filename using timestamp
 	timestamp := time.Now().UnixNano()
@@ -88,19 +92,19 @@ func (fs *fileStorage) Upload(file *domain.File, fileData multipart.File) (*doma
 	writer.ContentType = file.ContentType
 
 	if _, err := io.Copy(writer, fileData); err != nil {
-		logger.Output(nil, fmt.Errorf("error copying file to storage: %v", err))
+		logger.Output("error copying file to storage 1", err)
 		return nil, fmt.Errorf("error copying file to storage: %v", err)
 	}
 
 	if err := writer.Close(); err != nil {
-		logger.Output(nil, fmt.Errorf("error closing writer: %v", err))
+		logger.Output("error closing writer 2", err)
 		return nil, fmt.Errorf("error closing writer: %v", err)
 	}
 
 	// Find object attributes
 	attrs, err := obj.Attrs(ctx)
 	if err != nil {
-		logger.Output(nil, fmt.Errorf("error getting object attributes: %v", err))
+		logger.Output("error getting object attributes 3", err)
 		return nil, fmt.Errorf("error getting object attributes: %v", err)
 	}
 	logger.Output(map[string]interface{}{

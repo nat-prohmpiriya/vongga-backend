@@ -99,6 +99,7 @@ type ChatUsecase interface {
 	FindOnlineUsers(ctx context.Context, userIDs []string) ([]*ChatUserStatus, error)
 
 	// Notification operations
+	CreateNotification(ctx context.Context, userID string, notificationType string, roomID string, messageID string) (*ChatNotification, error)
 	SendNotification(ctx context.Context, notification *ChatNotification) error
 	FindUserNotifications(ctx context.Context, userID string) ([]*ChatNotification, error)
 	MarkNotificationRead(ctx context.Context, notificationID string) error
