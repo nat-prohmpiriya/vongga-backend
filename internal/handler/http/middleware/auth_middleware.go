@@ -8,30 +8,32 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"go.opentelemetry.io/otel/trace"
 )
 
-func AuthMiddleware(jwtSecret string) fiber.Handler {
+func AuthMiddleware(jwtSecret string, trcer trace.Tracer) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		logger := utils.NewTraceLogger("AuthMiddleware")
-		logger.Input(c)
+		_, span := trcer.Start(c.UserContext(), "middleware.AuthMiddleware")
+		defer span.End()
+		logger := utils.NewTraceLogger(span)
 
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
-			logger.Output(nil, fmt.Errorf("missing authorization header"))
+			logger.Output("missing authorization header", nil)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "unauthorized",
 			})
 		}
 
 		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
-		logger.LogInfo(tokenString)
+		logger.Info(tokenString)
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			logger.Output(nil, fmt.Errorf("parsing token"))
+			logger.Output("parsing token", nil)
 			return []byte(jwtSecret), nil
 		})
 
 		if err != nil || !token.Valid {
-			logger.Output(nil, fmt.Errorf("invalid token"))
+			logger.Output("invalid token", nil)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token",
 			})
@@ -42,11 +44,11 @@ func AuthMiddleware(jwtSecret string) fiber.Handler {
 			"claims":      claims,
 			"userIdValue": claims["userId"],
 			"userIdType":  fmt.Sprintf("%T", claims["userId"]),
-		}, nil)
+		})
 		// Convert userId to string before setting in context
 		userID, ok := claims["userId"].(string)
 		if !ok {
-			logger.Output(nil, fmt.Errorf("userId is not a string"))
+			logger.Output("Invalid token format", fmt.Errorf("invalid token format"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid token format",
 			})

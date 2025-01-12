@@ -16,7 +16,7 @@ type JeagerHandler struct {
 func NewJeagerHandler(router fiber.Router) *JeagerHandler {
 	handler := &JeagerHandler{}
 
-	router.Find("/", handler.ProxyJaegerHandler)
+	router.Get("/", handler.ProxyJaegerHandler)
 
 	return handler
 
@@ -37,7 +37,7 @@ func (h *JeagerHandler) ProxyJaegerHandler(c *fiber.Ctx) error {
 	}
 
 	// Copy headers
-	for key, values := range c.FindReqHeaders() {
+	for key, values := range c.GetReqHeaders() {
 		if len(values) > 0 {
 			req.Header.Set(key, values[0]) // ใช้ค่าแรกจาก array
 		}

@@ -7,19 +7,18 @@ import (
 	"vongga-api/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type FileHandler struct {
 	fileRepo domain.FileRepository
+	tracer   trace.Tracer
 }
 
-func NewFileHandler(router fiber.Router, fileRepo domain.FileRepository) *FileHandler {
-	logger := utils.NewTraceLogger("FileHandler.NewFileHandler")
-	logger.Input(map[string]interface{}{
-		"fileRepo": fileRepo,
-	})
+func NewFileHandler(router fiber.Router, fileRepo domain.FileRepository, tracer trace.Tracer) *FileHandler {
 	handler := &FileHandler{
 		fileRepo: fileRepo,
+		tracer:   tracer,
 	}
 
 	router.Post("/upload", handler.Upload)
@@ -28,12 +27,14 @@ func NewFileHandler(router fiber.Router, fileRepo domain.FileRepository) *FileHa
 }
 
 func (h *FileHandler) Upload(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("FileHandler.Upload")
+	ctx, span := h.tracer.Start(c.UserContext(), "FileHandler.Upload")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	// Find file from request
 	file, err := c.FormFile("file")
 	if err != nil {
-		logger.Output(nil, fmt.Errorf("error getting file from request: %v", err))
+		logger.Output("error getting file from request", fmt.Errorf("error getting file from request: %v", err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "file is required",
 		})
@@ -43,14 +44,14 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 		"filename":    file.Filename,
 		"size":        file.Size,
 		"header":      file.Header,
-		"contentType": file.Header.Find("Content-Type"),
+		"contentType": file.Header.Get("Content-Type"),
 	})
 
 	// Validate file type
-	contentType := file.Header.Find("Content-Type")
+	contentType := file.Header.Get("Content-Type")
 	if !isValidFileType(contentType) {
 		err := fmt.Errorf("invalid file type: %s", contentType)
-		logger.Output(nil, err)
+		logger.Output("error invalid file type", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -59,7 +60,7 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 	// Validate file size (max 10MB)
 	if file.Size > 10*1024*1024 {
 		err := fmt.Errorf("file size too large: %d bytes", file.Size)
-		logger.Output(nil, err)
+		logger.Output("error file size too large", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -68,7 +69,7 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 	// Open file
 	fileData, err := file.Open()
 	if err != nil {
-		logger.Output(nil, fmt.Errorf("error opening file: %v", err))
+		logger.Output("error opening file", fmt.Errorf("error opening file: %v", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "error opening file",
 		})
@@ -82,7 +83,7 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 	}
 
 	// Upload file
-	uploadedFile, err := h.fileRepo.Upload(fileModel, fileData)
+	uploadedFile, err := h.fileRepo.Upload(ctx, fileModel, fileData)
 	if err != nil {
 		logger.Output(nil, fmt.Errorf("error uploading file: %v", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

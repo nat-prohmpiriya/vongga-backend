@@ -8,22 +8,25 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type SubPostHandler struct {
 	subPostUseCase domain.SubPostUseCase
+	tracer         trace.Tracer
 }
 
-func NewSubPostHandler(router fiber.Router, su domain.SubPostUseCase) {
+func NewSubPostHandler(router fiber.Router, su domain.SubPostUseCase, tracer trace.Tracer) {
 	handler := &SubPostHandler{
 		subPostUseCase: su,
+		tracer:         tracer,
 	}
 
 	router.Post("/:postId/subposts", handler.CreateSubPost)
 	router.Put("/subposts/:id", handler.UpdateSubPost)
 	router.Delete("/subposts/:id", handler.DeleteSubPost)
-	router.Find("/subposts/:id", handler.FindSubPost)
-	router.Find("/:postId/subposts", handler.FindManySubPosts)
+	router.Get("/subposts/:id", handler.FindSubPost)
+	router.Get("/:postId/subposts", handler.FindManySubPosts)
 	router.Put("/:postId/subposts/reorder", handler.ReorderSubPosts)
 }
 
@@ -34,11 +37,13 @@ type CreateSubPostRequest struct {
 }
 
 func (h *SubPostHandler) CreateSubPost(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("SubPostHandler.CreateSubPost")
+	ctx, span := h.tracer.Start(c.Context(), "SubPostHandler.CreateSubPost")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	parentID, err := primitive.ObjectIDFromHex(c.Params("postId"))
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("invalid post ID format 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid post ID",
 		})
@@ -46,7 +51,7 @@ func (h *SubPostHandler) CreateSubPost(c *fiber.Ctx) error {
 
 	var req CreateSubPostRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.Output(nil, err)
+		logger.Output("invalid request body format 2", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -55,16 +60,15 @@ func (h *SubPostHandler) CreateSubPost(c *fiber.Ctx) error {
 	// TODO: Find userID from auth context
 	userID := primitive.NewObjectID()
 
-	input := map[string]interface{}{
+	logger.Input(map[string]interface{}{
 		"parentID": parentID,
 		"userID":   userID,
 		"request":  req,
-	}
-	logger.Input(input)
+	})
 
-	subPost, err := h.subPostUseCase.CreateSubPost(parentID, userID, req.Content, req.Media, req.Order)
+	subPost, err := h.subPostUseCase.CreateSubPost(ctx, parentID, userID, req.Content, req.Media, req.Order)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to create subpost 3", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -80,11 +84,13 @@ type UpdateSubPostRequest struct {
 }
 
 func (h *SubPostHandler) UpdateSubPost(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("SubPostHandler.UpdateSubPost")
+	ctx, span := h.tracer.Start(c.Context(), "SubPostHandler.UpdateSubPost")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	subPostID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("invalid subpost ID format 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid subpost ID",
 		})
@@ -92,21 +98,20 @@ func (h *SubPostHandler) UpdateSubPost(c *fiber.Ctx) error {
 
 	var req UpdateSubPostRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.Output(nil, err)
+		logger.Output("invalid request body format 2", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	input := map[string]interface{}{
+	logger.Input(map[string]interface{}{
 		"subPostID": subPostID,
 		"request":   req,
-	}
-	logger.Input(input)
+	})
 
-	subPost, err := h.subPostUseCase.UpdateSubPost(subPostID, req.Content, req.Media)
+	subPost, err := h.subPostUseCase.UpdateSubPost(ctx, subPostID, req.Content, req.Media)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to update subpost 3", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -117,44 +122,52 @@ func (h *SubPostHandler) UpdateSubPost(c *fiber.Ctx) error {
 }
 
 func (h *SubPostHandler) DeleteSubPost(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("SubPostHandler.DeleteSubPost")
+	ctx, span := h.tracer.Start(c.Context(), "SubPostHandler.DeleteSubPost")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	subPostID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("invalid subpost ID format 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid subpost ID",
 		})
 	}
-	logger.Input(subPostID)
+	logger.Input(map[string]interface{}{
+		"subPostID": subPostID,
+	})
 
-	err = h.subPostUseCase.DeleteSubPost(subPostID)
+	err = h.subPostUseCase.DeleteSubPost(ctx, subPostID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to delete subpost 2", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.Output("SubPost deleted successfully", nil)
+	logger.Output("subpost deleted successfully", nil)
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (h *SubPostHandler) FindSubPost(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("SubPostHandler.FindSubPost")
+	ctx, span := h.tracer.Start(c.Context(), "SubPostHandler.FindSubPost")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	subPostID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("invalid subpost ID format 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid subpost ID",
 		})
 	}
-	logger.Input(subPostID)
+	logger.Input(map[string]interface{}{
+		"subPostID": subPostID,
+	})
 
-	subPost, err := h.subPostUseCase.FindSubPost(subPostID)
+	subPost, err := h.subPostUseCase.FindSubPost(ctx, subPostID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to find subpost 2", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -165,11 +178,13 @@ func (h *SubPostHandler) FindSubPost(c *fiber.Ctx) error {
 }
 
 func (h *SubPostHandler) FindManySubPosts(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("SubPostHandler.FindManySubPosts")
+	ctx, span := h.tracer.Start(c.Context(), "SubPostHandler.FindManySubPosts")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	parentID, err := primitive.ObjectIDFromHex(c.Params("postId"))
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("invalid post ID format 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid post ID",
 		})
@@ -178,16 +193,15 @@ func (h *SubPostHandler) FindManySubPosts(c *fiber.Ctx) error {
 	limit, _ := strconv.Atoi(c.Query("limit"))
 	offset, _ := strconv.Atoi(c.Query("offset"))
 
-	input := map[string]interface{}{
+	logger.Input(map[string]interface{}{
 		"parentID": parentID,
 		"limit":    limit,
 		"offset":   offset,
-	}
-	logger.Input(input)
+	})
 
-	subPosts, err := h.subPostUseCase.FindManySubPosts(parentID, limit, offset)
+	subPosts, err := h.subPostUseCase.FindManySubPosts(ctx, parentID, limit, offset)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to find subposts 2", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -202,11 +216,13 @@ type ReorderSubPostsRequest struct {
 }
 
 func (h *SubPostHandler) ReorderSubPosts(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("SubPostHandler.ReorderSubPosts")
+	ctx, span := h.tracer.Start(c.Context(), "SubPostHandler.ReorderSubPosts")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	parentID, err := primitive.ObjectIDFromHex(c.Params("postId"))
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("invalid post ID format 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid post ID",
 		})
@@ -214,7 +230,7 @@ func (h *SubPostHandler) ReorderSubPosts(c *fiber.Ctx) error {
 
 	var req ReorderSubPostsRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.Output(nil, err)
+		logger.Output("invalid request body format 2", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -225,7 +241,7 @@ func (h *SubPostHandler) ReorderSubPosts(c *fiber.Ctx) error {
 	for idStr, order := range req.Orders {
 		id, err := primitive.ObjectIDFromHex(idStr)
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("invalid subpost ID in orders 3", err)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid subpost ID in orders",
 			})
@@ -233,20 +249,19 @@ func (h *SubPostHandler) ReorderSubPosts(c *fiber.Ctx) error {
 		orders[id] = order
 	}
 
-	input := map[string]interface{}{
+	logger.Input(map[string]interface{}{
 		"parentID": parentID,
 		"orders":   orders,
-	}
-	logger.Input(input)
+	})
 
-	err = h.subPostUseCase.ReorderSubPosts(parentID, orders)
+	err = h.subPostUseCase.ReorderSubPosts(ctx, parentID, orders)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to reorder subposts 4", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.Output("SubPosts reordered successfully", nil)
+	logger.Output("subposts reordered successfully", nil)
 	return c.SendStatus(fiber.StatusNoContent)
 }

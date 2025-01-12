@@ -5,15 +5,18 @@ import (
 	"vongga-api/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type AuthHandler struct {
 	authUseCase domain.AuthUseCase
+	tracer      trace.Tracer
 }
 
-func NewAuthHandler(authUseCase domain.AuthUseCase) *AuthHandler {
+func NewAuthHandler(authUseCase domain.AuthUseCase, tracer trace.Tracer) *AuthHandler {
 	return &AuthHandler{
 		authUseCase: authUseCase,
+		tracer:      tracer,
 	}
 }
 
@@ -28,55 +31,52 @@ func NewAuthHandler(authUseCase domain.AuthUseCase) *AuthHandler {
 // @Failure 400 {object} ErrorResponse
 // @Router /auth/createTestToken [post]
 func (h *AuthHandler) CreateTestToken(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("AuthHandler.CreateTestToken")
+	ctx, span := h.tracer.Start(c.UserContext(), "AuthHandler.CreateTestToken")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	var req CreateTestTokenRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.Input(req)
-		logger.Output(nil, err)
+		logger.Output("error parsing request 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
 	}
 
 	logger.Input(req)
-	tokenPair, err := h.authUseCase.CreateTestToken(c.Context(), req.UserID)
+	tokenPair, err := h.authUseCase.CreateTestToken(ctx, req.UserID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error creating test token 2", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	response := TokenResponse{
-		AccessToken:  tokenPair.AccessToken,
-		RefreshToken: tokenPair.RefreshToken,
-	}
-
-	logger.Output(response, nil)
-	return c.JSON(response)
+	logger.Output(tokenPair, nil)
+	return c.JSON(tokenPair)
 }
 
 // VerifyTokenFirebase verifies Firebase ID token and returns user data with JWT tokens
 func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("AuthHandler.VerifyTokenFirebase")
+	ctx, span := h.tracer.Start(c.UserContext(), "AuthHandler.VerifyTokenFirebase")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	var req struct {
 		FirebaseToken string `json:"firebaseToken"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
-		logger.Input(req)
-		logger.Output(nil, err)
+		logger.Output("error parsing request 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid request body",
+			"error": err.Error(),
 		})
 	}
 
 	logger.Input(req)
-	user, tokenPair, err := h.authUseCase.VerifyTokenFirebase(c.Context(), req.FirebaseToken)
+	user, tokenPair, err := h.authUseCase.VerifyTokenFirebase(ctx, req.FirebaseToken)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error verifying token 2", err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -94,52 +94,49 @@ func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
 
 // RefreshToken refreshes the access token using a refresh token
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("AuthHandler.RefreshToken")
+	ctx, span := h.tracer.Start(c.UserContext(), "AuthHandler.RefreshToken")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	var req RefreshTokenRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.Input(req)
-		logger.Output(nil, err)
+		logger.Output("error parsing request 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid request body",
-		})
-	}
-
-	logger.Input(req)
-	tokenPair, err := h.authUseCase.RefreshToken(c.Context(), req.RefreshToken)
-	if err != nil {
-		logger.Output(nil, err)
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	response := TokenResponse{
-		AccessToken:  tokenPair.AccessToken,
-		RefreshToken: tokenPair.RefreshToken,
+	logger.Input(req)
+	tokenPair, err := h.authUseCase.RefreshToken(ctx, req.RefreshToken)
+	if err != nil {
+		logger.Output("error refreshing token 2", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
 
-	logger.Output(response, nil)
-	return c.JSON(response)
+	logger.Output(tokenPair, nil)
+	return c.JSON(tokenPair)
 }
 
 // Logout revokes the refresh token
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("AuthHandler.Logout")
+	ctx, span := h.tracer.Start(c.UserContext(), "AuthHandler.Logout")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	var req LogoutRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.Input(req)
-		logger.Output(nil, err)
+		logger.Output("error parsing request 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid request body",
+			"error": err.Error(),
 		})
 	}
 
 	logger.Input(req)
-	err := h.authUseCase.RevokeRefreshToken(c.Context(), req.RefreshToken)
+	err := h.authUseCase.RevokeRefreshToken(ctx, req.RefreshToken)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error logging out 2", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})

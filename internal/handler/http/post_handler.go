@@ -8,20 +8,23 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type PostHandler struct {
 	postUseCase domain.PostUseCase
+	tracer      trace.Tracer
 }
 
-func NewPostHandler(router fiber.Router, pu domain.PostUseCase) *PostHandler {
+func NewPostHandler(router fiber.Router, pu domain.PostUseCase, tracer trace.Tracer) *PostHandler {
 	handler := &PostHandler{
 		postUseCase: pu,
+		tracer:      tracer,
 	}
 
 	router.Post("/", handler.CreatePost)
-	router.Find("/", handler.FindManyPosts)
-	router.Find("/:id", handler.FindPost)
+	router.Get("/", handler.FindManyPosts)
+	router.Get("/:id", handler.FindPost)
 	router.Put("/:id", handler.UpdatePost)
 	router.Delete("/:id", handler.DeletePost)
 
@@ -46,11 +49,13 @@ type UpdatePostRequest struct {
 }
 
 func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("PostHandler.CreatePost")
+	ctx, span := h.tracer.Start(c.UserContext(), "PostHandler.CreatePost")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	var req CreatePostRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.Output(nil, err)
+		logger.Output("error parsing request body 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -58,13 +63,14 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding user ID 2", err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
 	}
 
 	post, err := h.postUseCase.CreatePost(
+		ctx,
 		userID,
 		req.Content,
 		req.Media,
@@ -74,7 +80,7 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 		req.SubPosts,
 	)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error creating post 3", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -85,11 +91,13 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 }
 
 func (h *PostHandler) UpdatePost(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("PostHandler.UpdatePost")
+	ctx, span := h.tracer.Start(c.UserContext(), "PostHandler.UpdatePost")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error parsing post ID 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid post ID",
 		})
@@ -97,7 +105,7 @@ func (h *PostHandler) UpdatePost(c *fiber.Ctx) error {
 
 	var req UpdatePostRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.Output(nil, err)
+		logger.Output("error parsing request body 2", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -109,9 +117,9 @@ func (h *PostHandler) UpdatePost(c *fiber.Ctx) error {
 	}
 	logger.Input(input)
 
-	post, err := h.postUseCase.UpdatePost(postID, req.Content, req.Media, req.Tags, req.Location, req.Visibility)
+	post, err := h.postUseCase.UpdatePost(ctx, postID, req.Content, req.Media, req.Tags, req.Location, req.Visibility)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error updating post 3", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -122,20 +130,22 @@ func (h *PostHandler) UpdatePost(c *fiber.Ctx) error {
 }
 
 func (h *PostHandler) DeletePost(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("PostHandler.DeletePost")
+	ctx, span := h.tracer.Start(c.UserContext(), "PostHandler.DeletePost")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error parsing post ID 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid post ID",
 		})
 	}
 	logger.Input(postID)
 
-	err = h.postUseCase.DeletePost(postID)
+	err = h.postUseCase.DeletePost(ctx, postID)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error deleting post 2", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -146,11 +156,13 @@ func (h *PostHandler) DeletePost(c *fiber.Ctx) error {
 }
 
 func (h *PostHandler) FindPost(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("PostHandler.FindPost")
+	ctx, span := h.tracer.Start(c.UserContext(), "PostHandler.FindPost")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error parsing post ID 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid post ID",
 		})
@@ -163,9 +175,9 @@ func (h *PostHandler) FindPost(c *fiber.Ctx) error {
 	}
 	logger.Input(input)
 
-	post, err := h.postUseCase.FindPost(postID, includeSubPosts)
+	post, err := h.postUseCase.FindPost(ctx, postID, includeSubPosts)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding post 2", err)
 		if domain.IsNotFoundError(err) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": err.Error(),
@@ -181,11 +193,13 @@ func (h *PostHandler) FindPost(c *fiber.Ctx) error {
 }
 
 func (h *PostHandler) FindManyPosts(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("PostHandler.FindManyPosts")
+	ctx, span := h.tracer.Start(c.UserContext(), "PostHandler.FindManyPosts")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	userIDStr := c.Query("userId")
 	if userIDStr == "" {
-		logger.Output(nil, fmt.Errorf("missing userId query parameter"))
+		logger.Output("missing user ID query parameter 1", fmt.Errorf("missing userId query parameter"))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Missing user ID",
 		})
@@ -193,7 +207,7 @@ func (h *PostHandler) FindManyPosts(c *fiber.Ctx) error {
 
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error parsing user ID 2", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid user ID",
 		})
@@ -222,9 +236,9 @@ func (h *PostHandler) FindManyPosts(c *fiber.Ctx) error {
 	}
 	logger.Input(input)
 
-	posts, err := h.postUseCase.FindManyPosts(userID, limit, offset, includeSubPosts, hasMedia, mediaType)
+	posts, err := h.postUseCase.FindManyPosts(ctx, userID, limit, offset, includeSubPosts, hasMedia, mediaType)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("error finding many posts 3", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})

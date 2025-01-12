@@ -10,41 +10,42 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.opentelemetry.io/otel/trace"
 )
 
-func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler {
+func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client, trcer trace.Tracer) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		logger := utils.NewTraceLogger("JWTAuthMiddleware")
+		_, span := trcer.Start(c.UserContext(), "middleware.JWTAuthMiddleware")
+		defer span.End()
+		logger := utils.NewTraceLogger(span)
 		authHeader := c.Get("Authorization")
+		logger.Input(authHeader)
 		if authHeader == "" {
-			logger.Input(authHeader)
-			logger.Output(nil, fmt.Errorf("missing authorization header"))
+			logger.Output("missing authorization header", fmt.Errorf("missing authorization header"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "missing authorization header",
 			})
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		logger.Input(tokenString)
 		if tokenString == authHeader {
-			logger.Input(tokenString)
-			logger.Output(nil, fmt.Errorf("invalid token format"))
+			logger.Output("invalid token format", fmt.Errorf("invalid token format"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token format",
 			})
 		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			logger.Input(tokenString)
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				logger.Input(tokenString)
-				logger.Output(nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
+				logger.Output("unexpected signing method", fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
 				return nil, fiber.ErrUnauthorized
 			}
-			logger.Input(tokenString)
 			return []byte(jwtSecret), nil
 		})
 
 		if err != nil {
-			logger.Input(tokenString)
 			logger.Output(nil, err)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token",
@@ -52,9 +53,9 @@ func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler 
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
+		logger.Input(claims)
 		if !ok || !token.Valid {
-			logger.Input(tokenString)
-			logger.Output(nil, fmt.Errorf("invalid token claims"))
+			logger.Output("invalid token claims", fmt.Errorf("invalid token claims"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token claims",
 			})
@@ -73,13 +74,13 @@ func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler 
 			if str, ok := v.(string); ok {
 				userIDStr = str
 			} else {
-				logger.Output(nil, fmt.Errorf("userId is not a valid string: %T", v))
+				logger.Output("userId is not a valid string", fmt.Errorf("userId is not a valid string: %T", v))
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 					"error": "invalid user ID format in token",
 				})
 			}
 		default:
-			logger.Output(nil, fmt.Errorf("userId is not a valid format: %T", v))
+			logger.Output("userId is not a valid format", fmt.Errorf("userId is not a valid format: %T", v))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid user ID format in token",
 			})

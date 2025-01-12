@@ -9,33 +9,36 @@ import (
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/gofiber/fiber/v2"
+	"go.opentelemetry.io/otel/trace"
 )
 
-func FirebaseAuthMiddleware(auth *auth.Client) fiber.Handler {
+func FirebaseAuthMiddleware(auth *auth.Client, trcer trace.Tracer) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		logger := utils.NewTraceLogger("FirebaseAuthMiddleware")
+		_, span := trcer.Start(c.UserContext(), "middleware.FirebaseAuthMiddleware")
+		defer span.End()
+		logger := utils.NewTraceLogger(span)
 		authHeader := c.Get("Authorization")
+		logger.Input(authHeader)
 		if authHeader == "" {
-			logger.Input(authHeader)
-			logger.Output(nil, fmt.Errorf("missing authorization header"))
+			logger.Output("missing authorization header", fmt.Errorf("missing authorization header"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "missing authorization header",
 			})
 		}
 
 		idToken := strings.TrimPrefix(authHeader, "Bearer ")
+		logger.Input(idToken)
 		if idToken == authHeader {
-			logger.Input(idToken)
-			logger.Output(nil, fmt.Errorf("invalid token format"))
+			logger.Output("invalid token format", fmt.Errorf("invalid token format"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token format",
 			})
 		}
 
 		token, err := auth.VerifyIDToken(context.Background(), idToken)
+		logger.Input(idToken)
 		if err != nil {
-			logger.Input(idToken)
-			logger.Output(nil, err)
+			logger.Output("invalid token", err)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token",
 			})

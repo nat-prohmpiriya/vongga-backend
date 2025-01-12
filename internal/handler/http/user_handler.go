@@ -8,34 +8,39 @@ import (
 	"vongga-api/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type UserHandler struct {
+	tracer      trace.Tracer
 	userUseCase domain.UserUseCase
 }
 
-func NewUserHandler(router fiber.Router, userUseCase domain.UserUseCase) *UserHandler {
+func NewUserHandler(router fiber.Router, tracer trace.Tracer, userUseCase domain.UserUseCase) *UserHandler {
 	handler := &UserHandler{
+		tracer:      tracer,
 		userUseCase: userUseCase,
 	}
 
 	router.Patch("/", handler.UpdateUser)
 	router.Delete("/", handler.DeleteAccount)
 	router.Post("/", handler.CreateOrUpdateUser)
-	router.Find("/me", handler.FindProfile)
-	router.Find("/check-username", handler.CheckUsername)
-	router.Find("/list", handler.FindUserFindMany)
-	router.Find("/:username", handler.FindUserByUsername)
+	router.Get("/me", handler.FindProfile)
+	router.Get("/check-username", handler.CheckUsername)
+	router.Get("/list", handler.FindUserFindMany)
+	router.Get("/:username", handler.FindUserByUsername)
 
 	return handler
 }
 
 func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("UserHandler.CreateOrUpdateUser")
+	ctx, span := h.tracer.Start(c.Context(), "UserHandler.CreateOrUpdateUser")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("unauthorized access attempt 1", err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
@@ -50,7 +55,7 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&req); err != nil {
 		logger.Input(req)
-		logger.Output(nil, err)
+		logger.Output("invalid request body 2", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
@@ -59,21 +64,28 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 	// Email validation
 	if email == "" {
 		err := fiber.NewError(fiber.StatusBadRequest, "email is required")
-		logger.Output(nil, err)
+		logger.Output("missing email 3", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 	if !regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`).MatchString(email) {
 		err := fiber.NewError(fiber.StatusBadRequest, "invalid email format")
-		logger.Output(nil, err)
+		logger.Output("invalid email format 4", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.Input(userID, email, req)
+	logger.Input(map[string]interface{}{
+		"userID":    userID,
+		"email":     email,
+		"firstName": req.FirstName,
+		"lastName":  req.LastName,
+		"photoURL":  req.PhotoURL,
+	})
 	user, err := h.userUseCase.CreateOrUpdateUser(
+		ctx,
 		userID.Hex(),
 		email,
 		req.FirstName,
@@ -81,7 +93,7 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 		req.PhotoURL,
 	)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to create/update user 5", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -94,20 +106,22 @@ func (h *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) FindProfile(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("UserHandler.FindProfile")
+	ctx, span := h.tracer.Start(c.Context(), "UserHandler.FindProfile")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("unauthorized access attempt 1", err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
 	}
 	logger.Input(userID)
 
-	user, err := h.userUseCase.FindUserByID(userID.Hex())
+	user, err := h.userUseCase.FindUserByID(ctx, userID.Hex())
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to find user profile 2", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -120,11 +134,13 @@ func (h *UserHandler) FindProfile(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("UserHandler.UpdateUser")
+	ctx, span := h.tracer.Start(c.Context(), "UserHandler.UpdateUser")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("unauthorized access attempt 1", err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
@@ -157,16 +173,40 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&req); err != nil {
 		logger.Input(req)
-		logger.Output(nil, err)
+		logger.Output("invalid request body 2", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
 	}
 
-	logger.Input(userID, req)
-	user, err := h.userUseCase.FindUserByID(userID.Hex())
+	logger.Input(map[string]interface{}{
+		"userID":         userID,
+		"firstName":      req.FirstName,
+		"lastName":       req.LastName,
+		"username":       req.Username,
+		"displayName":    req.DisplayName,
+		"bio":            req.Bio,
+		"avatar":         req.Avatar,
+		"photoProfile":   req.PhotoProfile,
+		"photoCover":     req.PhotoCover,
+		"dateOfBirth":    req.DateOfBirth,
+		"gender":         req.Gender,
+		"interestedIn":   req.InterestedIn,
+		"location":       req.Location,
+		"relationStatus": req.RelationStatus,
+		"height":         req.Height,
+		"interests":      req.Interests,
+		"occupation":     req.Occupation,
+		"education":      req.Education,
+		"phoneNumber":    req.PhoneNumber,
+		"datingPhotos":   req.DatingPhotos,
+		"isVerified":     req.IsVerified,
+		"isActive":       req.IsActive,
+		"live":           req.Live,
+	})
+	user, err := h.userUseCase.FindUserByID(ctx, userID.Hex())
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to find user for update 3", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -176,36 +216,36 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	if req.Username != nil {
 		if *req.Username == "" {
 			err := fiber.NewError(fiber.StatusBadRequest, "username is required")
-			logger.Output(nil, err)
+			logger.Output("missing username 4", err)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": err.Error(),
 			})
 		}
 		if !regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString(*req.Username) {
 			err := fiber.NewError(fiber.StatusBadRequest, "username can only contain letters and numbers")
-			logger.Output(nil, err)
+			logger.Output("invalid username format 5", err)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": err.Error(),
 			})
 		}
 		if len(*req.Username) < 3 || len(*req.Username) > 20 {
 			err := fiber.NewError(fiber.StatusBadRequest, "username must be between 3 and 20 characters")
-			logger.Output(nil, err)
+			logger.Output("invalid username length 6", err)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": err.Error(),
 			})
 		}
 		// Check if username is already taken by another user
-		existingUser, err := h.userUseCase.FindUserByUsername(*req.Username)
+		existingUser, err := h.userUseCase.FindUserByUsername(ctx, *req.Username)
 		if err != nil {
-			logger.Output(nil, err)
+			logger.Output("failed to check username availability 7", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": err.Error(),
 			})
 		}
 		if existingUser != nil && existingUser.ID != user.ID {
 			err := fiber.NewError(fiber.StatusBadRequest, "username is already taken")
-			logger.Output(nil, err)
+			logger.Output("username already taken 8", err)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": err.Error(),
 			})
@@ -282,9 +322,9 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	user.UpdatedAt = time.Now()
 	user.Version++
 
-	err = h.userUseCase.UpdateUser(user)
+	err = h.userUseCase.UpdateUser(ctx, user)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to update user 9", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -297,22 +337,24 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) FindUserByUsername(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("UserHandler.FindUserByUsername")
+	ctx, span := h.tracer.Start(c.Context(), "UserHandler.FindUserByUsername")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	username := c.Params("username")
 	if username == "" {
 		err := fiber.NewError(fiber.StatusBadRequest, "username is required")
 		logger.Input(username)
-		logger.Output(nil, err)
+		logger.Output("missing username 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
 	logger.Input(username)
-	user, err := h.userUseCase.FindUserByUsername(username)
+	user, err := h.userUseCase.FindUserByUsername(ctx, username)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to find user by username 2", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -320,7 +362,7 @@ func (h *UserHandler) FindUserByUsername(c *fiber.Ctx) error {
 
 	if user == nil {
 		err := fiber.NewError(fiber.StatusNotFound, "user not found")
-		logger.Output(nil, err)
+		logger.Output("user not found 3", err)
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -333,7 +375,9 @@ func (h *UserHandler) FindUserByUsername(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) FindUserFindMany(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("UserHandler.FindUserFindMany")
+	ctx, span := h.tracer.Start(c.Context(), "UserHandler.FindUserFindMany")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	// Parse query parameters
 	req := &domain.UserFindManyRequest{
@@ -348,9 +392,9 @@ func (h *UserHandler) FindUserFindMany(c *fiber.Ctx) error {
 	logger.Input(req)
 
 	// Find user list from use case
-	response, err := h.userUseCase.FindUserFindMany(req)
+	response, err := h.userUseCase.FindUserFindMany(ctx, req)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to find users 1", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -361,13 +405,15 @@ func (h *UserHandler) FindUserFindMany(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("UserHandler.CheckUsername")
+	ctx, span := h.tracer.Start(c.Context(), "UserHandler.CheckUsername")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	username := c.Query("username")
 	if username == "" {
 		err := fiber.NewError(fiber.StatusBadRequest, "username is required")
 		logger.Input(username)
-		logger.Output(nil, err)
+		logger.Output("missing username 1", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -376,7 +422,7 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 	// Check if username is valid (only alphanumeric characters)
 	if !regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString(username) {
 		err := fiber.NewError(fiber.StatusBadRequest, "username can only contain letters and numbers")
-		logger.Output(nil, err)
+		logger.Output("invalid username format 2", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":     err.Error(),
 			"available": false,
@@ -386,7 +432,7 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 	// Check length
 	if len(username) < 3 || len(username) > 15 {
 		err := fiber.NewError(fiber.StatusBadRequest, "username must be between 3 and 15 characters")
-		logger.Output(nil, err)
+		logger.Output("invalid username length 3", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":     err.Error(),
 			"available": false,
@@ -394,9 +440,9 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 	}
 
 	logger.Input(username)
-	user, err := h.userUseCase.FindUserByUsername(username)
+	user, err := h.userUseCase.FindUserByUsername(ctx, username)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to check username 4", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -409,11 +455,13 @@ func (h *UserHandler) CheckUsername(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) DeleteAccount(c *fiber.Ctx) error {
-	logger := utils.NewTraceLogger("UserHandler.DeleteAccount")
+	ctx, span := h.tracer.Start(c.Context(), "UserHandler.DeleteAccount")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("unauthorized access attempt 1", err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
@@ -421,9 +469,9 @@ func (h *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 	authClient := c.Locals("firebase_auth")
 	logger.Input(userID)
 
-	err = h.userUseCase.DeleteAccount(userID.Hex(), authClient)
+	err = h.userUseCase.DeleteAccount(ctx, userID.Hex(), authClient)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("failed to delete account 2", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
