@@ -11,28 +11,34 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 type reactionRepository struct {
-	db *mongo.Database
+	db     *mongo.Database
+	tracer trace.Tracer
 }
 
-func NewReactionRepository(db *mongo.Database) domain.ReactionRepository {
+func NewReactionRepository(db *mongo.Database, tracer trace.Tracer) domain.ReactionRepository {
 	return &reactionRepository{
-		db: db,
+		db:     db,
+		tracer: tracer,
 	}
 }
 
-func (r *reactionRepository) Create(reaction *domain.Reaction) error {
-	logger := utils.NewTraceLogger("ReactionRepository.Create")
+func (r *reactionRepository) Create(ctx context.Context, reaction *domain.Reaction) error {
+	ctx, span := r.tracer.Start(ctx, "ReactionRepository.Create")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(reaction)
 
 	reaction.CreatedAt = time.Now()
 	reaction.UpdatedAt = time.Now()
 
-	result, err := r.db.Collection("reactions").InsertOne(context.Background(), reaction)
+	result, err := r.db.Collection("reactions").InsertOne(ctx, reaction)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("1", err)
 		return err
 	}
 
@@ -41,8 +47,10 @@ func (r *reactionRepository) Create(reaction *domain.Reaction) error {
 	return nil
 }
 
-func (r *reactionRepository) Update(reaction *domain.Reaction) error {
-	logger := utils.NewTraceLogger("ReactionRepository.Update")
+func (r *reactionRepository) Update(ctx context.Context, reaction *domain.Reaction) error {
+	ctx, span := r.tracer.Start(ctx, "ReactionRepository.Update")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(reaction)
 
 	reaction.UpdatedAt = time.Now()
@@ -50,13 +58,20 @@ func (r *reactionRepository) Update(reaction *domain.Reaction) error {
 	filter := bson.M{"_id": reaction.ID}
 	update := bson.M{"$set": reaction}
 
-	_, err := r.db.Collection("reactions").UpdateOne(context.Background(), filter, update)
-	logger.Output(nil, err)
-	return err
+	_, err := r.db.Collection("reactions").UpdateOne(ctx, filter, update)
+	if err != nil {
+		logger.Output("1", err)
+		return err
+	}
+	
+	logger.Output(reaction, nil)
+	return nil
 }
 
-func (r *reactionRepository) Delete(id primitive.ObjectID) error {
-	logger := utils.NewTraceLogger("ReactionRepository.Delete")
+func (r *reactionRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
+	ctx, span := r.tracer.Start(ctx, "ReactionRepository.Delete")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(id)
 
 	filter := bson.M{"_id": id}
@@ -67,23 +82,30 @@ func (r *reactionRepository) Delete(id primitive.ObjectID) error {
 		},
 	}
 
-	_, err := r.db.Collection("reactions").UpdateOne(context.Background(), filter, update)
-	logger.Output(nil, err)
-	return err
+	_, err := r.db.Collection("reactions").UpdateOne(ctx, filter, update)
+	if err != nil {
+		logger.Output("1", err)
+		return err
+	}
+	
+	logger.Output(map[string]interface{}{"id": id}, nil)
+	return nil
 }
 
-func (r *reactionRepository) FindByID(id primitive.ObjectID) (*domain.Reaction, error) {
-	logger := utils.NewTraceLogger("ReactionRepository.FindByID")
+func (r *reactionRepository) FindByID(ctx context.Context, id primitive.ObjectID) (*domain.Reaction, error) {
+	ctx, span := r.tracer.Start(ctx, "ReactionRepository.FindByID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(id)
 
 	var reaction domain.Reaction
-	err := r.db.Collection("reactions").FindOne(context.Background(), bson.M{"_id": id, "deletedAt": bson.M{"$exists": false}}).Decode(&reaction)
+	err := r.db.Collection("reactions").FindOne(ctx, bson.M{"_id": id, "deletedAt": bson.M{"$exists": false}}).Decode(&reaction)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			logger.Output(nil, domain.ErrNotFound)
+			logger.Output("1", domain.ErrNotFound)
 			return nil, domain.ErrNotFound
 		}
-		logger.Output(nil, err)
+		logger.Output("2", err)
 		return nil, err
 	}
 
@@ -91,25 +113,30 @@ func (r *reactionRepository) FindByID(id primitive.ObjectID) (*domain.Reaction, 
 	return &reaction, nil
 }
 
-func (r *reactionRepository) FindByPostID(postID primitive.ObjectID, limit, offset int) ([]domain.Reaction, error) {
-	logger := utils.NewTraceLogger("ReactionRepository.FindByPostID")
-	logger.Input(postID, limit, offset)
+func (r *reactionRepository) FindByPostID(ctx context.Context, postID primitive.ObjectID, limit, offset int) ([]domain.Reaction, error) {
+	ctx, span := r.tracer.Start(ctx, "ReactionRepository.FindByPostID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(map[string]interface{}{
+		"postID": postID,
+		"limit":  limit,
+		"offset": offset,
+	})
 
 	opts := options.Find().
-		// SetLimit(int64(limit)).
 		SetSkip(int64(offset)).
 		SetSort(bson.D{{Key: "createdAt", Value: -1}})
 
-	cursor, err := r.db.Collection("reactions").Find(context.Background(), bson.M{"postId": postID, "deletedAt": bson.M{"$exists": false}}, opts)
+	cursor, err := r.db.Collection("reactions").Find(ctx, bson.M{"postId": postID, "deletedAt": bson.M{"$exists": false}}, opts)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("1", err)
 		return nil, err
 	}
-	defer cursor.Close(context.Background())
+	defer cursor.Close(ctx)
 
 	var reactions []domain.Reaction
-	if err = cursor.All(context.Background(), &reactions); err != nil {
-		logger.Output(nil, err)
+	if err = cursor.All(ctx, &reactions); err != nil {
+		logger.Output("2", err)
 		return nil, err
 	}
 
@@ -117,25 +144,30 @@ func (r *reactionRepository) FindByPostID(postID primitive.ObjectID, limit, offs
 	return reactions, nil
 }
 
-func (r *reactionRepository) FindByCommentID(commentID primitive.ObjectID, limit, offset int) ([]domain.Reaction, error) {
-	logger := utils.NewTraceLogger("ReactionRepository.FindByCommentID")
-	logger.Input(commentID, limit, offset)
+func (r *reactionRepository) FindByCommentID(ctx context.Context, commentID primitive.ObjectID, limit, offset int) ([]domain.Reaction, error) {
+	ctx, span := r.tracer.Start(ctx, "ReactionRepository.FindByCommentID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(map[string]interface{}{
+		"commentID": commentID,
+		"limit":     limit,
+		"offset":    offset,
+	})
 
 	opts := options.Find().
-		// SetLimit(int64(limit)).
 		SetSkip(int64(offset)).
 		SetSort(bson.D{{Key: "createdAt", Value: -1}})
 
-	cursor, err := r.db.Collection("reactions").Find(context.Background(), bson.M{"commentId": commentID, "deletedAt": bson.M{"$exists": false}}, opts)
+	cursor, err := r.db.Collection("reactions").Find(ctx, bson.M{"commentId": commentID, "deletedAt": bson.M{"$exists": false}}, opts)
 	if err != nil {
-		logger.Output(nil, err)
+		logger.Output("1", err)
 		return nil, err
 	}
-	defer cursor.Close(context.Background())
+	defer cursor.Close(ctx)
 
 	var reactions []domain.Reaction
-	if err = cursor.All(context.Background(), &reactions); err != nil {
-		logger.Output(nil, err)
+	if err = cursor.All(ctx, &reactions); err != nil {
+		logger.Output("2", err)
 		return nil, err
 	}
 
@@ -143,9 +175,15 @@ func (r *reactionRepository) FindByCommentID(commentID primitive.ObjectID, limit
 	return reactions, nil
 }
 
-func (r *reactionRepository) FindByUserAndTarget(userID, postID primitive.ObjectID, commentID *primitive.ObjectID) (*domain.Reaction, error) {
-	logger := utils.NewTraceLogger("ReactionRepository.FindByUserAndTarget")
-	logger.Input(userID, postID, commentID)
+func (r *reactionRepository) FindByUserAndTarget(ctx context.Context, userID, postID primitive.ObjectID, commentID *primitive.ObjectID) (*domain.Reaction, error) {
+	ctx, span := r.tracer.Start(ctx, "ReactionRepository.FindByUserAndTarget")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(map[string]interface{}{
+		"userID":    userID,
+		"postID":    postID,
+		"commentID": commentID,
+	})
 
 	filter := bson.M{
 		"userId": userID,
@@ -156,13 +194,13 @@ func (r *reactionRepository) FindByUserAndTarget(userID, postID primitive.Object
 	}
 
 	var reaction domain.Reaction
-	err := r.db.Collection("reactions").FindOne(context.Background(), filter).Decode(&reaction)
+	err := r.db.Collection("reactions").FindOne(ctx, filter).Decode(&reaction)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			logger.Output(nil, nil)
 			return nil, nil
 		}
-		logger.Output(nil, err)
+		logger.Output("1", err)
 		return nil, err
 	}
 
