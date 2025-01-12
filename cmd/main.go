@@ -125,6 +125,7 @@ func main() {
 		cfg.RefreshTokenSecret,
 		cfg.FindJWTExpiry(),
 		cfg.FindRefreshTokenExpiry(),
+		tracer,
 	)
 	followUseCase := usecase.NewFollowUseCase(followRepo, notificationUseCase, tracer)
 	friendshipUseCase := usecase.NewFriendshipUseCase(friendshipRepo, notificationUseCase, tracer)
@@ -135,31 +136,31 @@ func main() {
 
 	// Initialize Fiber app with performance configurations
 	app := fiber.New(fiber.Config{
-		Prefork:       false,
-		ServerHeader:  "Vongga",
-		StrictRouting: true,
-		CaseSensitive: true,
-		BodyLimit:     4 * 1024 * 1024, // 4MB
-		Concurrency:   256,
+		Prefork:       false,           // ไม่ใช้ prefork mode (ไม่แยก process)
+		ServerHeader:  "Vongga",        // ชื่อ server ใน header
+		StrictRouting: true,            // route ต้องตรงแบบ strict (/foo != /foo/)
+		CaseSensitive: true,            // route เป็น case sensitive (/Foo != /foo)
+		BodyLimit:     4 * 1024 * 1024, // จำกัดขนาด request body 4MB
+		Concurrency:   256,             // จำนวน concurrent connections สูงสุด
 	})
 
 	// CORS
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		MaxAge:       3600,
+		AllowOrigins: "*",                                           // อนุญาตทุก origin
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",                 // HTTP methods ที่อนุญาต
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization", // headers ที่อนุญาต
+		MaxAge:       3600,                                          // browser จะ cache CORS response นานเท่าไร
 	}))
 
 	// Add compression middleware
 	app.Use(compress.New(compress.Config{
-		Level: compress.LevelBestSpeed,
+		Level: compress.LevelBestSpeed, // ระดับการบีบอัดข้อมูล
 	}))
 
 	// Add cache middleware
 	app.Use(cache.New(cache.Config{
-		Expiration:   30 * time.Minute,
-		CacheControl: true,
+		Expiration:   30 * time.Minute, // cache หมดอายุใน 30 นาที
+		CacheControl: true,             // ใช้ Cache-Control header
 	}))
 
 	// Swagger
@@ -182,17 +183,17 @@ func main() {
 	api := app.Group("/api")
 
 	// WebSocket endpoint (outside protected routes)
-	websocket.NewWebSocketHandler(api, chatUseCase, systemAuthAdapter)
+	websocket.NewWebSocketHandler(api, chatUseCase, systemAuthAdapter, tracer)
 
 	// Public auth routes
 	auth := api.Group("/auth")
-	auth.Post("/verifyTokenFirebase", handler.NewAuthHandler(authUseCase).VerifyTokenFirebase, tracer)
-	auth.Post("/refresh", handler.NewAuthHandler(authUseCase).RefreshToken, tracer)
-	auth.Post("/logout", handler.NewAuthHandler(authUseCase).Logout, tracer)
-	auth.Post("/createTestToken", handler.NewAuthHandler(authUseCase).CreateTestToken, tracer)
+	auth.Post("/verifyTokenFirebase", handler.NewAuthHandler(authUseCase, tracer).VerifyTokenFirebase)
+	auth.Post("/refresh", handler.NewAuthHandler(authUseCase, tracer).RefreshToken)
+	auth.Post("/logout", handler.NewAuthHandler(authUseCase, tracer).Logout)
+	auth.Post("/createTestToken", handler.NewAuthHandler(authUseCase, tracer).CreateTestToken)
 
 	// Protected routes
-	protectedApi := api.Group("", middleware.AuthMiddleware(cfg.JWTSecret))
+	protectedApi := api.Group("", middleware.AuthMiddleware(cfg.JWTSecret, tracer))
 
 	// Create route groups
 	users := protectedApi.Group("/users")

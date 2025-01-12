@@ -119,6 +119,55 @@ func (u *authUseCase) VerifyTokenFirebase(ctx context.Context, firebaseToken str
 	return user, tokenPair, nil
 }
 
+func (u *authUseCase) VerifyToken(ctx context.Context, token string) (*domain.Claims, error) {
+	_, span := u.tracer.Start(ctx, "AuthUseCase.VerifyToken")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(token)
+
+	// 1. ตรวจสอบว่า token ว่างไหม
+	if token == "" {
+		logger.Output("token is empty", nil)
+		return nil, fmt.Errorf("token is empty")
+	}
+
+	// 2. Parse และ verify token
+	claims := &domain.Claims{}
+	parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
+		// ตรวจสอบ algorithm
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return []byte(u.jwtSecret), nil
+	})
+
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			logger.Output("invalid signature", err)
+			return nil, fmt.Errorf("invalid signature")
+		}
+		logger.Output("failed to parse token", err)
+		return nil, fmt.Errorf("failed to parse token: %w", err)
+	}
+
+	// 3. ตรวจสอบว่า token valid
+	if !parsedToken.Valid {
+		logger.Output("token is invalid", nil)
+		return nil, fmt.Errorf("token is invalid")
+	}
+
+	// 4. ตรวจสอบ expiration
+	if claims.ExpiresAt.Before(time.Now()) {
+		logger.Output("token is expired", nil)
+		return nil, fmt.Errorf("token is expired")
+	}
+
+	// 5. ตรวจสอบว่า user ยังมีสิทธิ์ใช้งานไหม (optional)
+
+	logger.Output("token verified successfully", nil)
+	return claims, nil
+}
+
 func (u *authUseCase) RefreshToken(ctx context.Context, refreshToken string) (*domain.TokenPair, error) {
 	ctx, span := u.tracer.Start(ctx, "AuthUseCase.RefreshToken")
 	defer span.End()

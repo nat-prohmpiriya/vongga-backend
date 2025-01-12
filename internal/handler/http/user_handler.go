@@ -12,11 +12,11 @@ import (
 )
 
 type UserHandler struct {
-	tracer      trace.Tracer
 	userUseCase domain.UserUseCase
+	tracer      trace.Tracer
 }
 
-func NewUserHandler(router fiber.Router, tracer trace.Tracer, userUseCase domain.UserUseCase) *UserHandler {
+func NewUserHandler(router fiber.Router, userUseCase domain.UserUseCase, tracer trace.Tracer) *UserHandler {
 	handler := &UserHandler{
 		tracer:      tracer,
 		userUseCase: userUseCase,

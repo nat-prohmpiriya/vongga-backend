@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -10,6 +11,7 @@ import (
 	"vongga-api/utils"
 
 	"github.com/gofiber/websocket/v2"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Message types
@@ -50,9 +52,10 @@ type Hub struct {
 	Unregister  chan *Client
 	Mutex       sync.Mutex
 	ChatUsecase domain.ChatUsecase
+	tracer      trace.Tracer
 }
 
-func NewHub(chatUsecase domain.ChatUsecase) *Hub {
+func NewHub(chatUsecase domain.ChatUsecase, tracer trace.Tracer) *Hub {
 	return &Hub{
 		Clients:     make(map[*Client]bool),
 		UserMap:     make(map[string]*Client),
@@ -60,11 +63,14 @@ func NewHub(chatUsecase domain.ChatUsecase) *Hub {
 		Register:    make(chan *Client),
 		Unregister:  make(chan *Client),
 		ChatUsecase: chatUsecase,
+		tracer:      tracer,
 	}
 }
 
-func (h *Hub) Run() {
-	logger := utils.NewTraceLogger("Hub.Run")
+func (h *Hub) Run(ctx context.Context) {
+	ctx, span := h.tracer.Start(ctx, "Hub.Run")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	for {
 		select {
@@ -124,8 +130,10 @@ func (h *Hub) Run() {
 	}
 }
 
-func (h *Hub) BroadcastToRoom(roomID string, message interface{}) {
-	logger := utils.NewTraceLogger("Hub.BroadcastToRoom")
+func (h *Hub) BroadcastToRoom(ctx context.Context, roomID string, message interface{}) {
+	ctx, span := h.tracer.Start(ctx, "Hub.BroadcastToRoom")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(map[string]interface{}{
 		"roomID":  roomID,
 		"message": message,
@@ -160,8 +168,10 @@ func (h *Hub) BroadcastToRoom(roomID string, message interface{}) {
 	}
 }
 
-func (h *Hub) BroadcastUserStatus(userID string, status string) {
-	logger := utils.NewTraceLogger("Hub.BroadcastUserStatus")
+func (h *Hub) BroadcastUserStatus(ctx context.Context, userID string, status string) {
+	ctx, span := h.tracer.Start(ctx, "Hub.BroadcastUserStatus")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	logger.Input(map[string]interface{}{
 		"userID": userID,
 		"status": status,
@@ -192,15 +202,17 @@ func (c *Client) JoinRoom(roomID string) {
 	c.RoomIDs[roomID] = true
 }
 
-func (c *Client) ReadPump() {
-	logger := utils.NewTraceLogger("Client.ReadPump")
+func (c *Client) ReadPump(ctx context.Context) {
+	ctx, span := c.Hub.tracer.Start(ctx, "Client.ReadPump")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	// Recover from panic
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Output(nil, fmt.Errorf("panic recovered in ReadPump: %v", r))
 		}
-		logger.LogInfo("closing connection and unregistering client")
+		logger.Info("closing connection and unregistering client")
 		if c.Hub != nil {
 			c.Hub.Unregister <- c
 		}
@@ -216,7 +228,7 @@ func (c *Client) ReadPump() {
 	}
 
 	// ดึงข้อมูลห้องแชทที่ user เป็นสมาชิกและเพิ่มเข้าไปใน RoomIDs
-	rooms, err := c.Hub.ChatUsecase.FindRoomsByUserID(c.UserID)
+	rooms, err := c.Hub.ChatUsecase.FindRoomsByUserID(ctx, c.UserID)
 	if err != nil {
 		logger.Output(nil, fmt.Errorf("error getting user rooms: %v", err))
 	} else {
@@ -302,6 +314,7 @@ func (c *Client) ReadPump() {
 
 			// จัดการข้อความปกติ
 			chatMsg, err := c.Hub.ChatUsecase.SendMessage(
+				ctx,
 				msg.RoomID,
 				msg.SenderID,
 				"text",
@@ -332,7 +345,7 @@ func (c *Client) ReadPump() {
 					}
 				}()
 				if c.Hub != nil {
-					c.Hub.BroadcastToRoom(msg.RoomID, broadcastMsg)
+					c.Hub.BroadcastToRoom(ctx, msg.RoomID, broadcastMsg)
 				}
 			}()
 
@@ -357,7 +370,7 @@ func (c *Client) ReadPump() {
 					}
 				}()
 				if c.Hub != nil {
-					c.Hub.BroadcastToRoom(msg.RoomID, typingMsg)
+					c.Hub.BroadcastToRoom(ctx, msg.RoomID, typingMsg)
 				}
 			}()
 
@@ -392,8 +405,10 @@ func (c *Client) ReadPump() {
 	}
 }
 
-func (c *Client) WritePump() {
-	logger := utils.NewTraceLogger("Client.WritePump")
+func (c *Client) WritePump(ctx context.Context) {
+	ctx, span := c.Hub.tracer.Start(ctx, "Client.WritePump")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 	ticker := time.NewTicker(30 * time.Second)
 
 	defer func() {

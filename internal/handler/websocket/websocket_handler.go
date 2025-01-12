@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"context"
 	"time"
 
 	"fmt"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -30,20 +32,22 @@ type WebSocketHandler struct {
 	chatUsecase domain.ChatUsecase
 	hub         *Hub
 	authClient  domain.AuthClient
+	tracer      trace.Tracer
 }
 
-func NewWebSocketHandler(router fiber.Router, chatUsecase domain.ChatUsecase, authClient domain.AuthClient) {
+func NewWebSocketHandler(router fiber.Router, chatUsecase domain.ChatUsecase, authClient domain.AuthClient, tracer trace.Tracer) {
 	handler := &WebSocketHandler{
 		chatUsecase: chatUsecase,
-		hub:         NewHub(chatUsecase),
+		hub:         NewHub(chatUsecase, tracer),
 		authClient:  authClient,
+		tracer:      tracer,
 	}
 
 	// Start WebSocket hub
-	go handler.hub.Run()
+	go handler.hub.Run(context.Background())
 
 	// WebSocket endpoint with custom middleware for WebSocket authentication
-	router.Find("/ws", websocket.New(handler.handleWebSocket, websocket.Config{
+	router.Get("/ws", websocket.New(handler.handleWebSocket, websocket.Config{
 		HandshakeTimeout:  10 * time.Second,
 		ReadBufferSize:    1024,
 		WriteBufferSize:   1024,
@@ -52,11 +56,13 @@ func NewWebSocketHandler(router fiber.Router, chatUsecase domain.ChatUsecase, au
 }
 
 func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
-	logger := utils.NewTraceLogger("WebSocketHandler.handleWebSocket")
+	ctx := context.Background()
+	ctx, span := h.tracer.Start(ctx, "WebSocketHandler.handleWebSocket")
+	logger := utils.NewTraceLogger(span)
 
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Output(nil, fmt.Errorf("panic recovered in handleWebSocket: %v", r))
+			logger.Output("panic recovered in handleWebSocket", fmt.Errorf("%v", r))
 			ws.WriteControl(
 				websocket.CloseMessage,
 				websocket.FormatCloseMessage(
@@ -117,12 +123,12 @@ func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
 	// Register client before starting pumps
 	h.hub.Register <- client
 
-	logger.LogInfo(map[string]interface{}{
+	logger.Info(map[string]interface{}{
 		"userID": userID,
 		"status": "client_registered",
 	})
 
 	// Start ReadPump in main goroutine to keep ws.Conn alive
-	go client.WritePump()
-	client.ReadPump() // This blocks until connection is closed
+	go client.WritePump(ctx)
+	client.ReadPump(ctx) // This blocks until connection is closed
 }

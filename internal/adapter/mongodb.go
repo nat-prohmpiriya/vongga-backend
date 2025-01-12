@@ -1,4 +1,4 @@
-package mongodb
+package adapter
 
 import (
 	"context"

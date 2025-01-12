@@ -10,11 +10,11 @@ type WebHandler struct {
 func NewWebHandler(router fiber.Router) *WebHandler {
 	handler := &WebHandler{}
 
-	router.Find("", handler.Home)
-	router.Find("/", handler.Home)
-	router.Find("/login", handler.Home)
-	router.Find("/logs", handler.Logs)
-	router.Find("/socket", handler.WebSocket)
+	router.Get("", handler.Home)
+	router.Get("/", handler.Home)
+	router.Get("/login", handler.Home)
+	router.Get("/logs", handler.Logs)
+	router.Get("/socket", handler.WebSocket)
 
 	return handler
 }
