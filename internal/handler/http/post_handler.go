@@ -46,11 +46,11 @@ type UpdatePostRequest struct {
 }
 
 func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
-	logger := utils.NewLogger("PostHandler.CreatePost")
+	logger := utils.NewTraceLogger("PostHandler.CreatePost")
 
 	var req CreatePostRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -58,7 +58,7 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
@@ -74,22 +74,22 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 		req.SubPosts,
 	)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(post, nil)
+	logger.Output(post, nil)
 	return c.Status(fiber.StatusCreated).JSON(post)
 }
 
 func (h *PostHandler) UpdatePost(c *fiber.Ctx) error {
-	logger := utils.NewLogger("PostHandler.UpdatePost")
+	logger := utils.NewTraceLogger("PostHandler.UpdatePost")
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid post ID",
 		})
@@ -97,7 +97,7 @@ func (h *PostHandler) UpdatePost(c *fiber.Ctx) error {
 
 	var req UpdatePostRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -107,50 +107,50 @@ func (h *PostHandler) UpdatePost(c *fiber.Ctx) error {
 		"postID":  postID,
 		"request": req,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	post, err := h.postUseCase.UpdatePost(postID, req.Content, req.Media, req.Tags, req.Location, req.Visibility)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(post, nil)
+	logger.Output(post, nil)
 	return c.JSON(post)
 }
 
 func (h *PostHandler) DeletePost(c *fiber.Ctx) error {
-	logger := utils.NewLogger("PostHandler.DeletePost")
+	logger := utils.NewTraceLogger("PostHandler.DeletePost")
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid post ID",
 		})
 	}
-	logger.LogInput(postID)
+	logger.Input(postID)
 
 	err = h.postUseCase.DeletePost(postID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput("Post deleted successfully", nil)
+	logger.Output("Post deleted successfully", nil)
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (h *PostHandler) FindPost(c *fiber.Ctx) error {
-	logger := utils.NewLogger("PostHandler.FindPost")
+	logger := utils.NewTraceLogger("PostHandler.FindPost")
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid post ID",
 		})
@@ -161,11 +161,11 @@ func (h *PostHandler) FindPost(c *fiber.Ctx) error {
 		"postID":          postID,
 		"includeSubPosts": includeSubPosts,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	post, err := h.postUseCase.FindPost(postID, includeSubPosts)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		if domain.IsNotFoundError(err) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": err.Error(),
@@ -176,16 +176,16 @@ func (h *PostHandler) FindPost(c *fiber.Ctx) error {
 		})
 	}
 
-	logger.LogOutput(post, nil)
+	logger.Output(post, nil)
 	return c.JSON(post)
 }
 
 func (h *PostHandler) FindManyPosts(c *fiber.Ctx) error {
-	logger := utils.NewLogger("PostHandler.FindManyPosts")
+	logger := utils.NewTraceLogger("PostHandler.FindManyPosts")
 
 	userIDStr := c.Query("userId")
 	if userIDStr == "" {
-		logger.LogOutput(nil, fmt.Errorf("missing userId query parameter"))
+		logger.Output(nil, fmt.Errorf("missing userId query parameter"))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Missing user ID",
 		})
@@ -193,7 +193,7 @@ func (h *PostHandler) FindManyPosts(c *fiber.Ctx) error {
 
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid user ID",
 		})
@@ -220,16 +220,16 @@ func (h *PostHandler) FindManyPosts(c *fiber.Ctx) error {
 		"hasMedia":        hasMedia,
 		"mediaType":       mediaType,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	posts, err := h.postUseCase.FindManyPosts(userID, limit, offset, includeSubPosts, hasMedia, mediaType)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(posts, nil)
+	logger.Output(posts, nil)
 	return c.JSON(posts)
 }

@@ -35,11 +35,11 @@ type CreateCommentRequest struct {
 }
 
 func (h *CommentHandler) CreateComment(c *fiber.Ctx) error {
-	logger := utils.NewLogger("CommentHandler.CreateComment")
+	logger := utils.NewTraceLogger("CommentHandler.CreateComment")
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("postId"))
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid post ID",
 		})
@@ -47,7 +47,7 @@ func (h *CommentHandler) CreateComment(c *fiber.Ctx) error {
 
 	var req CreateCommentRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -56,7 +56,7 @@ func (h *CommentHandler) CreateComment(c *fiber.Ctx) error {
 	// Find userID from auth context
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
@@ -66,7 +66,7 @@ func (h *CommentHandler) CreateComment(c *fiber.Ctx) error {
 	if req.ReplyTo != nil {
 		replyToID, err := primitive.ObjectIDFromHex(*req.ReplyTo)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid reply to ID",
 			})
@@ -79,17 +79,17 @@ func (h *CommentHandler) CreateComment(c *fiber.Ctx) error {
 		"userID":  userID,
 		"request": req,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	comment, err := h.commentUseCase.CreateComment(userID, postID, req.Content, req.Media, replyTo)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(comment, nil)
+	logger.Output(comment, nil)
 	return c.Status(fiber.StatusCreated).JSON(comment)
 }
 
@@ -99,11 +99,11 @@ type UpdateCommentRequest struct {
 }
 
 func (h *CommentHandler) UpdateComment(c *fiber.Ctx) error {
-	logger := utils.NewLogger("CommentHandler.UpdateComment")
+	logger := utils.NewTraceLogger("CommentHandler.UpdateComment")
 
 	commentID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid comment ID",
 		})
@@ -111,7 +111,7 @@ func (h *CommentHandler) UpdateComment(c *fiber.Ctx) error {
 
 	var req UpdateCommentRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -121,74 +121,74 @@ func (h *CommentHandler) UpdateComment(c *fiber.Ctx) error {
 		"commentID": commentID,
 		"request":   req,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	comment, err := h.commentUseCase.UpdateComment(commentID, req.Content, req.Media)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(comment, nil)
+	logger.Output(comment, nil)
 	return c.JSON(comment)
 }
 
 func (h *CommentHandler) DeleteComment(c *fiber.Ctx) error {
-	logger := utils.NewLogger("CommentHandler.DeleteComment")
+	logger := utils.NewTraceLogger("CommentHandler.DeleteComment")
 
 	commentID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid comment ID",
 		})
 	}
-	logger.LogInput(commentID)
+	logger.Input(commentID)
 
 	err = h.commentUseCase.DeleteComment(commentID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput("Comment deleted successfully", nil)
+	logger.Output("Comment deleted successfully", nil)
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (h *CommentHandler) FindComment(c *fiber.Ctx) error {
-	logger := utils.NewLogger("CommentHandler.FindComment")
+	logger := utils.NewTraceLogger("CommentHandler.FindComment")
 
 	commentID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid comment ID",
 		})
 	}
-	logger.LogInput(commentID)
+	logger.Input(commentID)
 
 	comment, err := h.commentUseCase.FindComment(commentID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(comment, nil)
+	logger.Output(comment, nil)
 	return c.JSON(comment)
 }
 
 func (h *CommentHandler) FindManyComments(c *fiber.Ctx) error {
-	logger := utils.NewLogger("CommentHandler.FindManyComments")
+	logger := utils.NewTraceLogger("CommentHandler.FindManyComments")
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("postId"))
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid post ID",
 		})
@@ -205,7 +205,7 @@ func (h *CommentHandler) FindManyComments(c *fiber.Ctx) error {
 
 	comments, err := h.commentUseCase.FindManyComments(postID, limit, offset)
 	if err != nil {
-		logger.LogOutput(input, err)
+		logger.Output(input, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -218,7 +218,7 @@ func (h *CommentHandler) FindManyComments(c *fiber.Ctx) error {
 	for _, comment := range comments {
 		user, err := h.userUseCase.FindUserByID(comment.UserID.Hex())
 		if err != nil {
-			logger.LogOutput(input, err)
+			logger.Output(input, err)
 			continue
 		}
 
@@ -239,6 +239,6 @@ func (h *CommentHandler) FindManyComments(c *fiber.Ctx) error {
 		commentsWithUsers = append(commentsWithUsers, commentWithUser)
 	}
 
-	logger.LogOutput(commentsWithUsers, nil)
+	logger.Output(commentsWithUsers, nil)
 	return c.JSON(commentsWithUsers)
 }

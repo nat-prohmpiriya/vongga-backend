@@ -38,11 +38,11 @@ func NewReactionHandler(router fiber.Router, ru domain.ReactionUseCase) *Reactio
 // @Failure 401 {object} utils.ErrorResponse
 // @Router /reactions [post]
 func (h *ReactionHandler) CreateReaction(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ReactionHandler.CreateReaction")
+	logger := utils.NewTraceLogger("ReactionHandler.CreateReaction")
 
 	userID, errr := utils.FindUserIDFromContext(c)
 	if errr != nil {
-		logger.LogOutput(nil, errr)
+		logger.Output(nil, errr)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
@@ -50,11 +50,11 @@ func (h *ReactionHandler) CreateReaction(c *fiber.Ctx) error {
 
 	var req domain.CreateReactionRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogInput(req)
-		logger.LogOutput(nil, err)
+		logger.Input(req)
+		logger.Output(nil, err)
 		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
 	}
-	logger.LogInput(userID, req)
+	logger.Input(userID, req)
 
 	var commentID *primitive.ObjectID
 	var postID primitive.ObjectID
@@ -63,7 +63,7 @@ func (h *ReactionHandler) CreateReaction(c *fiber.Ctx) error {
 	if req.CommentID != "" {
 		id, err := primitive.ObjectIDFromHex(req.CommentID)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return utils.SendError(c, fiber.StatusBadRequest, "Invalid comment ID")
 		}
 		commentID = &id
@@ -72,18 +72,18 @@ func (h *ReactionHandler) CreateReaction(c *fiber.Ctx) error {
 	if req.PostID != "" {
 		postID, err = primitive.ObjectIDFromHex(req.PostID)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return utils.SendError(c, fiber.StatusBadRequest, "Invalid post ID")
 		}
 	}
 
 	reaction, err := h.reactionUseCase.CreateReaction(userID, postID, commentID, req.Type)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return utils.HandleError(c, err)
 	}
 
-	logger.LogOutput(reaction, nil)
+	logger.Output(reaction, nil)
 	return c.Status(fiber.StatusCreated).JSON(reaction)
 }
 
@@ -100,22 +100,22 @@ func (h *ReactionHandler) CreateReaction(c *fiber.Ctx) error {
 // @Failure 401 {object} utils.ErrorResponse
 // @Router /reactions/{id} [delete]
 func (h *ReactionHandler) DeleteReaction(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ReactionHandler.DeleteReaction")
+	logger := utils.NewTraceLogger("ReactionHandler.DeleteReaction")
 
 	reactionID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		logger.LogInput(c.Params("id"))
-		logger.LogOutput(nil, err)
+		logger.Input(c.Params("id"))
+		logger.Output(nil, err)
 		return utils.SendError(c, fiber.StatusBadRequest, "Invalid reaction ID")
 	}
-	logger.LogInput(reactionID)
+	logger.Input(reactionID)
 
 	if err := h.reactionUseCase.DeleteReaction(reactionID); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return utils.HandleError(c, err)
 	}
 
-	logger.LogOutput("Reaction deleted successfully", nil)
+	logger.Output("Reaction deleted successfully", nil)
 	return utils.SendSuccess(c, "Reaction deleted successfully")
 }
 
@@ -134,12 +134,12 @@ func (h *ReactionHandler) DeleteReaction(c *fiber.Ctx) error {
 // @Failure 401 {object} utils.ErrorResponse
 // @Router /reactions/post/{postId} [get]
 func (h *ReactionHandler) FindManyPostReactions(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ReactionHandler.FindManyPostReactions")
+	logger := utils.NewTraceLogger("ReactionHandler.FindManyPostReactions")
 
 	postID, err := primitive.ObjectIDFromHex(c.Params("postId"))
 	if err != nil {
-		logger.LogInput(c.Params("postId"))
-		logger.LogOutput(nil, err)
+		logger.Input(c.Params("postId"))
+		logger.Output(nil, err)
 		return utils.SendError(c, fiber.StatusBadRequest, "Invalid post ID")
 	}
 
@@ -150,15 +150,15 @@ func (h *ReactionHandler) FindManyPostReactions(c *fiber.Ctx) error {
 	if offset < 0 {
 		offset = 0
 	}
-	logger.LogInput(postID, limit, offset)
+	logger.Input(postID, limit, offset)
 
 	reactions, err := h.reactionUseCase.FindManyReactions(postID, false, limit, offset)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return utils.HandleError(c, err)
 	}
 
-	logger.LogOutput(reactions, nil)
+	logger.Output(reactions, nil)
 	return c.JSON(reactions)
 }
 
@@ -177,12 +177,12 @@ func (h *ReactionHandler) FindManyPostReactions(c *fiber.Ctx) error {
 // @Failure 401 {object} utils.ErrorResponse
 // @Router /reactions/comment/{commentId} [get]
 func (h *ReactionHandler) FindManyCommentReactions(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ReactionHandler.FindManyCommentReactions")
+	logger := utils.NewTraceLogger("ReactionHandler.FindManyCommentReactions")
 
 	commentID, err := primitive.ObjectIDFromHex(c.Params("commentId"))
 	if err != nil {
-		logger.LogInput(c.Params("commentId"))
-		logger.LogOutput(nil, err)
+		logger.Input(c.Params("commentId"))
+		logger.Output(nil, err)
 		return utils.SendError(c, fiber.StatusBadRequest, "Invalid comment ID")
 	}
 
@@ -193,14 +193,14 @@ func (h *ReactionHandler) FindManyCommentReactions(c *fiber.Ctx) error {
 	if offset < 0 {
 		offset = 0
 	}
-	logger.LogInput(commentID, limit, offset)
+	logger.Input(commentID, limit, offset)
 
 	reactions, err := h.reactionUseCase.FindManyReactions(commentID, true, limit, offset)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return utils.HandleError(c, err)
 	}
 
-	logger.LogOutput(reactions, nil)
+	logger.Output(reactions, nil)
 	return c.JSON(reactions)
 }

@@ -28,25 +28,25 @@ func NewFriendshipRepository(db *mongo.Database) domain.FriendshipRepository {
 }
 
 func (r *friendshipRepository) Create(friendship *domain.Friendship) error {
-	logger := utils.NewLogger("FriendshipRepository.Create")
-	logger.LogInput(friendship)
+	logger := utils.NewTraceLogger("FriendshipRepository.Create")
+	logger.Input(friendship)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	_, err := r.collection.InsertOne(ctx, friendship)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
-	logger.LogOutput(friendship, nil)
+	logger.Output(friendship, nil)
 	return nil
 }
 
 func (r *friendshipRepository) Update(friendship *domain.Friendship) error {
-	logger := utils.NewLogger("FriendshipRepository.Update")
-	logger.LogInput(friendship)
+	logger := utils.NewTraceLogger("FriendshipRepository.Update")
+	logger.Input(friendship)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -61,27 +61,27 @@ func (r *friendshipRepository) Update(friendship *domain.Friendship) error {
 
 	result, err := r.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if result.MatchedCount == 0 {
 		err = domain.ErrNotFound
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
-	logger.LogOutput(result, nil)
+	logger.Output(result, nil)
 	return nil
 }
 
 func (r *friendshipRepository) Delete(userID1, userID2 primitive.ObjectID) error {
-	logger := utils.NewLogger("FriendshipRepository.Delete")
+	logger := utils.NewTraceLogger("FriendshipRepository.Delete")
 	input := map[string]interface{}{
 		"userID1": userID1.Hex(),
 		"userID2": userID2.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -101,27 +101,27 @@ func (r *friendshipRepository) Delete(userID1, userID2 primitive.ObjectID) error
 
 	result, err := r.collection.DeleteOne(ctx, filter)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if result.DeletedCount == 0 {
 		err = domain.ErrNotFound
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
-	logger.LogOutput(result, nil)
+	logger.Output(result, nil)
 	return nil
 }
 
 func (r *friendshipRepository) FindByUsers(userID1, userID2 primitive.ObjectID) (*domain.Friendship, error) {
-	logger := utils.NewLogger("FriendshipRepository.FindByUsers")
+	logger := utils.NewTraceLogger("FriendshipRepository.FindByUsers")
 	input := map[string]interface{}{
 		"userID1": userID1.Hex(),
 		"userID2": userID2.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -143,25 +143,25 @@ func (r *friendshipRepository) FindByUsers(userID1, userID2 primitive.ObjectID) 
 	err := r.collection.FindOne(ctx, filter).Decode(&friendship)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			logger.LogOutput(nil, domain.ErrNotFound)
+			logger.Output(nil, domain.ErrNotFound)
 			return nil, domain.ErrNotFound
 		}
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(&friendship, nil)
+	logger.Output(&friendship, nil)
 	return &friendship, nil
 }
 
 func (r *friendshipRepository) FindFriends(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
-	logger := utils.NewLogger("FriendshipRepository.FindFriends")
+	logger := utils.NewTraceLogger("FriendshipRepository.FindFriends")
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 		"limit":  limit,
 		"offset": offset,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -185,29 +185,29 @@ func (r *friendshipRepository) FindFriends(userID primitive.ObjectID, limit, off
 
 	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
 	var friendships []domain.Friendship
 	if err = cursor.All(ctx, &friendships); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(friendships, nil)
+	logger.Output(friendships, nil)
 	return friendships, nil
 }
 
 func (r *friendshipRepository) FindPendingRequests(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
-	logger := utils.NewLogger("FriendshipRepository.FindPendingRequests")
+	logger := utils.NewTraceLogger("FriendshipRepository.FindPendingRequests")
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 		"limit":  limit,
 		"offset": offset,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -224,27 +224,27 @@ func (r *friendshipRepository) FindPendingRequests(userID primitive.ObjectID, li
 
 	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
 	var friendships []domain.Friendship
 	if err = cursor.All(ctx, &friendships); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(friendships, nil)
+	logger.Output(friendships, nil)
 	return friendships, nil
 }
 
 func (r *friendshipRepository) CountFriends(userID primitive.ObjectID) (int64, error) {
-	logger := utils.NewLogger("FriendshipRepository.CountFriends")
+	logger := utils.NewTraceLogger("FriendshipRepository.CountFriends")
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -263,20 +263,20 @@ func (r *friendshipRepository) CountFriends(userID primitive.ObjectID) (int64, e
 
 	count, err := r.collection.CountDocuments(ctx, filter)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return 0, err
 	}
 
-	logger.LogOutput(count, nil)
+	logger.Output(count, nil)
 	return count, nil
 }
 
 func (r *friendshipRepository) CountPendingRequests(userID primitive.ObjectID) (int64, error) {
-	logger := utils.NewLogger("FriendshipRepository.CountPendingRequests")
+	logger := utils.NewTraceLogger("FriendshipRepository.CountPendingRequests")
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -288,17 +288,17 @@ func (r *friendshipRepository) CountPendingRequests(userID primitive.ObjectID) (
 
 	count, err := r.collection.CountDocuments(ctx, filter)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return 0, err
 	}
 
-	logger.LogOutput(count, nil)
+	logger.Output(count, nil)
 	return count, nil
 }
 
 func (r *friendshipRepository) FindByUserAndTarget(userID, targetID primitive.ObjectID) (*domain.Friendship, error) {
-	logger := utils.NewLogger("FriendshipRepository.FindByUserAndTarget")
-	logger.LogInput(userID, targetID)
+	logger := utils.NewTraceLogger("FriendshipRepository.FindByUserAndTarget")
+	logger.Input(userID, targetID)
 
 	filter := bson.M{
 		"$or": []bson.M{
@@ -317,20 +317,20 @@ func (r *friendshipRepository) FindByUserAndTarget(userID, targetID primitive.Ob
 	err := r.collection.FindOne(context.Background(), filter).Decode(&friendship)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			logger.LogOutput(nil, nil)
+			logger.Output(nil, nil)
 			return nil, nil
 		}
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(friendship, nil)
+	logger.Output(friendship, nil)
 	return &friendship, nil
 }
 
 func (r *friendshipRepository) FindByID(id primitive.ObjectID) (*domain.Friendship, error) {
-	logger := utils.NewLogger("FriendshipRepository.FindByID")
-	logger.LogInput(id)
+	logger := utils.NewTraceLogger("FriendshipRepository.FindByID")
+	logger.Input(id)
 
 	filter := bson.M{"_id": id}
 
@@ -338,20 +338,20 @@ func (r *friendshipRepository) FindByID(id primitive.ObjectID) (*domain.Friendsh
 	err := r.collection.FindOne(context.Background(), filter).Decode(&friendship)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			logger.LogOutput(nil, nil)
+			logger.Output(nil, nil)
 			return nil, nil
 		}
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(friendship, nil)
+	logger.Output(friendship, nil)
 	return &friendship, nil
 }
 
 func (r *friendshipRepository) RemoveFriend(userID, targetID primitive.ObjectID) error {
-	logger := utils.NewLogger("FriendshipRepository.RemoveFriend")
-	logger.LogInput(userID, targetID)
+	logger := utils.NewTraceLogger("FriendshipRepository.RemoveFriend")
+	logger.Input(userID, targetID)
 
 	filter := bson.M{
 		"$or": []bson.M{
@@ -368,15 +368,15 @@ func (r *friendshipRepository) RemoveFriend(userID, targetID primitive.ObjectID)
 
 	result, err := r.collection.DeleteOne(context.Background(), filter)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if result.DeletedCount == 0 {
-		logger.LogOutput(nil, errors.New("friendship not found"))
+		logger.Output(nil, errors.New("friendship not found"))
 		return errors.New("friendship not found")
 	}
 
-	logger.LogOutput("Friendship removed successfully", nil)
+	logger.Output("Friendship removed successfully", nil)
 	return nil
 }

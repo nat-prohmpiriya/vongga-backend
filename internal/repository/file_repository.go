@@ -22,15 +22,15 @@ type fileStorage struct {
 }
 
 func NewFileStorage(credentialsFile string, bucketName string) (domain.FileRepository, error) {
-	logger := utils.NewLogger("FileRepository.NewFileStorage")
-	logger.LogInput(map[string]string{
+	logger := utils.NewTraceLogger("FileRepository.NewFileStorage")
+	logger.Input(map[string]string{
 		"credentialsFile": credentialsFile,
 		"bucketName":      bucketName,
 	})
 
 	if bucketName == "" {
 		err := fmt.Errorf("bucket name is required")
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -42,19 +42,19 @@ func NewFileStorage(credentialsFile string, bucketName string) (domain.FileRepos
 	opt := option.WithCredentialsFile(credentialsFile)
 	app, err := firebase.NewApp(ctx, config, opt)
 	if err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error initializing firebase app: %v", err))
+		logger.Output(nil, fmt.Errorf("error initializing firebase app: %v", err))
 		return nil, fmt.Errorf("error initializing firebase app: %v", err)
 	}
 
 	client, err := app.Storage(ctx)
 	if err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error getting storage client: %v", err))
+		logger.Output(nil, fmt.Errorf("error getting storage client: %v", err))
 		return nil, fmt.Errorf("error getting storage client: %v", err)
 	}
 
 	bucket, err := client.DefaultBucket()
 	if err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error getting bucket: %v", err))
+		logger.Output(nil, fmt.Errorf("error getting bucket: %v", err))
 		return nil, fmt.Errorf("error getting bucket: %v", err)
 	}
 
@@ -63,13 +63,13 @@ func NewFileStorage(credentialsFile string, bucketName string) (domain.FileRepos
 		bucketName: bucketName,
 	}
 
-	logger.LogOutput(storage, nil)
+	logger.Output(storage, nil)
 	return storage, nil
 }
 
 func (fs *fileStorage) Upload(file *domain.File, fileData multipart.File) (*domain.File, error) {
-	logger := utils.NewLogger("FileRepository.Upload")
-	logger.LogInput(map[string]interface{}{
+	logger := utils.NewTraceLogger("FileRepository.Upload")
+	logger.Input(map[string]interface{}{
 		"fileName":    file.FileName,
 		"contentType": file.ContentType,
 	})
@@ -88,22 +88,22 @@ func (fs *fileStorage) Upload(file *domain.File, fileData multipart.File) (*doma
 	writer.ContentType = file.ContentType
 
 	if _, err := io.Copy(writer, fileData); err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error copying file to storage: %v", err))
+		logger.Output(nil, fmt.Errorf("error copying file to storage: %v", err))
 		return nil, fmt.Errorf("error copying file to storage: %v", err)
 	}
 
 	if err := writer.Close(); err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error closing writer: %v", err))
+		logger.Output(nil, fmt.Errorf("error closing writer: %v", err))
 		return nil, fmt.Errorf("error closing writer: %v", err)
 	}
 
 	// Find object attributes
 	attrs, err := obj.Attrs(ctx)
 	if err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error getting object attributes: %v", err))
+		logger.Output(nil, fmt.Errorf("error getting object attributes: %v", err))
 		return nil, fmt.Errorf("error getting object attributes: %v", err)
 	}
-	logger.LogOutput(map[string]interface{}{
+	logger.Output(map[string]interface{}{
 		"attrs": attrs,
 	}, nil)
 
@@ -114,7 +114,7 @@ func (fs *fileStorage) Upload(file *domain.File, fileData multipart.File) (*doma
 		ContentType: file.ContentType,
 	}
 
-	logger.LogOutput(map[string]string{
+	logger.Output(map[string]string{
 		"fileURL":  fileModel.FileURL,
 		"fileName": fileModel.FileName,
 	}, nil)

@@ -31,12 +31,12 @@ func NewCommentRepository(db *mongo.Database, rdb *redis.Client) domain.CommentR
 }
 
 func (r *commentRepository) Create(comment *domain.Comment) error {
-	logger := utils.NewLogger("CommentRepository.Create")
-	logger.LogInput(comment)
+	logger := utils.NewTraceLogger("CommentRepository.Create")
+	logger.Input(comment)
 
 	_, err := r.collection.InsertOne(context.Background(), comment)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
@@ -45,30 +45,30 @@ func (r *commentRepository) Create(comment *domain.Comment) error {
 	pattern := fmt.Sprintf("post_comments:%s:*", comment.PostID.Hex())
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 	}
 
-	logger.LogOutput("Comment created successfully", nil)
+	logger.Output("Comment created successfully", nil)
 	return nil
 }
 
 func (r *commentRepository) Update(comment *domain.Comment) error {
-	logger := utils.NewLogger("CommentRepository.Update")
-	logger.LogInput(comment)
+	logger := utils.NewTraceLogger("CommentRepository.Update")
+	logger.Input(comment)
 
 	filter := bson.M{"_id": comment.ID}
 	update := bson.M{"$set": comment}
 	_, err := r.collection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
@@ -80,44 +80,44 @@ func (r *commentRepository) Update(comment *domain.Comment) error {
 	// Delete comment cache
 	err = r.rdb.Del(ctx, commentKey).Err()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	// Delete post comments cache
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 	}
 
-	logger.LogOutput("Comment updated successfully", nil)
+	logger.Output("Comment updated successfully", nil)
 	return nil
 }
 
 func (r *commentRepository) Delete(id primitive.ObjectID) error {
-	logger := utils.NewLogger("CommentRepository.Delete")
-	logger.LogInput(id)
+	logger := utils.NewTraceLogger("CommentRepository.Delete")
+	logger.Input(id)
 
 	// Find comment first to get postID for cache invalidation
 	var comment domain.Comment
 	err := r.collection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&comment)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	filter := bson.M{"_id": id}
 	_, err = r.collection.DeleteOne(context.Background(), filter)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
@@ -129,31 +129,31 @@ func (r *commentRepository) Delete(id primitive.ObjectID) error {
 	// Delete comment cache
 	err = r.rdb.Del(ctx, commentKey).Err()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	// Delete post comments cache
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 	}
 
-	logger.LogOutput("Comment deleted successfully", nil)
+	logger.Output("Comment deleted successfully", nil)
 	return nil
 }
 
 func (r *commentRepository) FindByID(id primitive.ObjectID) (*domain.Comment, error) {
-	logger := utils.NewLogger("CommentRepository.FindByID")
-	logger.LogInput(id)
+	logger := utils.NewTraceLogger("CommentRepository.FindByID")
+	logger.Input(id)
 
 	ctx := context.Background()
 	key := fmt.Sprintf("comment:%s", id.Hex())
@@ -165,14 +165,14 @@ func (r *commentRepository) FindByID(id primitive.ObjectID) (*domain.Comment, er
 		var comment domain.Comment
 		err = json.Unmarshal([]byte(commentJSON), &comment)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return nil, err
 		}
-		logger.LogOutput(&comment, nil)
+		logger.Output(&comment, nil)
 		return &comment, nil
 	} else if err != redis.Nil {
 		// Redis error
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -181,35 +181,35 @@ func (r *commentRepository) FindByID(id primitive.ObjectID) (*domain.Comment, er
 	filter := bson.M{"_id": id}
 	err = r.collection.FindOne(ctx, filter).Decode(&comment)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
 	// Cache in Redis for 30 minutes
 	commentBytes, err := json.Marshal(&comment)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
 	err = r.rdb.Set(ctx, key, string(commentBytes), 30*time.Minute).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 	}
 
-	logger.LogOutput(&comment, nil)
+	logger.Output(&comment, nil)
 	return &comment, nil
 }
 
 func (r *commentRepository) FindByPostID(postID primitive.ObjectID, limit, offset int) ([]domain.Comment, error) {
-	logger := utils.NewLogger("CommentRepository.FindByPostID")
+	logger := utils.NewTraceLogger("CommentRepository.FindByPostID")
 	input := map[string]interface{}{
 		"postID": postID,
 		"limit":  limit,
 		"offset": offset,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	ctx := context.Background()
 	key := fmt.Sprintf("post_comments:%s:%d:%d", postID.Hex(), limit, offset)
@@ -221,14 +221,14 @@ func (r *commentRepository) FindByPostID(postID primitive.ObjectID, limit, offse
 		var comments []domain.Comment
 		err = json.Unmarshal([]byte(commentsJSON), &comments)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return nil, err
 		}
-		logger.LogOutput(comments, nil)
+		logger.Output(comments, nil)
 		return comments, nil
 	} else if err != redis.Nil {
 		// Redis error
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -247,42 +247,42 @@ func (r *commentRepository) FindByPostID(postID primitive.ObjectID, limit, offse
 
 	cursor, err := r.collection.Find(ctx, filter, findOptions)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
 	err = cursor.All(ctx, &comments)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
 	// Cache in Redis for 10 minutes
 	commentsBytes, err := json.Marshal(comments)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
 	err = r.rdb.Set(ctx, key, string(commentsBytes), 10*time.Minute).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 	}
 
-	logger.LogOutput(comments, nil)
+	logger.Output(comments, nil)
 	return comments, nil
 }
 
 func (r *commentRepository) DeleteByPostID(postID primitive.ObjectID) error {
-	logger := utils.NewLogger("CommentRepository.DeleteByPostID")
-	logger.LogInput(postID)
+	logger := utils.NewTraceLogger("CommentRepository.DeleteByPostID")
+	logger.Input(postID)
 
 	filter := bson.M{"postId": postID}
 	result, err := r.collection.DeleteMany(context.Background(), filter)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
@@ -291,18 +291,18 @@ func (r *commentRepository) DeleteByPostID(postID primitive.ObjectID) error {
 	pattern := fmt.Sprintf("post_comments:%s:*", postID.Hex())
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 	}
 
-	logger.LogOutput(map[string]interface{}{
+	logger.Output(map[string]interface{}{
 		"message":      "Comments deleted successfully",
 		"deletedCount": result.DeletedCount,
 	}, nil)

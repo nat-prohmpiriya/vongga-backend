@@ -22,7 +22,7 @@ func NewSubPostUseCase(subPostRepo domain.SubPostRepository, postRepo domain.Pos
 }
 
 func (s *subPostUseCase) CreateSubPost(parentID, userID primitive.ObjectID, content string, media []domain.Media, order int) (*domain.SubPost, error) {
-	logger := utils.NewLogger("SubPostUseCase.CreateSubPost")
+	logger := utils.NewTraceLogger("SubPostUseCase.CreateSubPost")
 	input := map[string]interface{}{
 		"parentID": parentID,
 		"userID":   userID,
@@ -30,12 +30,12 @@ func (s *subPostUseCase) CreateSubPost(parentID, userID primitive.ObjectID, cont
 		"media":    media,
 		"order":    order,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	// Find parent post to increment subpost count
 	post, err := s.postRepo.FindByID(parentID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -51,7 +51,7 @@ func (s *subPostUseCase) CreateSubPost(parentID, userID primitive.ObjectID, cont
 
 	err = s.subPostRepo.Create(subPost)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -59,26 +59,26 @@ func (s *subPostUseCase) CreateSubPost(parentID, userID primitive.ObjectID, cont
 	post.SubPostCount++
 	err = s.postRepo.Update(post)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(subPost, nil)
+	logger.Output(subPost, nil)
 	return subPost, nil
 }
 
 func (s *subPostUseCase) UpdateSubPost(subPostID primitive.ObjectID, content string, media []domain.Media) (*domain.SubPost, error) {
-	logger := utils.NewLogger("SubPostUseCase.UpdateSubPost")
+	logger := utils.NewTraceLogger("SubPostUseCase.UpdateSubPost")
 	input := map[string]interface{}{
 		"subPostID": subPostID,
 		"content":   content,
 		"media":     media,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	subPost, err := s.subPostRepo.FindByID(subPostID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -88,35 +88,35 @@ func (s *subPostUseCase) UpdateSubPost(subPostID primitive.ObjectID, content str
 
 	err = s.subPostRepo.Update(subPost)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(subPost, nil)
+	logger.Output(subPost, nil)
 	return subPost, nil
 }
 
 func (s *subPostUseCase) DeleteSubPost(subPostID primitive.ObjectID) error {
-	logger := utils.NewLogger("SubPostUseCase.DeleteSubPost")
-	logger.LogInput(subPostID)
+	logger := utils.NewTraceLogger("SubPostUseCase.DeleteSubPost")
+	logger.Input(subPostID)
 
 	// Find subpost to get parentID
 	subPost, err := s.subPostRepo.FindByID(subPostID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	// Find parent post to decrement subpost count
 	post, err := s.postRepo.FindByID(subPost.ParentID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	err = s.subPostRepo.Delete(subPostID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
@@ -125,62 +125,62 @@ func (s *subPostUseCase) DeleteSubPost(subPostID primitive.ObjectID) error {
 		post.SubPostCount--
 		err = s.postRepo.Update(post)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 	}
 
-	logger.LogOutput("SubPost deleted successfully", nil)
+	logger.Output("SubPost deleted successfully", nil)
 	return nil
 }
 
 func (s *subPostUseCase) FindSubPost(subPostID primitive.ObjectID) (*domain.SubPost, error) {
-	logger := utils.NewLogger("SubPostUseCase.FindSubPost")
-	logger.LogInput(subPostID)
+	logger := utils.NewTraceLogger("SubPostUseCase.FindSubPost")
+	logger.Input(subPostID)
 
 	subPost, err := s.subPostRepo.FindByID(subPostID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(subPost, nil)
+	logger.Output(subPost, nil)
 	return subPost, nil
 }
 
 func (s *subPostUseCase) FindManySubPosts(parentID primitive.ObjectID, limit, offset int) ([]domain.SubPost, error) {
-	logger := utils.NewLogger("SubPostUseCase.FindManySubPosts")
+	logger := utils.NewTraceLogger("SubPostUseCase.FindManySubPosts")
 	input := map[string]interface{}{
 		"parentID": parentID,
 		"limit":    limit,
 		"offset":   offset,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	subPosts, err := s.subPostRepo.FindByParentID(parentID, limit, offset)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(subPosts, nil)
+	logger.Output(subPosts, nil)
 	return subPosts, nil
 }
 
 func (s *subPostUseCase) ReorderSubPosts(parentID primitive.ObjectID, orders map[primitive.ObjectID]int) error {
-	logger := utils.NewLogger("SubPostUseCase.ReorderSubPosts")
+	logger := utils.NewTraceLogger("SubPostUseCase.ReorderSubPosts")
 	input := map[string]interface{}{
 		"parentID": parentID,
 		"orders":   orders,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	err := s.subPostRepo.UpdateOrder(parentID, orders)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
-	logger.LogOutput("SubPosts reordered successfully", nil)
+	logger.Output("SubPosts reordered successfully", nil)
 	return nil
 }

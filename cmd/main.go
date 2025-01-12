@@ -113,10 +113,10 @@ func main() {
 	}
 
 	// Initialize use cases
-	userUseCase := usecase.NewUserUseCase(userRepo)
-	notificationUseCase := usecase.NewNotificationUseCase(notificationRepo, userRepo)
-	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo, userRepo, notificationUseCase)
-	storyUseCase := usecase.NewStoryUseCase(storyRepo, userRepo)
+	userUseCase := usecase.NewUserUseCase(userRepo, tracer)
+	notificationUseCase := usecase.NewNotificationUseCase(notificationRepo, userRepo, tracer)
+	postUseCase := usecase.NewPostUseCase(postRepo, subPostRepo, userRepo, notificationUseCase, tracer)
+	storyUseCase := usecase.NewStoryUseCase(storyRepo, userRepo, tracer)
 	authUseCase := usecase.NewAuthUseCase(
 		userRepo,
 		authClient,
@@ -126,12 +126,12 @@ func main() {
 		cfg.FindJWTExpiry(),
 		cfg.FindRefreshTokenExpiry(),
 	)
-	followUseCase := usecase.NewFollowUseCase(followRepo, notificationUseCase)
-	friendshipUseCase := usecase.NewFriendshipUseCase(friendshipRepo, notificationUseCase)
-	commentUseCase := usecase.NewCommentUseCase(commentRepo, postRepo, notificationUseCase, userRepo)
-	reactionUseCase := usecase.NewReactionUseCase(reactionRepo, postRepo, commentRepo, notificationUseCase)
-	subPostUseCase := usecase.NewSubPostUseCase(subPostRepo, postRepo)
-	chatUseCase := usecase.NewChatUsecase(chatRepo, userRepo, notificationUseCase)
+	followUseCase := usecase.NewFollowUseCase(followRepo, notificationUseCase, tracer)
+	friendshipUseCase := usecase.NewFriendshipUseCase(friendshipRepo, notificationUseCase, tracer)
+	commentUseCase := usecase.NewCommentUseCase(commentRepo, postRepo, notificationUseCase, userRepo, tracer)
+	reactionUseCase := usecase.NewReactionUseCase(reactionRepo, postRepo, commentRepo, notificationUseCase, tracer)
+	subPostUseCase := usecase.NewSubPostUseCase(subPostRepo, postRepo, tracer)
+	chatUseCase := usecase.NewChatUsecase(chatRepo, userRepo, notificationUseCase, tracer)
 
 	// Initialize Fiber app with performance configurations
 	app := fiber.New(fiber.Config{
@@ -186,10 +186,10 @@ func main() {
 
 	// Public auth routes
 	auth := api.Group("/auth")
-	auth.Post("/verifyTokenFirebase", handler.NewAuthHandler(authUseCase).VerifyTokenFirebase)
-	auth.Post("/refresh", handler.NewAuthHandler(authUseCase).RefreshToken)
-	auth.Post("/logout", handler.NewAuthHandler(authUseCase).Logout)
-	auth.Post("/createTestToken", handler.NewAuthHandler(authUseCase).CreateTestToken)
+	auth.Post("/verifyTokenFirebase", handler.NewAuthHandler(authUseCase).VerifyTokenFirebase, tracer)
+	auth.Post("/refresh", handler.NewAuthHandler(authUseCase).RefreshToken, tracer)
+	auth.Post("/logout", handler.NewAuthHandler(authUseCase).Logout, tracer)
+	auth.Post("/createTestToken", handler.NewAuthHandler(authUseCase).CreateTestToken, tracer)
 
 	// Protected routes
 	protectedApi := api.Group("", middleware.AuthMiddleware(cfg.JWTSecret))
@@ -206,18 +206,18 @@ func main() {
 	chats := protectedApi.Group("/chat")
 
 	// Initialize handlers with their respective route groups
-	handler.NewUserHandler(users, userUseCase)
-	handler.NewFollowHandler(follows, followUseCase)
-	handler.NewFriendshipHandler(friendships, friendshipUseCase)
-	handler.NewPostHandler(posts, postUseCase)
-	handler.NewSubPostHandler(posts, subPostUseCase)
-	handler.NewCommentHandler(comments, commentUseCase, userUseCase)
-	handler.NewReactionHandler(reactions, reactionUseCase)
-	handler.NewNotificationHandler(notifications, notificationUseCase)
-	handler.NewStoryHandler(stories, storyUseCase)
-	handler.NewFileHandler(protectedApi, fileRepo)
-	handler.NewChatHandler(chats, chatUseCase)
+	handler.NewUserHandler(users, userUseCase, tracer)
+	handler.NewFollowHandler(follows, followUseCase, tracer)
+	handler.NewFriendshipHandler(friendships, friendshipUseCase, tracer)
+	handler.NewPostHandler(posts, postUseCase, tracer)
+	handler.NewSubPostHandler(posts, subPostUseCase, tracer)
+	handler.NewCommentHandler(comments, commentUseCase, userUseCase, tracer)
+	handler.NewReactionHandler(reactions, reactionUseCase, tracer)
+	handler.NewNotificationHandler(notifications, notificationUseCase, tracer)
+	handler.NewStoryHandler(stories, storyUseCase, tracer)
+	handler.NewFileHandler(protectedApi, fileRepo, tracer)
+	handler.NewChatHandler(chats, chatUseCase, tracer)
 
 	// Start server
-	log.Fatal(app.FindManyen(cfg.ServerAddress))
+	log.Fatal(app.Listen(cfg.ServerAddress))
 }

@@ -31,7 +31,7 @@ func NewPostUseCase(
 }
 
 func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, media []domain.Media, tags []string, location *domain.Location, visibility string, subPosts []domain.SubPostInput) (*domain.Post, error) {
-	logger := utils.NewLogger("PostUseCase.CreatePost")
+	logger := utils.NewTraceLogger("PostUseCase.CreatePost")
 	input := map[string]interface{}{
 		"userID":     userID,
 		"content":    content,
@@ -41,7 +41,7 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 		"visibility": visibility,
 		"subPosts":   subPosts,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	now := time.Now()
 	post := &domain.Post{
@@ -67,7 +67,7 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 
 	err := p.postRepo.Create(post)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -92,7 +92,7 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 			}
 			err := p.subPostRepo.Create(subPost)
 			if err != nil {
-				logger.LogOutput(nil, err)
+				logger.Output(nil, err)
 				return nil, err
 			}
 		}
@@ -104,7 +104,7 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 		// Find user by username
 		mentionedUser, err := p.userRepo.FindByUsername(username)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			continue // Skip if user not found
 		}
 
@@ -123,17 +123,17 @@ func (p *postUseCase) CreatePost(userID primitive.ObjectID, content string, medi
 			"mentioned you in a post", // message
 		)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			// Don't return error here as the post was created successfully
 		}
 	}
 
-	logger.LogOutput(post, nil)
+	logger.Output(post, nil)
 	return post, nil
 }
 
 func (p *postUseCase) UpdatePost(postID primitive.ObjectID, content string, media []domain.Media, tags []string, location *domain.Location, visibility string) (*domain.Post, error) {
-	logger := utils.NewLogger("PostUseCase.UpdatePost")
+	logger := utils.NewTraceLogger("PostUseCase.UpdatePost")
 	input := map[string]interface{}{
 		"postID":     postID,
 		"content":    content,
@@ -142,11 +142,11 @@ func (p *postUseCase) UpdatePost(postID primitive.ObjectID, content string, medi
 		"location":   location,
 		"visibility": visibility,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	post, err := p.postRepo.FindByID(postID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -171,7 +171,7 @@ func (p *postUseCase) UpdatePost(postID primitive.ObjectID, content string, medi
 
 	err = p.postRepo.Update(post)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -181,7 +181,7 @@ func (p *postUseCase) UpdatePost(postID primitive.ObjectID, content string, medi
 		// Find user by username
 		mentionedUser, err := p.userRepo.FindByUsername(username)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			continue // Skip if user not found
 		}
 
@@ -200,29 +200,29 @@ func (p *postUseCase) UpdatePost(postID primitive.ObjectID, content string, medi
 			"mentioned you in a post", // message
 		)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			// Don't return error here as the post was updated successfully
 		}
 	}
 
-	logger.LogOutput(post, nil)
+	logger.Output(post, nil)
 	return post, nil
 }
 
 func (p *postUseCase) DeletePost(postID primitive.ObjectID) error {
-	logger := utils.NewLogger("PostUseCase.DeletePost")
-	logger.LogInput(postID)
+	logger := utils.NewTraceLogger("PostUseCase.DeletePost")
+	logger.Input(postID)
 
 	// Delete all subposts first
 	subPosts, err := p.subPostRepo.FindByParentID(postID, 0, 0) // Find all subposts
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 	for _, subPost := range subPosts {
 		err = p.subPostRepo.Delete(subPost.ID)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 	}
@@ -230,32 +230,32 @@ func (p *postUseCase) DeletePost(postID primitive.ObjectID) error {
 	// Delete the post
 	err = p.postRepo.Delete(postID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
-	logger.LogOutput("Post and all related subposts deleted successfully", nil)
+	logger.Output("Post and all related subposts deleted successfully", nil)
 	return nil
 }
 
 func (p *postUseCase) FindPost(postID primitive.ObjectID, includeSubPosts bool) (*domain.PostWithDetails, error) {
-	logger := utils.NewLogger("PostUseCase.FindPost")
+	logger := utils.NewTraceLogger("PostUseCase.FindPost")
 	input := map[string]interface{}{
 		"postID":          postID,
 		"includeSubPosts": includeSubPosts,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	post, err := p.postRepo.FindByID(postID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
 	// Find user data
 	user, err := p.userRepo.FindByID(post.UserID.Hex())
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -277,18 +277,18 @@ func (p *postUseCase) FindPost(postID primitive.ObjectID, includeSubPosts bool) 
 	if includeSubPosts {
 		subPosts, err := p.subPostRepo.FindByParentID(postID, 0, 0) // Find all subposts
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return nil, err
 		}
 		result.SubPosts = subPosts
 	}
 
-	logger.LogOutput(result, nil)
+	logger.Output(result, nil)
 	return result, nil
 }
 
 func (p *postUseCase) FindManyPosts(userID primitive.ObjectID, limit, offset int, includeSubPosts bool, hasMedia bool, mediaType string) ([]domain.PostWithDetails, error) {
-	logger := utils.NewLogger("PostUseCase.FindManyPosts")
+	logger := utils.NewTraceLogger("PostUseCase.FindManyPosts")
 
 	input := map[string]interface{}{
 		"userID":          userID,
@@ -298,11 +298,11 @@ func (p *postUseCase) FindManyPosts(userID primitive.ObjectID, limit, offset int
 		"hasMedia":        hasMedia,
 		"mediaType":       mediaType,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	posts, err := p.postRepo.FindByUserID(userID, limit, offset, hasMedia, mediaType)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -316,7 +316,7 @@ func (p *postUseCase) FindManyPosts(userID primitive.ObjectID, limit, offset int
 		// Find user details
 		user, err := p.userRepo.FindByID(post.UserID.Hex())
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			continue
 		}
 
@@ -333,7 +333,7 @@ func (p *postUseCase) FindManyPosts(userID primitive.ObjectID, limit, offset int
 		if includeSubPosts {
 			subPosts, err := p.subPostRepo.FindByParentID(post.ID, 0, 0)
 			if err != nil {
-				logger.LogOutput(nil, err)
+				logger.Output(nil, err)
 				continue
 			}
 			postWithDetails.SubPosts = subPosts
@@ -342,6 +342,6 @@ func (p *postUseCase) FindManyPosts(userID primitive.ObjectID, limit, offset int
 		result = append(result, postWithDetails)
 	}
 
-	logger.LogOutput(result, nil)
+	logger.Output(result, nil)
 	return result, nil
 }

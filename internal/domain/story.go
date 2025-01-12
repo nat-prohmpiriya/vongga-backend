@@ -58,7 +58,7 @@ type StoryRepository interface {
 	Update(ctx context.Context, story *Story) error
 	AddViewer(ctx context.Context, storyID string, viewer StoryViewer) error
 	DeleteStory(ctx context.Context, id string) error
-	ArchiveExpiredStories() error
+	ArchiveExpiredStories(ctx context.Context) error
 }
 
 type StoryUseCase interface {

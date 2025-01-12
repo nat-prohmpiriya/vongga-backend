@@ -12,12 +12,12 @@ import (
 
 func AuthMiddleware(jwtSecret string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		logger := utils.NewLogger("AuthMiddleware")
-		logger.LogInput(c)
+		logger := utils.NewTraceLogger("AuthMiddleware")
+		logger.Input(c)
 
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
-			logger.LogOutput(nil, fmt.Errorf("missing authorization header"))
+			logger.Output(nil, fmt.Errorf("missing authorization header"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "unauthorized",
 			})
@@ -26,19 +26,19 @@ func AuthMiddleware(jwtSecret string) fiber.Handler {
 		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
 		logger.LogInfo(tokenString)
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			logger.LogOutput(nil, fmt.Errorf("parsing token"))
+			logger.Output(nil, fmt.Errorf("parsing token"))
 			return []byte(jwtSecret), nil
 		})
 
 		if err != nil || !token.Valid {
-			logger.LogOutput(nil, fmt.Errorf("invalid token"))
+			logger.Output(nil, fmt.Errorf("invalid token"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token",
 			})
 		}
 
 		claims := token.Claims.(jwt.MapClaims)
-		logger.LogInput(map[string]interface{}{
+		logger.Input(map[string]interface{}{
 			"claims":      claims,
 			"userIdValue": claims["userId"],
 			"userIdType":  fmt.Sprintf("%T", claims["userId"]),
@@ -46,7 +46,7 @@ func AuthMiddleware(jwtSecret string) fiber.Handler {
 		// Convert userId to string before setting in context
 		userID, ok := claims["userId"].(string)
 		if !ok {
-			logger.LogOutput(nil, fmt.Errorf("userId is not a string"))
+			logger.Output(nil, fmt.Errorf("userId is not a string"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid token format",
 			})
@@ -54,7 +54,7 @@ func AuthMiddleware(jwtSecret string) fiber.Handler {
 
 		// Set userId as string in context
 		c.Locals("userId", userID)
-		logger.LogOutput(userID, nil)
+		logger.Output(userID, nil)
 		return c.Next()
 	}
 }

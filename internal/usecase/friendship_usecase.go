@@ -25,39 +25,39 @@ func NewFriendshipUseCase(fr domain.FriendshipRepository, nu domain.Notification
 
 // SendFriendRequest creates a new friendship request
 func (f *friendshipUseCase) SendFriendRequest(fromID, toID primitive.ObjectID) error {
-	logger := utils.NewLogger("FriendshipUseCase.SendFriendRequest")
+	logger := utils.NewTraceLogger("FriendshipUseCase.SendFriendRequest")
 	input := map[string]interface{}{
 		"fromID": fromID.Hex(),
 		"toID":   toID.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	if fromID == toID {
 		err := domain.ErrInvalidInput
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	// Check if friendship already exists
 	existing, err := f.friendshipRepo.FindByUsers(fromID, toID)
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return domain.ErrInternalError
 	}
 	if existing != nil {
 		if existing.Status == "blocked" {
 			err := domain.ErrInvalidInput
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 		if existing.Status == "pending" {
 			err := domain.ErrFriendRequestAlreadySent
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 		if existing.Status == "accepted" {
 			err := domain.ErrAlreadyFriends
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 	}
@@ -72,7 +72,7 @@ func (f *friendshipUseCase) SendFriendRequest(fromID, toID primitive.ObjectID) e
 
 	err = f.friendshipRepo.Create(friendship)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return domain.ErrInternalError
 	}
 
@@ -86,23 +86,23 @@ func (f *friendshipUseCase) SendFriendRequest(fromID, toID primitive.ObjectID) e
 		"sent you a friend request", // message
 	)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		// Don't return error here as the friend request was successful
 		// Just log the notification error
 	}
 
-	logger.LogOutput(friendship, nil)
+	logger.Output(friendship, nil)
 	return nil
 }
 
 // AcceptFriendRequest accepts a pending friend request
 func (f *friendshipUseCase) AcceptFriendRequest(userID, friendID primitive.ObjectID) error {
-	logger := utils.NewLogger("FriendshipUseCase.AcceptFriendRequest")
+	logger := utils.NewTraceLogger("FriendshipUseCase.AcceptFriendRequest")
 	input := map[string]interface{}{
 		"userID":   userID.Hex(),
 		"friendID": friendID.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	// Find the friendship
 	friendship, err := f.friendshipRepo.FindByUsers(friendID, userID)
@@ -110,19 +110,19 @@ func (f *friendshipUseCase) AcceptFriendRequest(userID, friendID primitive.Objec
 		if errors.Is(err, domain.ErrNotFound) {
 			err = domain.ErrFriendRequestNotFound
 		}
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if friendship.Status != "pending" {
 		err = domain.ErrInvalidInput
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if friendship.RequestedBy == userID {
 		err = domain.ErrInvalidInput
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
@@ -130,7 +130,7 @@ func (f *friendshipUseCase) AcceptFriendRequest(userID, friendID primitive.Objec
 	friendship.UpdatedAt = time.Now()
 
 	if err := f.friendshipRepo.Update(friendship); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return domain.ErrInternalError
 	}
 
@@ -144,144 +144,144 @@ func (f *friendshipUseCase) AcceptFriendRequest(userID, friendID primitive.Objec
 		"accepted your friend request", // message
 	)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		// Don't return error here as the accept action was successful
 		// Just log the notification error
 	}
 
-	logger.LogOutput(friendship, nil)
+	logger.Output(friendship, nil)
 	return nil
 }
 
 // RejectFriendRequest rejects a pending friend request
 func (f *friendshipUseCase) RejectFriendRequest(userID, friendID primitive.ObjectID) error {
-	logger := utils.NewLogger("FriendshipUseCase.RejectFriendRequest")
+	logger := utils.NewTraceLogger("FriendshipUseCase.RejectFriendRequest")
 	input := map[string]interface{}{
 		"userID":   userID.Hex(),
 		"friendID": friendID.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	friendship, err := f.friendshipRepo.FindByUsers(friendID, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			err = domain.ErrFriendRequestNotFound
 		}
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if friendship.Status != "pending" {
 		err = domain.ErrInvalidInput
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if friendship.RequestedBy == userID {
 		err = domain.ErrInvalidInput
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if err := f.friendshipRepo.Delete(friendID, userID); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return domain.ErrInternalError
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output(nil, nil)
 	return nil
 }
 
 // CancelFriendRequest cancels a sent friend request
 func (f *friendshipUseCase) CancelFriendRequest(userID, friendID primitive.ObjectID) error {
-	logger := utils.NewLogger("FriendshipUseCase.CancelFriendRequest")
+	logger := utils.NewTraceLogger("FriendshipUseCase.CancelFriendRequest")
 	input := map[string]interface{}{
 		"userID":   userID.Hex(),
 		"friendID": friendID.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	friendship, err := f.friendshipRepo.FindByUsers(userID, friendID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			err = domain.ErrFriendRequestNotFound
 		}
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if friendship.Status != "pending" {
 		err = domain.ErrInvalidInput
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if friendship.RequestedBy != userID {
 		err = domain.ErrInvalidInput
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if err := f.friendshipRepo.Delete(userID, friendID); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return domain.ErrInternalError
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output(nil, nil)
 	return nil
 }
 
 // Unfriend removes an accepted friendship
 func (f *friendshipUseCase) Unfriend(userID1, userID2 primitive.ObjectID) error {
-	logger := utils.NewLogger("FriendshipUseCase.Unfriend")
+	logger := utils.NewTraceLogger("FriendshipUseCase.Unfriend")
 	input := map[string]interface{}{
 		"userID1": userID1.Hex(),
 		"userID2": userID2.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	friendship, err := f.friendshipRepo.FindByUsers(userID1, userID2)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			err = domain.ErrFriendshipNotFound
 		}
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if friendship.Status != "accepted" {
 		err = domain.ErrInvalidInput
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if err := f.friendshipRepo.Delete(userID1, userID2); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return domain.ErrInternalError
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output(nil, nil)
 	return nil
 }
 
 // BlockFriend blocks a user
 func (f *friendshipUseCase) BlockFriend(userID, blockedID primitive.ObjectID) error {
-	logger := utils.NewLogger("FriendshipUseCase.BlockFriend")
+	logger := utils.NewTraceLogger("FriendshipUseCase.BlockFriend")
 	input := map[string]interface{}{
 		"userID":    userID.Hex(),
 		"blockedID": blockedID.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	if userID == blockedID {
 		err := domain.ErrInvalidInput
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	friendship, err := f.friendshipRepo.FindByUsers(userID, blockedID)
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return domain.ErrInternalError
 	}
 
@@ -289,7 +289,7 @@ func (f *friendshipUseCase) BlockFriend(userID, blockedID primitive.ObjectID) er
 		friendship.Status = "blocked"
 		friendship.UpdatedAt = time.Now()
 		if err := f.friendshipRepo.Update(friendship); err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return domain.ErrInternalError
 		}
 	} else {
@@ -302,132 +302,132 @@ func (f *friendshipUseCase) BlockFriend(userID, blockedID primitive.ObjectID) er
 		}
 
 		if err := f.friendshipRepo.Create(friendship); err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return domain.ErrInternalError
 		}
 	}
 
-	logger.LogOutput(friendship, nil)
+	logger.Output(friendship, nil)
 	return nil
 }
 
 // UnblockFriend removes a block
 func (f *friendshipUseCase) UnblockFriend(userID, blockedID primitive.ObjectID) error {
-	logger := utils.NewLogger("FriendshipUseCase.UnblockFriend")
+	logger := utils.NewTraceLogger("FriendshipUseCase.UnblockFriend")
 	input := map[string]interface{}{
 		"userID":    userID.Hex(),
 		"blockedID": blockedID.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	friendship, err := f.friendshipRepo.FindByUsers(userID, blockedID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			err = domain.ErrFriendshipNotFound
 		}
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if friendship.Status != "blocked" {
 		err = domain.ErrInvalidInput
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	if err := f.friendshipRepo.Delete(userID, blockedID); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return domain.ErrInternalError
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output(nil, nil)
 	return nil
 }
 
 // FindFriends returns a list of accepted friends
 func (f *friendshipUseCase) FindFriends(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
-	logger := utils.NewLogger("FriendshipUseCase.FindFriends")
+	logger := utils.NewTraceLogger("FriendshipUseCase.FindFriends")
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 		"limit":  limit,
 		"offset": offset,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	friends, err := f.friendshipRepo.FindFriends(userID, limit, offset)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, domain.ErrInternalError
 	}
 
-	logger.LogOutput(friends, nil)
+	logger.Output(friends, nil)
 	return friends, nil
 }
 
 // FindPendingRequests returns a list of pending friend requests
 func (f *friendshipUseCase) FindPendingRequests(userID primitive.ObjectID, limit, offset int) ([]domain.Friendship, error) {
-	logger := utils.NewLogger("FriendshipUseCase.FindPendingRequests")
+	logger := utils.NewTraceLogger("FriendshipUseCase.FindPendingRequests")
 	input := map[string]interface{}{
 		"userID": userID.Hex(),
 		"limit":  limit,
 		"offset": offset,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	requests, err := f.friendshipRepo.FindPendingRequests(userID, limit, offset)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, domain.ErrInternalError
 	}
 
-	logger.LogOutput(requests, nil)
+	logger.Output(requests, nil)
 	return requests, nil
 }
 
 // IsFriend checks if two users are friends
 func (f *friendshipUseCase) IsFriend(userID1, userID2 primitive.ObjectID) (bool, error) {
-	logger := utils.NewLogger("FriendshipUseCase.IsFriend")
+	logger := utils.NewTraceLogger("FriendshipUseCase.IsFriend")
 	input := map[string]interface{}{
 		"userID1": userID1.Hex(),
 		"userID2": userID2.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	friendship, err := f.friendshipRepo.FindByUsers(userID1, userID2)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			logger.LogOutput(false, nil)
+			logger.Output(false, nil)
 			return false, nil
 		}
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return false, domain.ErrInternalError
 	}
 
 	isFriend := friendship.Status == "accepted"
-	logger.LogOutput(isFriend, nil)
+	logger.Output(isFriend, nil)
 	return isFriend, nil
 }
 
 // FindFriendshipStatus returns the current friendship status between two users
 func (f *friendshipUseCase) FindFriendshipStatus(userID1, userID2 primitive.ObjectID) (string, error) {
-	logger := utils.NewLogger("FriendshipUseCase.FindFriendshipStatus")
+	logger := utils.NewTraceLogger("FriendshipUseCase.FindFriendshipStatus")
 	input := map[string]interface{}{
 		"userID1": userID1.Hex(),
 		"userID2": userID2.Hex(),
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	friendship, err := f.friendshipRepo.FindByUsers(userID1, userID2)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			logger.LogOutput("none", nil)
+			logger.Output("none", nil)
 			return "none", nil
 		}
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return "", domain.ErrInternalError
 	}
 
-	logger.LogOutput(friendship.Status, nil)
+	logger.Output(friendship.Status, nil)
 	return friendship.Status, nil
 }
 

@@ -31,12 +31,12 @@ func NewPostRepository(db *mongo.Database, rdb *redis.Client) domain.PostReposit
 }
 
 func (r *postRepository) Create(post *domain.Post) error {
-	logger := utils.NewLogger("PostRepository.Create")
-	logger.LogInput(post)
+	logger := utils.NewTraceLogger("PostRepository.Create")
+	logger.Input(post)
 
 	_, err := r.collection.InsertOne(context.Background(), post)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
@@ -45,30 +45,30 @@ func (r *postRepository) Create(post *domain.Post) error {
 	pattern := fmt.Sprintf("user_posts:%s:*", post.UserID.Hex())
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 	}
 
-	logger.LogOutput("Post created successfully", nil)
+	logger.Output("Post created successfully", nil)
 	return nil
 }
 
 func (r *postRepository) Update(post *domain.Post) error {
-	logger := utils.NewLogger("PostRepository.Update")
-	logger.LogInput(post)
+	logger := utils.NewTraceLogger("PostRepository.Update")
+	logger.Input(post)
 
 	filter := bson.M{"_id": post.ID}
 	update := bson.M{"$set": post}
 	_, err := r.collection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
@@ -80,31 +80,31 @@ func (r *postRepository) Update(post *domain.Post) error {
 	// Delete post cache
 	err = r.rdb.Del(ctx, key).Err()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	// Delete user's posts cache
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 	}
 
-	logger.LogOutput("Post updated successfully", nil)
+	logger.Output("Post updated successfully", nil)
 	return nil
 }
 
 func (r *postRepository) Delete(id primitive.ObjectID) error {
-	logger := utils.NewLogger("PostRepository.Delete")
-	logger.LogInput(id)
+	logger := utils.NewTraceLogger("PostRepository.Delete")
+	logger.Input(id)
 
 	now := time.Now()
 	filter := bson.M{"_id": id}
@@ -114,13 +114,13 @@ func (r *postRepository) Delete(id primitive.ObjectID) error {
 	var post domain.Post
 	err := r.collection.FindOne(context.Background(), filter).Decode(&post)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	_, err = r.collection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
@@ -132,31 +132,31 @@ func (r *postRepository) Delete(id primitive.ObjectID) error {
 	// Delete post cache
 	err = r.rdb.Del(ctx, key).Err()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	// Delete user's posts cache
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 	}
 
-	logger.LogOutput("Post soft deleted successfully", nil)
+	logger.Output("Post soft deleted successfully", nil)
 	return nil
 }
 
 func (r *postRepository) FindByID(id primitive.ObjectID) (*domain.Post, error) {
-	logger := utils.NewLogger("PostRepository.FindByID")
-	logger.LogInput(id)
+	logger := utils.NewTraceLogger("PostRepository.FindByID")
+	logger.Input(id)
 
 	ctx := context.Background()
 	key := fmt.Sprintf("post:%s", id.Hex())
@@ -168,14 +168,14 @@ func (r *postRepository) FindByID(id primitive.ObjectID) (*domain.Post, error) {
 		var post domain.Post
 		err = json.Unmarshal([]byte(postJSON), &post)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return nil, err
 		}
-		logger.LogOutput(&post, nil)
+		logger.Output(&post, nil)
 		return &post, nil
 	} else if err != redis.Nil {
 		// Redis error
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -190,32 +190,32 @@ func (r *postRepository) FindByID(id primitive.ObjectID) (*domain.Post, error) {
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			notFoundErr := domain.NewNotFoundError("post", id.Hex())
-			logger.LogOutput(nil, notFoundErr)
+			logger.Output(nil, notFoundErr)
 			return nil, notFoundErr
 		}
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
 	// Cache in Redis for 1 hour
 	postBytes, err := json.Marshal(&post)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
 	err = r.rdb.Set(ctx, key, string(postBytes), time.Hour).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 	}
 
-	logger.LogOutput(&post, nil)
+	logger.Output(&post, nil)
 	return &post, nil
 }
 
 func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset int, hasMedia bool, mediaType string) ([]domain.Post, error) {
-	logger := utils.NewLogger("PostRepository.FindByUserID")
+	logger := utils.NewTraceLogger("PostRepository.FindByUserID")
 
 	input := map[string]interface{}{
 		"userID":    userID,
@@ -224,7 +224,7 @@ func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset i
 		"hasMedia":  hasMedia,
 		"mediaType": mediaType,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	filter := bson.M{
 		"userId":   userID,
@@ -272,17 +272,17 @@ func (r *postRepository) FindByUserID(userID primitive.ObjectID, limit, offset i
 
 	cursor, err := r.collection.Find(context.Background(), filter, opts)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 	defer cursor.Close(context.Background())
 
 	var posts []domain.Post
 	if err := cursor.All(context.Background(), &posts); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(posts, nil)
+	logger.Output(posts, nil)
 	return posts, nil
 }

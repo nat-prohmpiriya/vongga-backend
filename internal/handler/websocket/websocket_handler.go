@@ -52,11 +52,11 @@ func NewWebSocketHandler(router fiber.Router, chatUsecase domain.ChatUsecase, au
 }
 
 func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
-	logger := utils.NewLogger("WebSocketHandler.handleWebSocket")
+	logger := utils.NewTraceLogger("WebSocketHandler.handleWebSocket")
 
 	defer func() {
 		if r := recover(); r != nil {
-			logger.LogOutput(nil, fmt.Errorf("panic recovered in handleWebSocket: %v", r))
+			logger.Output(nil, fmt.Errorf("panic recovered in handleWebSocket: %v", r))
 			ws.WriteControl(
 				websocket.CloseMessage,
 				websocket.FormatCloseMessage(
@@ -71,9 +71,9 @@ func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
 
 	// Find token from query parameter
 	token := ws.Query("token")
-	logger.LogInput(token)
+	logger.Input(token)
 	if token == "" {
-		logger.LogOutput(nil, fmt.Errorf("missing token"))
+		logger.Output(nil, fmt.Errorf("missing token"))
 		ws.WriteControl(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(
@@ -88,7 +88,7 @@ func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
 	// Verify token
 	claims, err := h.authClient.VerifyToken(token)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		ws.WriteControl(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(
@@ -101,7 +101,7 @@ func (h *WebSocketHandler) handleWebSocket(ws *websocket.Conn) {
 		return
 	}
 
-	logger.LogOutput(claims, nil)
+	logger.Output(claims, nil)
 	userID := claims.UserID
 
 	// Create new client with mutex

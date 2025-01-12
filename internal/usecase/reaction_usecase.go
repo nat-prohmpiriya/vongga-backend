@@ -32,35 +32,35 @@ func NewReactionUseCase(
 }
 
 func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, commentID *primitive.ObjectID, reactionType string) (*domain.Reaction, error) {
-	logger := utils.NewLogger("ReactionUseCase.CreateReaction")
+	logger := utils.NewTraceLogger("ReactionUseCase.CreateReaction")
 	input := map[string]interface{}{
 		"userID":       userID,
 		"postID":       postID,
 		"commentID":    commentID,
 		"reactionType": reactionType,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	// Check if reaction already exists
 	existing, err := r.reactionRepo.FindByUserAndTarget(userID, postID, commentID)
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
 	// If reaction exists, update it
 	if existing != nil {
 		if existing.Type == reactionType {
-			logger.LogOutput(existing, nil)
+			logger.Output(existing, nil)
 			return existing, nil
 		}
 		existing.Type = reactionType
 		err = r.reactionRepo.Update(existing)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return nil, err
 		}
-		logger.LogOutput(existing, nil)
+		logger.Output(existing, nil)
 		return existing, nil
 	}
 
@@ -81,7 +81,7 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 
 	err = r.reactionRepo.Create(reaction)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -89,7 +89,7 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 	if commentID == nil {
 		post, err := r.postRepo.FindByID(postID)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return nil, err
 		}
 
@@ -100,13 +100,13 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 
 		err = r.postRepo.Update(post)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return nil, err
 		}
 	} else {
 		comment, err := r.commentRepo.FindByID(*commentID)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return nil, err
 		}
 
@@ -117,7 +117,7 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 
 		err = r.commentRepo.Update(comment)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return nil, err
 		}
 	}
@@ -127,7 +127,7 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 		// Reaction on comment
 		comment, err := r.commentRepo.FindByID(*commentID)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			// Don't return error, just skip notification
 		} else if comment.UserID != userID { // Don't notify if user reacts to their own comment
 			_, err = r.notificationUseCase.CreateNotification(
@@ -139,7 +139,7 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 				"reacted to your comment", // message
 			)
 			if err != nil {
-				logger.LogOutput(nil, err)
+				logger.Output(nil, err)
 				// Don't return error here as the reaction was created successfully
 			}
 		}
@@ -147,7 +147,7 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 		// Reaction on post
 		post, err := r.postRepo.FindByID(postID)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			// Don't return error, just skip notification
 		} else if post.UserID != userID { // Don't notify if user reacts to their own post
 			_, err = r.notificationUseCase.CreateNotification(
@@ -159,23 +159,23 @@ func (r *reactionUseCase) CreateReaction(userID, postID primitive.ObjectID, comm
 				"reacted to your post", // message
 			)
 			if err != nil {
-				logger.LogOutput(nil, err)
+				logger.Output(nil, err)
 				// Don't return error here as the reaction was created successfully
 			}
 		}
 	}
 
-	logger.LogOutput(reaction, nil)
+	logger.Output(reaction, nil)
 	return reaction, nil
 }
 
 func (r *reactionUseCase) DeleteReaction(reactionID primitive.ObjectID) error {
-	logger := utils.NewLogger("ReactionUseCase.DeleteReaction")
-	logger.LogInput(reactionID)
+	logger := utils.NewTraceLogger("ReactionUseCase.DeleteReaction")
+	logger.Input(reactionID)
 
 	reaction, err := r.reactionRepo.FindByID(reactionID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
@@ -184,14 +184,14 @@ func (r *reactionUseCase) DeleteReaction(reactionID primitive.ObjectID) error {
 		// Find post and update reaction count
 		post, err := r.postRepo.FindByID(reaction.PostID)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 		if count := post.ReactionCounts[reaction.Type]; count > 0 {
 			post.ReactionCounts[reaction.Type]--
 			err = r.postRepo.Update(post)
 			if err != nil {
-				logger.LogOutput(nil, err)
+				logger.Output(nil, err)
 				return err
 			}
 		}
@@ -199,14 +199,14 @@ func (r *reactionUseCase) DeleteReaction(reactionID primitive.ObjectID) error {
 		// Find comment and update reaction count
 		comment, err := r.commentRepo.FindByID(*reaction.CommentID)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 		if count := comment.ReactionCounts[reaction.Type]; count > 0 {
 			comment.ReactionCounts[reaction.Type]--
 			err = r.commentRepo.Update(comment)
 			if err != nil {
-				logger.LogOutput(nil, err)
+				logger.Output(nil, err)
 				return err
 			}
 		}
@@ -215,37 +215,37 @@ func (r *reactionUseCase) DeleteReaction(reactionID primitive.ObjectID) error {
 	// Delete reaction
 	err = r.reactionRepo.Delete(reactionID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
-	logger.LogOutput("Reaction deleted successfully", nil)
+	logger.Output("Reaction deleted successfully", nil)
 	return nil
 }
 
 func (r *reactionUseCase) FindReaction(reactionID primitive.ObjectID) (*domain.Reaction, error) {
-	logger := utils.NewLogger("ReactionUseCase.FindReaction")
-	logger.LogInput(reactionID)
+	logger := utils.NewTraceLogger("ReactionUseCase.FindReaction")
+	logger.Input(reactionID)
 
 	reaction, err := r.reactionRepo.FindByID(reactionID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(reaction, nil)
+	logger.Output(reaction, nil)
 	return reaction, nil
 }
 
 func (r *reactionUseCase) FindManyReactions(targetID primitive.ObjectID, isComment bool, limit, offset int) ([]domain.Reaction, error) {
-	logger := utils.NewLogger("ReactionUseCase.FindManyReactions")
+	logger := utils.NewTraceLogger("ReactionUseCase.FindManyReactions")
 	input := map[string]interface{}{
 		"targetID":  targetID,
 		"isComment": isComment,
 		"limit":     limit,
 		"offset":    offset,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	var reactions []domain.Reaction
 	var err error
@@ -255,10 +255,10 @@ func (r *reactionUseCase) FindManyReactions(targetID primitive.ObjectID, isComme
 		reactions, err = r.reactionRepo.FindByPostID(targetID, limit, offset)
 	}
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(reactions, nil)
+	logger.Output(reactions, nil)
 	return reactions, nil
 }

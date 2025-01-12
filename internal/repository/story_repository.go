@@ -13,23 +13,28 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type storyRepository struct {
 	collection *mongo.Collection
 	rdb        *redis.Client
+	tracer     trace.Tracer
 }
 
-func NewStoryRepository(db *mongo.Database, rdb *redis.Client) domain.StoryRepository {
+func NewStoryRepository(db *mongo.Database, rdb *redis.Client, trace trace.Tracer) domain.StoryRepository {
 	return &storyRepository{
 		collection: db.Collection("stories"),
 		rdb:        rdb,
+		tracer:     trace,
 	}
 }
 
-func (r *storyRepository) Create(story *domain.Story) error {
-	logger := utils.NewLogger("StoryRepository.Create")
-	logger.LogInput(story)
+func (r *storyRepository) Create(ctx context.Context, story *domain.Story) error {
+	ctx, span := r.tracer.Start(ctx, "StoryRepository.Create")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(story)
 
 	// Set default values
 	story.ID = primitive.NewObjectID()
@@ -41,9 +46,9 @@ func (r *storyRepository) Create(story *domain.Story) error {
 	story.Viewers = []domain.StoryViewer{}           // Initialize empty viewers array
 	story.ViewersCount = 0
 
-	_, err := r.collection.InsertOne(context.Background(), story)
+	_, err := r.collection.InsertOne(ctx, story)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("1", err)
 		return err
 	}
 
@@ -51,72 +56,74 @@ func (r *storyRepository) Create(story *domain.Story) error {
 	pipe := r.rdb.Pipeline()
 
 	// Delete active stories cache
-	pipe.Del(context.Background(), "active_stories")
+	pipe.Del(ctx, "active_stories")
 
 	// Delete user stories cache
 	userStoriesKey := fmt.Sprintf("user_stories:%s", story.UserID)
-	pipe.Del(context.Background(), userStoriesKey)
+	pipe.Del(ctx, userStoriesKey)
 
-	_, err = pipe.Exec(context.Background())
+	_, err = pipe.Exec(ctx)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("2", err)
 		return err
 	}
 
-	logger.LogOutput(story, nil)
+	logger.Output(story, nil)
 	return nil
 }
 
-func (r *storyRepository) FindByID(id string) (*domain.Story, error) {
-	logger := utils.NewLogger("StoryRepository.FindByID")
-	logger.LogInput(id)
+func (r *storyRepository) FindByID(ctx context.Context, id string) (*domain.Story, error) {
+	ctx, span := r.tracer.Start(ctx, "StoryRepository.FindByID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(id)
 
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("1", err)
 		return nil, err
 	}
 
 	// Try to get from Redis first
 	key := fmt.Sprintf("story:%s", id)
-	storyJSON, err := r.rdb.Get(context.Background(), key).Result()
+	storyJSON, err := r.rdb.Get(ctx, key).Result()
 	if err == nil {
 		// Found in Redis
 		var story domain.Story
 		err = json.Unmarshal([]byte(storyJSON), &story)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output("2", err)
 			return nil, err
 		}
 
 		// Check if story is expired
 		if time.Now().After(story.ExpiresAt) {
 			// Delete from Redis and return nil
-			r.rdb.Del(context.Background(), key)
+			r.rdb.Del(ctx, key)
 			return nil, nil
 		}
 
-		logger.LogOutput(&story, nil)
+		logger.Output(&story, nil)
 		return &story, nil
 	} else if err != redis.Nil {
 		// Redis error
-		logger.LogOutput(nil, err)
+		logger.Output("3", err)
 		return nil, err
 	}
 
 	// Not found in Redis, get from MongoDB
 	var story domain.Story
-	err = r.collection.FindOne(context.Background(), bson.M{
+	err = r.collection.FindOne(ctx, bson.M{
 		"_id":      objectID,
 		"isActive": true,
 	}).Decode(&story)
 
 	if err == mongo.ErrNoDocuments {
-		logger.LogOutput(nil, nil)
+		logger.Output(nil, nil)
 		return nil, nil
 	}
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -128,34 +135,36 @@ func (r *storyRepository) FindByID(id string) (*domain.Story, error) {
 	// Cache in Redis until story expires
 	storyBytes, err := json.Marshal(story)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
 	ttl := time.Until(story.ExpiresAt)
-	err = r.rdb.Set(context.Background(), key, string(storyBytes), ttl).Err()
+	err = r.rdb.Set(ctx, key, string(storyBytes), ttl).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 	}
 
-	logger.LogOutput(&story, nil)
+	logger.Output(&story, nil)
 	return &story, nil
 }
 
-func (r *storyRepository) FindByUserID(userID string) ([]*domain.Story, error) {
-	logger := utils.NewLogger("StoryRepository.FindByUserID")
-	logger.LogInput(userID)
+func (r *storyRepository) FindByUserID(ctx context.Context, userID string) ([]*domain.Story, error) {
+	ctx, span := r.tracer.Start(ctx, "StoryRepository.FindByUserID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(userID)
 
 	// Try to get from Redis first
 	key := fmt.Sprintf("user_stories:%s", userID)
-	storiesJSON, err := r.rdb.Get(context.Background(), key).Result()
+	storiesJSON, err := r.rdb.Get(ctx, key).Result()
 	if err == nil {
 		// Found in Redis
 		var stories []*domain.Story
 		err = json.Unmarshal([]byte(storiesJSON), &stories)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output("1", err)
 			return nil, err
 		}
 
@@ -168,11 +177,11 @@ func (r *storyRepository) FindByUserID(userID string) ([]*domain.Story, error) {
 			}
 		}
 
-		logger.LogOutput(activeStories, nil)
+		logger.Output(activeStories, nil)
 		return activeStories, nil
 	} else if err != redis.Nil {
 		// Redis error
-		logger.LogOutput(nil, err)
+		logger.Output("2", err)
 		return nil, err
 	}
 
@@ -182,16 +191,16 @@ func (r *storyRepository) FindByUserID(userID string) ([]*domain.Story, error) {
 		// "isActive": true,
 	}
 
-	cursor, err := r.collection.Find(context.Background(), filter)
+	cursor, err := r.collection.Find(ctx, filter)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("3", err)
 		return nil, err
 	}
-	defer cursor.Close(context.Background())
+	defer cursor.Close(ctx)
 
 	var stories []*domain.Story
-	if err = cursor.All(context.Background(), &stories); err != nil {
-		logger.LogOutput(nil, err)
+	if err = cursor.All(ctx, &stories); err != nil {
+		logger.Output("4", err)
 		return nil, err
 	}
 
@@ -207,32 +216,34 @@ func (r *storyRepository) FindByUserID(userID string) ([]*domain.Story, error) {
 	// Cache in Redis for 5 minutes
 	storiesBytes, err := json.Marshal(stories)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("5", err)
 		return nil, err
 	}
 
-	err = r.rdb.Set(context.Background(), key, string(storiesBytes), 5*time.Minute).Err()
+	err = r.rdb.Set(ctx, key, string(storiesBytes), 5*time.Minute).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.Error(err)
 	}
 
-	logger.LogOutput(stories, nil)
+	logger.Output(stories, nil)
 	return stories, nil
 }
 
-func (r *storyRepository) FindActiveStories() ([]*domain.Story, error) {
-	logger := utils.NewLogger("StoryRepository.FindActiveStories")
+func (r *storyRepository) FindActiveStories(ctx context.Context) ([]*domain.Story, error) {
+	ctx, span := r.tracer.Start(ctx, "StoryRepository.FindActiveStories")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	// Try to get from Redis first
 	key := "active_stories"
-	storiesJSON, err := r.rdb.Get(context.Background(), key).Result()
+	storiesJSON, err := r.rdb.Get(ctx, key).Result()
 	if err == nil {
 		// Found in Redis
 		var stories []*domain.Story
 		err = json.Unmarshal([]byte(storiesJSON), &stories)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output("1", err)
 			return nil, err
 		}
 
@@ -245,11 +256,11 @@ func (r *storyRepository) FindActiveStories() ([]*domain.Story, error) {
 			}
 		}
 
-		logger.LogOutput(activeStories, nil)
+		logger.Output(activeStories, nil)
 		return activeStories, nil
 	} else if err != redis.Nil {
 		// Redis error
-		logger.LogOutput(nil, err)
+		logger.Output("2", err)
 		return nil, err
 	}
 
@@ -261,39 +272,41 @@ func (r *storyRepository) FindActiveStories() ([]*domain.Story, error) {
 		"expiresAt": bson.M{"$gt": now},
 	}
 
-	cursor, err := r.collection.Find(context.Background(), filter)
+	cursor, err := r.collection.Find(ctx, filter)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("3", err)
 		return nil, err
 	}
-	defer cursor.Close(context.Background())
+	defer cursor.Close(ctx)
 
 	var stories []*domain.Story
-	if err = cursor.All(context.Background(), &stories); err != nil {
-		logger.LogOutput(nil, err)
+	if err = cursor.All(ctx, &stories); err != nil {
+		logger.Output("4", err)
 		return nil, err
 	}
 
 	// Cache in Redis for 1 minute
 	storiesBytes, err := json.Marshal(stories)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("5", err)
 		return nil, err
 	}
 
-	err = r.rdb.Set(context.Background(), key, string(storiesBytes), time.Minute).Err()
+	err = r.rdb.Set(ctx, key, string(storiesBytes), time.Minute).Err()
 	if err != nil {
 		// Log Redis error but don't return it since we have the data
-		logger.LogOutput(nil, err)
+		logger.Output("6", err)
 	}
 
-	logger.LogOutput(stories, nil)
+	logger.Output(stories, nil)
 	return stories, nil
 }
 
-func (r *storyRepository) Update(story *domain.Story) error {
-	logger := utils.NewLogger("StoryRepository.Update")
-	logger.LogInput(story)
+func (r *storyRepository) Update(ctx context.Context, story *domain.Story) error {
+	ctx, span := r.tracer.Start(ctx, "StoryRepository.Update")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(story)
 
 	story.UpdatedAt = time.Now()
 	story.Version++
@@ -308,15 +321,15 @@ func (r *storyRepository) Update(story *domain.Story) error {
 		"$set": story,
 	}
 
-	result, err := r.collection.UpdateOne(context.Background(), filter, update)
+	result, err := r.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("1", err)
 		return err
 	}
 
 	if result.MatchedCount == 0 {
 		err = mongo.ErrNoDocuments
-		logger.LogOutput(nil, err)
+		logger.Output("2", err)
 		return err
 	}
 
@@ -325,32 +338,34 @@ func (r *storyRepository) Update(story *domain.Story) error {
 
 	// Delete story cache
 	storyKey := fmt.Sprintf("story:%s", story.ID.Hex())
-	pipe.Del(context.Background(), storyKey)
+	pipe.Del(ctx, storyKey)
 
 	// Delete user stories cache
 	userStoriesKey := fmt.Sprintf("user_stories:%s", story.UserID)
-	pipe.Del(context.Background(), userStoriesKey)
+	pipe.Del(ctx, userStoriesKey)
 
 	// Delete active stories cache
-	pipe.Del(context.Background(), "active_stories")
+	pipe.Del(ctx, "active_stories")
 
-	_, err = pipe.Exec(context.Background())
+	_, err = pipe.Exec(ctx)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("3", err)
 		return err
 	}
 
-	logger.LogOutput(story, nil)
+	logger.Output(story, nil)
 	return nil
 }
 
-func (r *storyRepository) AddViewer(storyID string, viewer domain.StoryViewer) error {
-	logger := utils.NewLogger("StoryRepository.AddViewer")
-	logger.LogInput(map[string]interface{}{"storyID": storyID, "viewer": viewer})
+func (r *storyRepository) AddViewer(ctx context.Context, storyID string, viewer domain.StoryViewer) error {
+	ctx, span := r.tracer.Start(ctx, "StoryRepository.AddViewer")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(map[string]interface{}{"storyID": storyID, "viewer": viewer})
 
 	objectID, err := primitive.ObjectIDFromHex(storyID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("1", err)
 		return err
 	}
 
@@ -361,7 +376,7 @@ func (r *storyRepository) AddViewer(storyID string, viewer domain.StoryViewer) e
 	}
 
 	result, err := r.collection.UpdateOne(
-		context.Background(),
+		ctx,
 		bson.M{
 			"_id":      objectID,
 			"isActive": true,
@@ -370,43 +385,45 @@ func (r *storyRepository) AddViewer(storyID string, viewer domain.StoryViewer) e
 	)
 
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("2", err)
 		return err
 	}
 
 	if result.MatchedCount == 0 {
 		err = mongo.ErrNoDocuments
-		logger.LogOutput(nil, err)
+		logger.Output("3", err)
 		return err
 	}
 
 	// ลบ cache
 	key := fmt.Sprintf("story:%s", storyID)
-	err = r.rdb.Del(context.Background(), key).Err()
+	err = r.rdb.Del(ctx, key).Err()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("4", err)
 		return err
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output("AddViewer success", nil)
 	return nil
 }
 
-func (r *storyRepository) DeleteStory(id string) error {
-	logger := utils.NewLogger("StoryRepository.DeleteStory")
-	logger.LogInput(id)
+func (r *storyRepository) DeleteStory(ctx context.Context, id string) error {
+	ctx, span := r.tracer.Start(ctx, "StoryRepository.DeleteStory")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+	logger.Input(id)
 
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("1", err)
 		return err
 	}
 
 	// Find story first to get userID for cache invalidation
 	var story domain.Story
-	err = r.collection.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&story)
+	err = r.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&story)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("2", err)
 		return err
 	}
 
@@ -418,19 +435,19 @@ func (r *storyRepository) DeleteStory(id string) error {
 	}
 
 	result, err := r.collection.UpdateOne(
-		context.Background(),
+		ctx,
 		bson.M{"_id": objectID},
 		update,
 	)
 
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("3", err)
 		return err
 	}
 
 	if result.MatchedCount == 0 {
 		err = mongo.ErrNoDocuments
-		logger.LogOutput(nil, err)
+		logger.Output("4", err)
 		return err
 	}
 
@@ -439,27 +456,29 @@ func (r *storyRepository) DeleteStory(id string) error {
 
 	// Delete story cache
 	storyKey := fmt.Sprintf("story:%s", id)
-	pipe.Del(context.Background(), storyKey)
+	pipe.Del(ctx, storyKey)
 
 	// Delete user stories cache
 	userStoriesKey := fmt.Sprintf("user_stories:%s", story.UserID)
-	pipe.Del(context.Background(), userStoriesKey)
+	pipe.Del(ctx, userStoriesKey)
 
 	// Delete active stories cache
-	pipe.Del(context.Background(), "active_stories")
+	pipe.Del(ctx, "active_stories")
 
-	_, err = pipe.Exec(context.Background())
+	_, err = pipe.Exec(ctx)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("5", err)
 		return err
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output("DeleteStory success", nil)
 	return nil
 }
 
-func (r *storyRepository) ArchiveExpiredStories() error {
-	logger := utils.NewLogger("StoryRepository.ArchiveExpiredStories")
+func (r *storyRepository) ArchiveExpiredStories(ctx context.Context) error {
+	ctx, span := r.tracer.Start(ctx, "StoryRepository.ArchiveExpiredStories")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
 
 	now := time.Now()
 	filter := bson.M{
@@ -475,22 +494,22 @@ func (r *storyRepository) ArchiveExpiredStories() error {
 		},
 	}
 
-	result, err := r.collection.UpdateMany(context.Background(), filter, update)
+	result, err := r.collection.UpdateMany(ctx, filter, update)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output("1", err)
 		return err
 	}
 
 	// If any stories were archived, invalidate active stories cache
 	if result.ModifiedCount > 0 {
-		err = r.rdb.Del(context.Background(), "active_stories").Err()
+		err = r.rdb.Del(ctx, "active_stories").Err()
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output("2", err)
 			return err
 		}
 	}
 
-	logger.LogOutput(map[string]interface{}{
+	logger.Output(map[string]interface{}{
 		"archivedCount": result.ModifiedCount,
 	}, nil)
 	return nil

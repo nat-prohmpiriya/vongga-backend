@@ -14,11 +14,11 @@ import (
 
 func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		logger := utils.NewLogger("JWTAuthMiddleware")
+		logger := utils.NewTraceLogger("JWTAuthMiddleware")
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
-			logger.LogInput(authHeader)
-			logger.LogOutput(nil, fmt.Errorf("missing authorization header"))
+			logger.Input(authHeader)
+			logger.Output(nil, fmt.Errorf("missing authorization header"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "missing authorization header",
 			})
@@ -26,8 +26,8 @@ func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler 
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		if tokenString == authHeader {
-			logger.LogInput(tokenString)
-			logger.LogOutput(nil, fmt.Errorf("invalid token format"))
+			logger.Input(tokenString)
+			logger.Output(nil, fmt.Errorf("invalid token format"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token format",
 			})
@@ -35,17 +35,17 @@ func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler 
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				logger.LogInput(tokenString)
-				logger.LogOutput(nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
+				logger.Input(tokenString)
+				logger.Output(nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
 				return nil, fiber.ErrUnauthorized
 			}
-			logger.LogInput(tokenString)
+			logger.Input(tokenString)
 			return []byte(jwtSecret), nil
 		})
 
 		if err != nil {
-			logger.LogInput(tokenString)
-			logger.LogOutput(nil, err)
+			logger.Input(tokenString)
+			logger.Output(nil, err)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token",
 			})
@@ -53,8 +53,8 @@ func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler 
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok || !token.Valid {
-			logger.LogInput(tokenString)
-			logger.LogOutput(nil, fmt.Errorf("invalid token claims"))
+			logger.Input(tokenString)
+			logger.Output(nil, fmt.Errorf("invalid token claims"))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token claims",
 			})
@@ -73,13 +73,13 @@ func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler 
 			if str, ok := v.(string); ok {
 				userIDStr = str
 			} else {
-				logger.LogOutput(nil, fmt.Errorf("userId is not a valid string: %T", v))
+				logger.Output(nil, fmt.Errorf("userId is not a valid string: %T", v))
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 					"error": "invalid user ID format in token",
 				})
 			}
 		default:
-			logger.LogOutput(nil, fmt.Errorf("userId is not a valid format: %T", v))
+			logger.Output(nil, fmt.Errorf("userId is not a valid format: %T", v))
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid user ID format in token",
 			})
@@ -87,7 +87,7 @@ func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler 
 
 		userID, err := primitive.ObjectIDFromHex(userIDStr)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid user ID format",
 			})
@@ -95,7 +95,7 @@ func JWTAuthMiddleware(jwtSecret string, authClient *auth.Client) fiber.Handler 
 
 		c.Locals("userId", userID)
 		c.Locals("firebase_auth", authClient)
-		logger.LogInput(userID)
+		logger.Input(userID)
 		return c.Next()
 	}
 }

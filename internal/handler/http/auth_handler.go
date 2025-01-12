@@ -28,21 +28,21 @@ func NewAuthHandler(authUseCase domain.AuthUseCase) *AuthHandler {
 // @Failure 400 {object} ErrorResponse
 // @Router /auth/createTestToken [post]
 func (h *AuthHandler) CreateTestToken(c *fiber.Ctx) error {
-	logger := utils.NewLogger("AuthHandler.CreateTestToken")
+	logger := utils.NewTraceLogger("AuthHandler.CreateTestToken")
 
 	var req CreateTestTokenRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogInput(req)
-		logger.LogOutput(nil, err)
+		logger.Input(req)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
 	}
 
-	logger.LogInput(req)
+	logger.Input(req)
 	tokenPair, err := h.authUseCase.CreateTestToken(c.Context(), req.UserID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -53,30 +53,30 @@ func (h *AuthHandler) CreateTestToken(c *fiber.Ctx) error {
 		RefreshToken: tokenPair.RefreshToken,
 	}
 
-	logger.LogOutput(response, nil)
+	logger.Output(response, nil)
 	return c.JSON(response)
 }
 
 // VerifyTokenFirebase verifies Firebase ID token and returns user data with JWT tokens
 func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
-	logger := utils.NewLogger("AuthHandler.VerifyTokenFirebase")
+	logger := utils.NewTraceLogger("AuthHandler.VerifyTokenFirebase")
 
 	var req struct {
 		FirebaseToken string `json:"firebaseToken"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogInput(req)
-		logger.LogOutput(nil, err)
+		logger.Input(req)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
 	}
 
-	logger.LogInput(req)
+	logger.Input(req)
 	user, tokenPair, err := h.authUseCase.VerifyTokenFirebase(c.Context(), req.FirebaseToken)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -88,27 +88,27 @@ func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
 		RefreshToken: tokenPair.RefreshToken,
 	}
 
-	logger.LogOutput(response, nil)
+	logger.Output(response, nil)
 	return c.JSON(response)
 }
 
 // RefreshToken refreshes the access token using a refresh token
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
-	logger := utils.NewLogger("AuthHandler.RefreshToken")
+	logger := utils.NewTraceLogger("AuthHandler.RefreshToken")
 
 	var req RefreshTokenRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogInput(req)
-		logger.LogOutput(nil, err)
+		logger.Input(req)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
 	}
 
-	logger.LogInput(req)
+	logger.Input(req)
 	tokenPair, err := h.authUseCase.RefreshToken(c.Context(), req.RefreshToken)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -119,33 +119,33 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 		RefreshToken: tokenPair.RefreshToken,
 	}
 
-	logger.LogOutput(response, nil)
+	logger.Output(response, nil)
 	return c.JSON(response)
 }
 
 // Logout revokes the refresh token
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
-	logger := utils.NewLogger("AuthHandler.Logout")
+	logger := utils.NewTraceLogger("AuthHandler.Logout")
 
 	var req LogoutRequest
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogInput(req)
-		logger.LogOutput(nil, err)
+		logger.Input(req)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
 	}
 
-	logger.LogInput(req)
+	logger.Input(req)
 	err := h.authUseCase.RevokeRefreshToken(c.Context(), req.RefreshToken)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput("Successfully logged out", nil)
+	logger.Output("Successfully logged out", nil)
 	return c.SendStatus(fiber.StatusOK)
 }
 

@@ -31,7 +31,7 @@ func NewCommentUseCase(
 }
 
 func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, content string, media []domain.Media, replyTo *primitive.ObjectID) (*domain.Comment, error) {
-	logger := utils.NewLogger("CommentUseCase.CreateComment")
+	logger := utils.NewTraceLogger("CommentUseCase.CreateComment")
 	input := map[string]interface{}{
 		"userID":  userID,
 		"postID":  postID,
@@ -39,12 +39,12 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 		"media":   media,
 		"replyTo": replyTo,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	// Find post to increment comment count and get post owner
 	post, err := c.postRepo.FindByID(postID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -67,7 +67,7 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 
 	err = c.commentRepo.Create(comment)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -77,7 +77,7 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 		// Find user by username
 		mentionedUser, err := c.userRepo.FindByUsername(username)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			continue // Skip if user not found
 		}
 
@@ -96,7 +96,7 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 			"mentioned you in a comment", // message
 		)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			// Don't return error here as the comment was created successfully
 		}
 	}
@@ -105,7 +105,7 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 	if replyTo != nil {
 		originalComment, err := c.commentRepo.FindByID(*replyTo)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			// Don't return error, just skip notification
 		} else {
 			// Create notification for reply
@@ -118,7 +118,7 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 				"replied to your comment", // message
 			)
 			if err != nil {
-				logger.LogOutput(nil, err)
+				logger.Output(nil, err)
 				// Don't return error here as the comment was created successfully
 			}
 		}
@@ -135,7 +135,7 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 				"commented on your post", // message
 			)
 			if err != nil {
-				logger.LogOutput(nil, err)
+				logger.Output(nil, err)
 				// Don't return error here as the comment was created successfully
 			}
 		}
@@ -145,26 +145,26 @@ func (c *commentUseCase) CreateComment(userID, postID primitive.ObjectID, conten
 	post.CommentCount++
 	err = c.postRepo.Update(post)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(comment, nil)
+	logger.Output(comment, nil)
 	return comment, nil
 }
 
 func (c *commentUseCase) UpdateComment(commentID primitive.ObjectID, content string, media []domain.Media) (*domain.Comment, error) {
-	logger := utils.NewLogger("CommentUseCase.UpdateComment")
+	logger := utils.NewTraceLogger("CommentUseCase.UpdateComment")
 	input := map[string]interface{}{
 		"commentID": commentID,
 		"content":   content,
 		"media":     media,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	comment, err := c.commentRepo.FindByID(commentID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
@@ -174,35 +174,35 @@ func (c *commentUseCase) UpdateComment(commentID primitive.ObjectID, content str
 
 	err = c.commentRepo.Update(comment)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(comment, nil)
+	logger.Output(comment, nil)
 	return comment, nil
 }
 
 func (c *commentUseCase) DeleteComment(commentID primitive.ObjectID) error {
-	logger := utils.NewLogger("CommentUseCase.DeleteComment")
-	logger.LogInput(commentID)
+	logger := utils.NewTraceLogger("CommentUseCase.DeleteComment")
+	logger.Input(commentID)
 
 	// Find comment to get postID
 	comment, err := c.commentRepo.FindByID(commentID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	// Find post to decrement comment count
 	post, err := c.postRepo.FindByID(comment.PostID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
 	err = c.commentRepo.Delete(commentID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return err
 	}
 
@@ -211,44 +211,44 @@ func (c *commentUseCase) DeleteComment(commentID primitive.ObjectID) error {
 		post.CommentCount--
 		err = c.postRepo.Update(post)
 		if err != nil {
-			logger.LogOutput(nil, err)
+			logger.Output(nil, err)
 			return err
 		}
 	}
 
-	logger.LogOutput("Comment deleted successfully", nil)
+	logger.Output("Comment deleted successfully", nil)
 	return nil
 }
 
 func (c *commentUseCase) FindComment(commentID primitive.ObjectID) (*domain.Comment, error) {
-	logger := utils.NewLogger("CommentUseCase.FindComment")
-	logger.LogInput(commentID)
+	logger := utils.NewTraceLogger("CommentUseCase.FindComment")
+	logger.Input(commentID)
 
 	comment, err := c.commentRepo.FindByID(commentID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(comment, nil)
+	logger.Output(comment, nil)
 	return comment, nil
 }
 
 func (c *commentUseCase) FindManyComments(postID primitive.ObjectID, limit, offset int) ([]domain.Comment, error) {
-	logger := utils.NewLogger("CommentUseCase.FindManyComments")
+	logger := utils.NewTraceLogger("CommentUseCase.FindManyComments")
 	input := map[string]interface{}{
 		"postID": postID,
 		"limit":  limit,
 		"offset": offset,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	comments, err := c.commentRepo.FindByPostID(postID, limit, offset)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return nil, err
 	}
 
-	logger.LogOutput(comments, nil)
+	logger.Output(comments, nil)
 	return comments, nil
 }

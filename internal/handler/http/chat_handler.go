@@ -53,21 +53,21 @@ func (h *ChatHandler) CreatePrivateChat(c *fiber.Ctx) error {
 		})
 	}
 
-	logger := utils.NewLogger("ChatHandler.CreatePrivateChat")
-	logger.LogInput(map[string]string{
+	logger := utils.NewTraceLogger("ChatHandler.CreatePrivateChat")
+	logger.Input(map[string]string{
 		"userID1": req.UserID1,
 		"userID2": req.UserID2,
 	})
 
 	room, err := h.chatUsecase.CreatePrivateChat(c, req.UserID1, req.UserID2)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(room, nil)
+	logger.Output(room, nil)
 	return c.JSON(room)
 }
 
@@ -83,51 +83,51 @@ func (h *ChatHandler) CreateGroupChat(c *fiber.Ctx) error {
 		})
 	}
 
-	logger := utils.NewLogger("ChatHandler.CreateGroupChat")
-	logger.LogInput(map[string]interface{}{
+	logger := utils.NewTraceLogger("ChatHandler.CreateGroupChat")
+	logger.Input(map[string]interface{}{
 		"name":      req.Name,
 		"memberIDs": req.MemberIDs,
 	})
 
 	room, err := h.chatUsecase.CreateGroupChat(req.Name, req.MemberIDs)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(room, nil)
+	logger.Output(room, nil)
 	return c.JSON(room)
 }
 
 func (h *ChatHandler) FindUserChats(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ChatHandler.FindUserChats")
+	logger := utils.NewTraceLogger("ChatHandler.FindUserChats")
 
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogInput(userID.Hex())
+	logger.Input(userID.Hex())
 
 	rooms, err := h.chatUsecase.FindUserChats(userID.Hex())
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(rooms, nil)
+	logger.Output(rooms, nil)
 	return c.JSON(rooms)
 }
 
 func (h *ChatHandler) AddMemberToGroup(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ChatHandler.AddMemberToGroup")
+	logger := utils.NewTraceLogger("ChatHandler.AddMemberToGroup")
 	roomID := c.Params("roomId")
 
 	var req struct {
@@ -135,56 +135,56 @@ func (h *ChatHandler) AddMemberToGroup(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
 
-	logger.LogInput(map[string]string{
+	logger.Input(map[string]string{
 		"roomID": roomID,
 		"userID": req.UserID,
 	})
 
 	if err := h.chatUsecase.AddMemberToGroup(roomID, req.UserID); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output(nil, nil)
 	return c.SendStatus(fiber.StatusOK)
 }
 
 func (h *ChatHandler) RemoveMemberFromGroup(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ChatHandler.RemoveMemberFromGroup")
+	logger := utils.NewTraceLogger("ChatHandler.RemoveMemberFromGroup")
 	roomID := c.Params("roomId")
 	userID := c.Params("userId")
 
-	logger.LogInput(map[string]string{
+	logger.Input(map[string]string{
 		"roomID": roomID,
 		"userID": userID,
 	})
 
 	if err := h.chatUsecase.RemoveMemberFromGroup(roomID, userID); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output(nil, nil)
 	return c.SendStatus(fiber.StatusOK)
 }
 
 // Message handlers
 func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ChatHandler.SendMessage")
+	logger := utils.NewTraceLogger("ChatHandler.SendMessage")
 
 	senderID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -197,13 +197,13 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
 
-	logger.LogInput(map[string]string{
+	logger.Input(map[string]string{
 		"roomID":   req.RoomID,
 		"senderID": senderID.Hex(),
 		"type":     req.Type,
@@ -212,22 +212,22 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 
 	message, err := h.chatUsecase.SendMessage(req.RoomID, senderID.Hex(), req.Type, req.Content)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(message, nil)
+	logger.Output(message, nil)
 	return c.JSON(message)
 }
 
 func (h *ChatHandler) SendFileMessage(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ChatHandler.SendFileMessage")
+	logger := utils.NewTraceLogger("ChatHandler.SendFileMessage")
 
 	senderID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -241,13 +241,13 @@ func (h *ChatHandler) SendFileMessage(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
 
-	logger.LogInput(map[string]interface{}{
+	logger.Input(map[string]interface{}{
 		"roomID":   req.RoomID,
 		"senderID": senderID.Hex(),
 		"fileType": req.FileType,
@@ -257,23 +257,23 @@ func (h *ChatHandler) SendFileMessage(c *fiber.Ctx) error {
 
 	message, err := h.chatUsecase.SendFileMessage(req.RoomID, senderID.Hex(), req.FileType, req.FileSize, req.FileURL)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(message, nil)
+	logger.Output(message, nil)
 	return c.JSON(message)
 }
 
 func (h *ChatHandler) FindChatMessages(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ChatHandler.FindChatMessages")
+	logger := utils.NewTraceLogger("ChatHandler.FindChatMessages")
 	roomID := c.Params("roomId")
 	limit, _ := strconv.Atoi(c.Query("limit", "50"))
 	offset, _ := strconv.Atoi(c.Query("offset", "0"))
 
-	logger.LogInput(map[string]interface{}{
+	logger.Input(map[string]interface{}{
 		"roomID": roomID,
 		"limit":  limit,
 		"offset": offset,
@@ -281,51 +281,51 @@ func (h *ChatHandler) FindChatMessages(c *fiber.Ctx) error {
 
 	messages, err := h.chatUsecase.FindChatMessages(roomID, limit, offset)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(messages, nil)
+	logger.Output(messages, nil)
 	return c.JSON(messages)
 }
 
 func (h *ChatHandler) MarkMessageRead(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ChatHandler.MarkMessageRead")
+	logger := utils.NewTraceLogger("ChatHandler.MarkMessageRead")
 	messageID := c.Params("messageId")
 
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogInput(map[string]interface{}{
+	logger.Input(map[string]interface{}{
 		"messageID": messageID,
 		"userID":    userID.Hex(),
 	})
 
 	if err := h.chatUsecase.MarkMessageRead(messageID, userID.Hex()); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output(nil, nil)
 	return c.SendStatus(fiber.StatusOK)
 }
 
 // User status handlers
 func (h *ChatHandler) UpdateUserStatus(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ChatHandler.UpdateUserStatus")
+	logger := utils.NewTraceLogger("ChatHandler.UpdateUserStatus")
 
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -336,83 +336,83 @@ func (h *ChatHandler) UpdateUserStatus(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
 
-	logger.LogInput(map[string]interface{}{
+	logger.Input(map[string]interface{}{
 		"userID":   userID.Hex(),
 		"isOnline": req.IsOnline,
 	})
 
 	if err := h.chatUsecase.UpdateUserOnlineStatus(userID.Hex(), req.IsOnline); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output(nil, nil)
 	return c.SendStatus(fiber.StatusOK)
 }
 
 func (h *ChatHandler) FindUserStatus(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ChatHandler.FindUserStatus")
+	logger := utils.NewTraceLogger("ChatHandler.FindUserStatus")
 	userID := c.Params("userId")
-	logger.LogInput(userID)
+	logger.Input(userID)
 
 	status, err := h.chatUsecase.FindUserOnlineStatus(userID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(status, nil)
+	logger.Output(status, nil)
 	return c.JSON(status)
 }
 
 // Notification handlers
 func (h *ChatHandler) FindUserNotifications(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ChatHandler.FindUserNotifications")
+	logger := utils.NewTraceLogger("ChatHandler.FindUserNotifications")
 
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogInput(userID.Hex())
+	logger.Input(userID.Hex())
 
 	notifications, err := h.chatUsecase.FindUserNotifications(userID.Hex())
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(notifications, nil)
+	logger.Output(notifications, nil)
 	return c.JSON(notifications)
 }
 
 func (h *ChatHandler) MarkNotificationRead(c *fiber.Ctx) error {
-	logger := utils.NewLogger("ChatHandler.MarkNotificationRead")
+	logger := utils.NewTraceLogger("ChatHandler.MarkNotificationRead")
 	notificationID := c.Params("notificationId")
-	logger.LogInput(notificationID)
+	logger.Input(notificationID)
 
 	if err := h.chatUsecase.MarkNotificationRead(notificationID); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output(nil, nil)
 	return c.SendStatus(fiber.StatusOK)
 }

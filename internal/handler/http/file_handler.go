@@ -14,8 +14,8 @@ type FileHandler struct {
 }
 
 func NewFileHandler(router fiber.Router, fileRepo domain.FileRepository) *FileHandler {
-	logger := utils.NewLogger("FileHandler.NewFileHandler")
-	logger.LogInput(map[string]interface{}{
+	logger := utils.NewTraceLogger("FileHandler.NewFileHandler")
+	logger.Input(map[string]interface{}{
 		"fileRepo": fileRepo,
 	})
 	handler := &FileHandler{
@@ -28,18 +28,18 @@ func NewFileHandler(router fiber.Router, fileRepo domain.FileRepository) *FileHa
 }
 
 func (h *FileHandler) Upload(c *fiber.Ctx) error {
-	logger := utils.NewLogger("FileHandler.Upload")
+	logger := utils.NewTraceLogger("FileHandler.Upload")
 
 	// Find file from request
 	file, err := c.FormFile("file")
 	if err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error getting file from request: %v", err))
+		logger.Output(nil, fmt.Errorf("error getting file from request: %v", err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "file is required",
 		})
 	}
 
-	logger.LogInput(map[string]interface{}{
+	logger.Input(map[string]interface{}{
 		"filename":    file.Filename,
 		"size":        file.Size,
 		"header":      file.Header,
@@ -50,7 +50,7 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 	contentType := file.Header.Find("Content-Type")
 	if !isValidFileType(contentType) {
 		err := fmt.Errorf("invalid file type: %s", contentType)
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -59,7 +59,7 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 	// Validate file size (max 10MB)
 	if file.Size > 10*1024*1024 {
 		err := fmt.Errorf("file size too large: %d bytes", file.Size)
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -68,7 +68,7 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 	// Open file
 	fileData, err := file.Open()
 	if err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error opening file: %v", err))
+		logger.Output(nil, fmt.Errorf("error opening file: %v", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "error opening file",
 		})
@@ -84,13 +84,13 @@ func (h *FileHandler) Upload(c *fiber.Ctx) error {
 	// Upload file
 	uploadedFile, err := h.fileRepo.Upload(fileModel, fileData)
 	if err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error uploading file: %v", err))
+		logger.Output(nil, fmt.Errorf("error uploading file: %v", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "error uploading file",
 		})
 	}
 
-	logger.LogOutput(map[string]interface{}{
+	logger.Output(map[string]interface{}{
 		"fileURL":  uploadedFile.FileURL,
 		"fileName": uploadedFile.FileName,
 	}, nil)

@@ -18,8 +18,17 @@ func (t *TraceLogger) Input(data interface{}) {
 	t.span.AddEvent(fmt.Sprintf("input # %s", ToJSONString(data)))
 }
 
-func (t *TraceLogger) Output(data interface{}) {
-	t.span.AddEvent(fmt.Sprintf("output # %s", ToJSONString(data)))
+func (t *TraceLogger) Output(data interface{}, err error) {
+	if err == nil {
+		t.span.AddEvent(fmt.Sprintf("output # %s", ToJSONString(data)))
+		return
+	}
+	mappedErr := map[string]interface{}{
+		"message": data,
+		"error":   err.Error(),
+	}
+	t.span.RecordError(err)
+	t.span.AddEvent(fmt.Sprintf("output Error # %s", ToJSONString(mappedErr)))
 }
 
 func (t *TraceLogger) Warn(data interface{}) {

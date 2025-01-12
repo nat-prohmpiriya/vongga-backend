@@ -64,7 +64,7 @@ func NewHub(chatUsecase domain.ChatUsecase) *Hub {
 }
 
 func (h *Hub) Run() {
-	logger := utils.NewLogger("Hub.Run")
+	logger := utils.NewTraceLogger("Hub.Run")
 
 	for {
 		select {
@@ -74,7 +74,7 @@ func (h *Hub) Run() {
 			h.UserMap[client.UserID] = client
 			h.Mutex.Unlock()
 
-			logger.LogOutput(map[string]interface{}{
+			logger.Output(map[string]interface{}{
 				"totalClients": len(h.Clients),
 				"status":       "registered",
 			}, nil)
@@ -88,13 +88,13 @@ func (h *Hub) Run() {
 				h.Mutex.Unlock()
 			}
 
-			logger.LogOutput(map[string]interface{}{
+			logger.Output(map[string]interface{}{
 				"totalClients": len(h.Clients),
 				"status":       "unregistered",
 			}, nil)
 
 		case message := <-h.Broadcast:
-			logger.LogInput(map[string]interface{}{
+			logger.Input(map[string]interface{}{
 				"messageSize": len(message),
 				"action":      "broadcast",
 			})
@@ -102,7 +102,7 @@ func (h *Hub) Run() {
 			for client := range h.Clients {
 				select {
 				case client.Send <- message:
-					logger.LogOutput(map[string]interface{}{
+					logger.Output(map[string]interface{}{
 						"clientID": client.ID,
 						"status":   "messageSent",
 					}, nil)
@@ -113,7 +113,7 @@ func (h *Hub) Run() {
 					close(client.Send)
 					h.Mutex.Unlock()
 
-					logger.LogOutput(map[string]interface{}{
+					logger.Output(map[string]interface{}{
 						"clientID": client.ID,
 						"status":   "clientRemoved",
 						"reason":   "sendFailed",
@@ -125,8 +125,8 @@ func (h *Hub) Run() {
 }
 
 func (h *Hub) BroadcastToRoom(roomID string, message interface{}) {
-	logger := utils.NewLogger("Hub.BroadcastToRoom")
-	logger.LogInput(map[string]interface{}{
+	logger := utils.NewTraceLogger("Hub.BroadcastToRoom")
+	logger.Input(map[string]interface{}{
 		"roomID":  roomID,
 		"message": message,
 	})
@@ -134,7 +134,7 @@ func (h *Hub) BroadcastToRoom(roomID string, message interface{}) {
 	// แปลง message เป็น JSON
 	messageBytes, err := json.Marshal(message)
 	if err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error marshaling message: %v", err))
+		logger.Output(nil, fmt.Errorf("error marshaling message: %v", err))
 		return
 	}
 
@@ -146,7 +146,7 @@ func (h *Hub) BroadcastToRoom(roomID string, message interface{}) {
 		if client.RoomIDs[roomID] {
 			select {
 			case client.Send <- messageBytes:
-				logger.LogOutput(map[string]interface{}{
+				logger.Output(map[string]interface{}{
 					"clientID": client.ID,
 					"status":   "messageSent",
 				}, nil)
@@ -161,8 +161,8 @@ func (h *Hub) BroadcastToRoom(roomID string, message interface{}) {
 }
 
 func (h *Hub) BroadcastUserStatus(userID string, status string) {
-	logger := utils.NewLogger("Hub.BroadcastUserStatus")
-	logger.LogInput(map[string]interface{}{
+	logger := utils.NewTraceLogger("Hub.BroadcastUserStatus")
+	logger.Input(map[string]interface{}{
 		"userID": userID,
 		"status": status,
 	})
@@ -176,7 +176,7 @@ func (h *Hub) BroadcastUserStatus(userID string, status string) {
 
 	msgBytes, err := json.Marshal(msg)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return
 	}
 
@@ -193,12 +193,12 @@ func (c *Client) JoinRoom(roomID string) {
 }
 
 func (c *Client) ReadPump() {
-	logger := utils.NewLogger("Client.ReadPump")
+	logger := utils.NewTraceLogger("Client.ReadPump")
 
 	// Recover from panic
 	defer func() {
 		if r := recover(); r != nil {
-			logger.LogOutput(nil, fmt.Errorf("panic recovered in ReadPump: %v", r))
+			logger.Output(nil, fmt.Errorf("panic recovered in ReadPump: %v", r))
 		}
 		logger.LogInfo("closing connection and unregistering client")
 		if c.Hub != nil {
@@ -211,14 +211,14 @@ func (c *Client) ReadPump() {
 
 	// Check if connection is valid
 	if c.Conn == nil {
-		logger.LogOutput(nil, fmt.Errorf("connection is nil"))
+		logger.Output(nil, fmt.Errorf("connection is nil"))
 		return
 	}
 
 	// ดึงข้อมูลห้องแชทที่ user เป็นสมาชิกและเพิ่มเข้าไปใน RoomIDs
 	rooms, err := c.Hub.ChatUsecase.FindRoomsByUserID(c.UserID)
 	if err != nil {
-		logger.LogOutput(nil, fmt.Errorf("error getting user rooms: %v", err))
+		logger.Output(nil, fmt.Errorf("error getting user rooms: %v", err))
 	} else {
 		for _, room := range rooms {
 			c.JoinRoom(room.ID.String())
@@ -236,9 +236,9 @@ func (c *Client) ReadPump() {
 		messageType, message, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				logger.LogOutput(nil, fmt.Errorf("unexpected close error: %v", err))
+				logger.Output(nil, fmt.Errorf("unexpected close error: %v", err))
 			} else {
-				logger.LogOutput(nil, fmt.Errorf("read error: %v", err))
+				logger.Output(nil, fmt.Errorf("read error: %v", err))
 			}
 			break
 		}
@@ -246,7 +246,7 @@ func (c *Client) ReadPump() {
 		// Handle ping message
 		if messageType == websocket.PingMessage {
 			if err := c.Conn.WriteMessage(websocket.PongMessage, nil); err != nil {
-				logger.LogOutput(nil, fmt.Errorf("error sending pong: %v", err))
+				logger.Output(nil, fmt.Errorf("error sending pong: %v", err))
 				return
 			}
 			continue
@@ -254,19 +254,19 @@ func (c *Client) ReadPump() {
 
 		// Handle text message
 		if messageType != websocket.TextMessage {
-			logger.LogOutput(nil, fmt.Errorf("unexpected message type: %v", messageType))
+			logger.Output(nil, fmt.Errorf("unexpected message type: %v", messageType))
 			continue
 		}
 
 		// Validate message is not empty
 		if len(message) == 0 {
-			logger.LogOutput(nil, fmt.Errorf("received empty message"))
+			logger.Output(nil, fmt.Errorf("received empty message"))
 			continue
 		}
 
 		var msg WebSocketMessage
 		if err := json.Unmarshal(message, &msg); err != nil {
-			logger.LogOutput(nil, fmt.Errorf("error unmarshaling message: %v", err))
+			logger.Output(nil, fmt.Errorf("error unmarshaling message: %v", err))
 			continue
 		}
 
@@ -278,13 +278,13 @@ func (c *Client) ReadPump() {
 			}
 			pongBytes, err := json.Marshal(pongMsg)
 			if err != nil {
-				logger.LogOutput(nil, fmt.Errorf("error marshaling pong message: %v", err))
+				logger.Output(nil, fmt.Errorf("error marshaling pong message: %v", err))
 				continue
 			}
 			select {
 			case c.Send <- pongBytes:
 			default:
-				logger.LogOutput(nil, fmt.Errorf("send channel full"))
+				logger.Output(nil, fmt.Errorf("send channel full"))
 				return
 			}
 			continue
@@ -296,7 +296,7 @@ func (c *Client) ReadPump() {
 		switch msg.Type {
 		case MessageTypeMessage:
 			if msg.RoomID == "" || msg.Content == "" {
-				logger.LogOutput(nil, fmt.Errorf("roomID and content are required for message type"))
+				logger.Output(nil, fmt.Errorf("roomID and content are required for message type"))
 				continue
 			}
 
@@ -308,7 +308,7 @@ func (c *Client) ReadPump() {
 				msg.Content,
 			)
 			if err != nil {
-				logger.LogOutput(nil, fmt.Errorf("error sending message: %v", err))
+				logger.Output(nil, fmt.Errorf("error sending message: %v", err))
 				continue
 			}
 
@@ -328,7 +328,7 @@ func (c *Client) ReadPump() {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
-						logger.LogOutput(nil, fmt.Errorf("panic recovered in broadcast: %v", r))
+						logger.Output(nil, fmt.Errorf("panic recovered in broadcast: %v", r))
 					}
 				}()
 				if c.Hub != nil {
@@ -338,7 +338,7 @@ func (c *Client) ReadPump() {
 
 		case MessageTypeTyping:
 			if msg.RoomID == "" {
-				logger.LogOutput(nil, fmt.Errorf("roomID is required for typing status"))
+				logger.Output(nil, fmt.Errorf("roomID is required for typing status"))
 				continue
 			}
 
@@ -353,7 +353,7 @@ func (c *Client) ReadPump() {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
-						logger.LogOutput(nil, fmt.Errorf("panic recovered in broadcast: %v", r))
+						logger.Output(nil, fmt.Errorf("panic recovered in broadcast: %v", r))
 					}
 				}()
 				if c.Hub != nil {
@@ -373,13 +373,13 @@ func (c *Client) ReadPump() {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
-						logger.LogOutput(nil, fmt.Errorf("panic recovered in broadcast: %v", r))
+						logger.Output(nil, fmt.Errorf("panic recovered in broadcast: %v", r))
 					}
 				}()
 				if c.Hub != nil {
 					statusBytes, err := json.Marshal(statusMsg)
 					if err != nil {
-						logger.LogOutput(nil, fmt.Errorf("error marshaling status message: %v", err))
+						logger.Output(nil, fmt.Errorf("error marshaling status message: %v", err))
 						return
 					}
 					c.Hub.Broadcast <- statusBytes
@@ -387,18 +387,18 @@ func (c *Client) ReadPump() {
 			}()
 
 		default:
-			logger.LogOutput(nil, fmt.Errorf("unknown message type: %s", msg.Type))
+			logger.Output(nil, fmt.Errorf("unknown message type: %s", msg.Type))
 		}
 	}
 }
 
 func (c *Client) WritePump() {
-	logger := utils.NewLogger("Client.WritePump")
+	logger := utils.NewTraceLogger("Client.WritePump")
 	ticker := time.NewTicker(30 * time.Second)
 
 	defer func() {
 		if r := recover(); r != nil {
-			logger.LogOutput(nil, fmt.Errorf("panic recovered in WritePump: %v", r))
+			logger.Output(nil, fmt.Errorf("panic recovered in WritePump: %v", r))
 		}
 		ticker.Stop()
 		if c.Conn != nil {
@@ -408,7 +408,7 @@ func (c *Client) WritePump() {
 
 	// Check if connection is valid
 	if c.Conn == nil {
-		logger.LogOutput(nil, fmt.Errorf("connection is nil"))
+		logger.Output(nil, fmt.Errorf("connection is nil"))
 		return
 	}
 
@@ -419,7 +419,7 @@ func (c *Client) WritePump() {
 				// Send channel was closed
 				if c.Conn != nil {
 					if err := c.Conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
-						logger.LogOutput(nil, fmt.Errorf("error sending close message: %v", err))
+						logger.Output(nil, fmt.Errorf("error sending close message: %v", err))
 					}
 				}
 				return
@@ -428,7 +428,7 @@ func (c *Client) WritePump() {
 			if c.Conn != nil {
 				c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 				if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
-					logger.LogOutput(nil, fmt.Errorf("error writing message: %v", err))
+					logger.Output(nil, fmt.Errorf("error writing message: %v", err))
 					return
 				}
 			}
@@ -437,7 +437,7 @@ func (c *Client) WritePump() {
 			if c.Conn != nil {
 				c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 				if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-					logger.LogOutput(nil, fmt.Errorf("error writing ping message: %v", err))
+					logger.Output(nil, fmt.Errorf("error writing ping message: %v", err))
 					return
 				}
 			}

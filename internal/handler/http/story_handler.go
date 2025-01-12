@@ -27,11 +27,11 @@ func NewStoryHandler(router fiber.Router, storyUseCase domain.StoryUseCase) *Sto
 }
 
 func (h *StoryHandler) CreateStory(c *fiber.Ctx) error {
-	logger := utils.NewLogger("StoryHandler.CreateStory")
+	logger := utils.NewTraceLogger("StoryHandler.CreateStory")
 
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
@@ -47,7 +47,7 @@ func (h *StoryHandler) CreateStory(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&req); err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
@@ -78,26 +78,26 @@ func (h *StoryHandler) CreateStory(c *fiber.Ctx) error {
 		Location: req.Location,
 	}
 
-	logger.LogInput(story)
+	logger.Input(story)
 	err = h.storyUseCase.CreateStory(story)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(story, nil)
+	logger.Output(story, nil)
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"story": story,
 	})
 }
 
 func (h *StoryHandler) FindStoryByID(c *fiber.Ctx) error {
-	logger := utils.NewLogger("StoryHandler.FindStoryByID")
+	logger := utils.NewTraceLogger("StoryHandler.FindStoryByID")
 
 	storyID := c.Params("storyId")
-	logger.LogInput(storyID)
+	logger.Input(storyID)
 
 	if utils.IsUndefined(storyID) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -107,62 +107,62 @@ func (h *StoryHandler) FindStoryByID(c *fiber.Ctx) error {
 
 	story, err := h.storyUseCase.FindStoryByID(storyID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(story, nil)
+	logger.Output(story, nil)
 	return c.JSON(fiber.Map{
 		"story": story,
 	})
 }
 
 func (h *StoryHandler) FindUserStories(c *fiber.Ctx) error {
-	logger := utils.NewLogger("StoryHandler.FindUserStories")
+	logger := utils.NewTraceLogger("StoryHandler.FindUserStories")
 
 	userID := c.Params("userId")
-	logger.LogInput(userID)
+	logger.Input(userID)
 
 	stories, err := h.storyUseCase.FindUserStories(userID)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(stories, nil)
+	logger.Output(stories, nil)
 	return c.JSON(fiber.Map{
 		"stories": stories,
 	})
 }
 
 func (h *StoryHandler) FindActiveStories(c *fiber.Ctx) error {
-	logger := utils.NewLogger("StoryHandler.FindActiveStories")
+	logger := utils.NewTraceLogger("StoryHandler.FindActiveStories")
 
 	stories, err := h.storyUseCase.FindActiveStories()
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(stories, nil)
+	logger.Output(stories, nil)
 	return c.JSON(fiber.Map{
 		"stories": stories,
 	})
 }
 
 func (h *StoryHandler) ViewStory(c *fiber.Ctx) error {
-	logger := utils.NewLogger("StoryHandler.ViewStory")
+	logger := utils.NewTraceLogger("StoryHandler.ViewStory")
 
 	storyID := c.Params("storyId")
 	viewerID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
@@ -172,27 +172,27 @@ func (h *StoryHandler) ViewStory(c *fiber.Ctx) error {
 		"storyId":  storyID,
 		"viewerId": viewerID,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	err = h.storyUseCase.ViewStory(storyID, viewerID.Hex())
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output(nil, nil)
 	return c.SendStatus(fiber.StatusOK)
 }
 
 func (h *StoryHandler) DeleteStory(c *fiber.Ctx) error {
-	logger := utils.NewLogger("StoryHandler.DeleteStory")
+	logger := utils.NewTraceLogger("StoryHandler.DeleteStory")
 
 	storyID := c.Params("storyId")
 	userID, err := utils.FindUserIDFromContext(c)
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
@@ -202,16 +202,16 @@ func (h *StoryHandler) DeleteStory(c *fiber.Ctx) error {
 		"storyId": storyID,
 		"userId":  userID,
 	}
-	logger.LogInput(input)
+	logger.Input(input)
 
 	err = h.storyUseCase.DeleteStory(storyID, userID.Hex())
 	if err != nil {
-		logger.LogOutput(nil, err)
+		logger.Output(nil, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	logger.LogOutput(nil, nil)
+	logger.Output(nil, nil)
 	return c.SendStatus(fiber.StatusOK)
 }
