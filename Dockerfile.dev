@@ -26,9 +26,9 @@ RUN mkdir -p tmp
 RUN chmod +x $(go env GOPATH)/bin/air
 
 # เปลี่ยน working directory ไปที่ cmd
-WORKDIR /app/cmd
 
 EXPOSE 4000
 
 # รัน air เพื่อ hot-reload
-CMD ["sh", "-c", "air"]
+CMD ["air", "-c", ".air.toml"]
+

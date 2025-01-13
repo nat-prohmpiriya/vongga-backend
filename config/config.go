@@ -31,14 +31,19 @@ type Config struct {
 	JWTExpiryHours     int
 	RefreshTokenSecret string
 	RefreshTokenExpiry int // in days
+
+	// App
+	AppEnv string
 }
 
 func LoadConfig() *Config {
-	// Try to load .env file, but don't error if it doesn't exist
-	// This allows us to use environment variables from docker --env-file
 	if err := godotenv.Load(); err != nil {
-		log.Printf("Note: .env")
+		log.Printf("No .env in current directory, trying ../.env")
+		if err := godotenv.Load("../.env"); err != nil {
+			log.Printf("Could not load .env from either location")
+		}
 	}
+	log.Printf("Loading configuration...")
 
 	config := &Config{
 		ServerAddress:           getEnv("SERVER_ADDRESS", ":8080"),
@@ -46,12 +51,13 @@ func LoadConfig() *Config {
 		MongoDB:                 getEnv("MONGO_DB", "vongga"),
 		RedisURI:                getEnv("REDIS_URI", "localhost:6379"),
 		RedisPassword:           getEnv("REDIS_PASSWORD", ""),
-		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", ""),
+		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", "/app/config/firebase-credentials.json"),
 		FirebaseStorageBucket:   getEnv("FIREBASE_STORAGE_BUCKET", ""),
 		JWTSecret:               getEnv("JWT_SECRET", "your-secret-key"),
 		JWTExpiryHours:          24,
-		RefreshTokenSecret:      getEnv("REFRESH_TOKEN_SECRET", "your-refresh-secret-key"),
+		RefreshTokenSecret:      getEnv("REFRESH_TOKEN_SECRET", ""),
 		RefreshTokenExpiry:      7,
+		AppEnv:                  getEnv("APP_ENV", "development"),
 	}
 
 	// Log loaded configuration (mask sensitive values)

@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -9,12 +10,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+
+	"vongga_api/config"
 )
 
-func TraceProvider() (*sdktrace.TracerProvider, error) {
+func TraceProvider(config *config.Config) (*sdktrace.TracerProvider, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	// Create OTLP exporter
-	exporter, err := otlptracegrpc.New(context.Background(),
-		otlptracegrpc.WithEndpoint("otelc-1:4317"),
+	exporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithEndpoint("otelc:4317"),
 		otlptracegrpc.WithInsecure(),
 	)
 	if err != nil {
@@ -22,10 +27,10 @@ func TraceProvider() (*sdktrace.TracerProvider, error) {
 	}
 
 	// Create resource
-	res, err := resource.New(context.Background(),
+	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String("todo-service"),
-			semconv.ServiceVersionKey.String("1.0.0"),
+			semconv.ServiceNameKey.String("vongga_api-"+config.AppEnv),
+			semconv.ServiceVersionKey.String("0.1.0"),
 		),
 	)
 	if err != nil {

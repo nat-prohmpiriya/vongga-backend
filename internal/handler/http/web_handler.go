@@ -19,14 +19,14 @@ func NewWebHandler(router fiber.Router) *WebHandler {
 	return handler
 }
 
-func (w *WebHandler) Logs(c *fiber.Ctx) error {
-	return c.SendFile("./web/viewlog.html")
+func (w *WebHandler) Home(c *fiber.Ctx) error {
+	return c.SendFile("web/home.html")
 }
 
-func (w *WebHandler) Home(c *fiber.Ctx) error {
-	return c.SendFile("./web/home.html")
+func (w *WebHandler) Logs(c *fiber.Ctx) error {
+	return c.SendFile("web/viewlog.html")
 }
 
 func (w *WebHandler) WebSocket(c *fiber.Ctx) error {
-	return c.SendFile("./web/websocket.html")
+	return c.SendFile("web/websocket.html")
 }

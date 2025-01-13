@@ -16,8 +16,8 @@ services:
     environment:
       - env_file=.env
     volumes:
-      - ./config/firebase-credentials.json:/app/firebase-credentials.json:ro
-      - ./:/app
+      - ./config/firebase-credentials.json:/app/config/firebase-credentials.json:ro
+      - ./:/app:delegated
     networks:
       - vongga-network
 
@@ -58,4 +58,3 @@ services:
       - ./data/jaeger:/badger/data
       - ./data/jaeger-key:/badger/key
     user: "1000:1000"
-

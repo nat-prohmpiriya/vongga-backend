@@ -1,20 +1,18 @@
 #!/bin/bash
 
-# docker-compose -f ./docker-compose.dev.yml down 
-# # countedown 3 seconds
-# for i in $(seq 3 -1 1); do
-#     echo -n "$i ..."
-#     sleep 1
-# done
-# # run docker compose
-# docker-compose -f ./docker-compose.dev.yml up
+docker-compose -f ./docker-compose.dev.yml down 
+# countedown 3 seconds
+for i in $(seq 3 -1 1); do
+    echo -n "$i ..."
+    sleep 1
+done
+# run docker compose
+docker-compose -f docker-compose.dev.yml up --build --force-recreate
 
 # docker-compose -f ./docker-compose.dev.yml  down backend
 
-air -c ./air.toml
+# air -c ./.air.toml
 
-# run air
-# air -c ./air.toml
 
 #!/bin/bash
 

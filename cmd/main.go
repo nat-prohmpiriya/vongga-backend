@@ -4,12 +4,13 @@ import (
 	"log"
 	"time"
 
+	"context"
+
 	"vongga_api/config"
-	"vongga_api/internal/adapter/mongodb"
-	"vongga_api/internal/adapter/otel"
-	"vongga_api/internal/adapter/redis"
+	"vongga_api/internal/adapter"
 	handler "vongga_api/internal/handler/http"
 	"vongga_api/internal/handler/websocket"
+	"vongga_api/internal/middleware"
 	"vongga_api/internal/repository"
 	"vongga_api/internal/usecase"
 	"vongga_api/utils"
@@ -27,19 +28,34 @@ func main() {
 	cfg := config.LoadConfig()
 
 	// Connect External Service
-	db, err := mongodb.NewMongoDBClient(cfg)
+	db, err := adapter.NewMongoDBClient(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	redisClient, err := redis.NewRedisClient(cfg)
+	redisClient, err := adapter.NewRedisClient(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	authClient, err := firebase.NewFirebaseClient(cfg)
+	firebaseClient, err := adapter.NewFirebaseProvider(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	tracer, systemAuthAdapter := otel.NewTracer(cfg)
+	firebaseAuthClient, err := firebaseClient.Auth(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	tp, err := adapter.TraceProvider(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		err := tp.Shutdown(context.Background())
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+	tracer := tp.Tracer("vongga_api")
+	defer tracer.Start(context.Background(), "main")
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db, redisClient, tracer)
@@ -64,7 +80,7 @@ func main() {
 	storyUseCase := usecase.NewStoryUseCase(storyRepo, userRepo, tracer)
 	authUseCase := usecase.NewAuthUseCase(
 		userRepo,
-		authClient,
+		firebaseAuthClient,
 		redisClient,
 		cfg.JWTSecret,
 		cfg.RefreshTokenSecret,
@@ -127,8 +143,10 @@ func main() {
 	// Routes
 	api := app.Group("/api")
 
-	// WebSocket endpoint (outside protected routes)
-	websocket.NewWebSocketHandler(api, chatUseCase, systemAuthAdapter, tracer)
+	wsHandler := websocket.NewWebSocketHandler()
+	wsGroup := api.Group("/ws")
+	// wsGroup.Use(middleware.WebsocketAuthMiddleware(authUseCase, tracer))
+	wsHandler.RegisterRoutes(wsGroup)
 
 	// Public auth routes
 	auth := api.Group("/auth")
@@ -138,7 +156,7 @@ func main() {
 	auth.Post("/createTestToken", handler.NewAuthHandler(authUseCase, tracer).CreateTestToken)
 
 	// Protected routes
-	protectedApi := api.Group("", middleware.AuthMiddleware(cfg.JWTSecret, tracer))
+	protectedApi := api.Group("", middleware.HttpAuthMiddleware(authUseCase, tracer))
 
 	// Create route groups
 	users := protectedApi.Group("/users")
