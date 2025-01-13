@@ -49,6 +49,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	scClient, err := adapter.NewCloudflareAdapter(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer func() {
 		err := tp.Shutdown(context.Background())
 		if err != nil {
@@ -69,10 +73,7 @@ func main() {
 	subPostRepo := repository.NewSubPostRepository(db, redisClient, tracer)
 	storyRepo := repository.NewStoryRepository(db, redisClient, tracer)
 	chatRepo := repository.NewChatRepository(db, tracer)
-	fileRepo, err := repository.NewFileStorage(cfg.FirebaseCredentialsPath, cfg.FirebaseStorageBucket, tracer)
-	if err != nil {
-		log.Fatal(err)
-	}
+	fileRepo := repository.NewFileRepository(db, scClient, cfg.R2BucketName, cfg.R2CustomDomain, tracer)
 
 	// Initialize use cases
 	userUseCase := usecase.NewUserUseCase(userRepo, tracer)
@@ -95,6 +96,7 @@ func main() {
 	reactionUseCase := usecase.NewReactionUseCase(reactionRepo, postRepo, commentRepo, notificationUseCase, tracer)
 	subPostUseCase := usecase.NewSubPostUseCase(subPostRepo, postRepo, tracer)
 	chatUseCase := usecase.NewChatUsecase(chatRepo, userRepo, notificationUseCase, tracer)
+	fileUsecase := usecase.NewFileUseCase(fileRepo, tracer)
 
 	// Initialize Fiber app with performance configurations
 	app := fiber.New(fiber.Config{
@@ -171,6 +173,7 @@ func main() {
 	stories := protectedApi.Group("/stories")
 	chats := protectedApi.Group("/chat")
 	jaeger := protectedApi.Group("/jaeger")
+	files := protectedApi.Group("/files")
 
 	// Initialize handlers with their respective route groups
 	handler.NewUserHandler(users, userUseCase, tracer)
@@ -182,7 +185,7 @@ func main() {
 	handler.NewReactionHandler(reactions, reactionUseCase, tracer)
 	handler.NewNotificationHandler(notifications, notificationUseCase, tracer)
 	handler.NewStoryHandler(stories, storyUseCase, tracer)
-	handler.NewFileHandler(protectedApi, fileRepo, tracer)
+	handler.NewFileHandler(files, fileUsecase, tracer)
 	handler.NewChatHandler(chats, chatUseCase, tracer)
 	handler.NewJeagerHandler(jaeger)
 

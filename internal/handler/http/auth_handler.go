@@ -44,7 +44,7 @@ func (h *AuthHandler) CreateTestToken(c *fiber.Ctx) error {
 	}
 
 	logger.Input(req)
-	tokenPair, err := h.authUseCase.CreateTestToken(ctx, req.UserID)
+	user, tokenPair, err := h.authUseCase.CreateTestToken(ctx, req.UserID)
 	if err != nil {
 		logger.Output("error creating test token 2", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -52,8 +52,14 @@ func (h *AuthHandler) CreateTestToken(c *fiber.Ctx) error {
 		})
 	}
 
-	logger.Output(tokenPair, nil)
-	return c.JSON(tokenPair)
+	response := LoginResponse{
+		User:         user,
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
+	}
+
+	logger.Output(response, nil)
+	return c.JSON(response)
 }
 
 // VerifyTokenFirebase verifies Firebase ID token and returns user data with JWT tokens

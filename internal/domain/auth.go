@@ -12,14 +12,16 @@ type TokenPair struct {
 }
 
 type Claims struct {
-	UserID string `json:"userId"`
+	UserID   string `json:"sub"`      // MongoDB ObjectID
+	Role     string `json:"role"`     // "user", "admin"
+	Provider string `json:"provider"` // "firebase", "local"
 	jwt.RegisteredClaims
 }
 
 type AuthUseCase interface {
 	VerifyToken(ctx context.Context, token string) (*Claims, error)
 	VerifyTokenFirebase(ctx context.Context, firebaseToken string) (*User, *TokenPair, error)
+	CreateTestToken(ctx context.Context, userID string) (*User, *TokenPair, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error)
 	RevokeRefreshToken(ctx context.Context, refreshToken string) error
-	CreateTestToken(ctx context.Context, userID string) (*TokenPair, error)
 }

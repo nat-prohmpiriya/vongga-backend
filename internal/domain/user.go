@@ -40,7 +40,7 @@ type User struct {
 	FollowersCount int           `bson:"followersCount" json:"followersCount"`
 	FollowingCount int           `bson:"followingCount" json:"followingCount"`
 	FriendsCount   int           `bson:"friendsCount" json:"friendsCount"`
-	Provider       AuthProvider  `bson:"provider" json:"provider"`
+	Provider       AuthProvider  `bson:"provider" json:"provider"` // "google", "apple", "email"
 	EmailVerified  bool          `bson:"emailVerified" json:"emailVerified"`
 	DateOfBirth    time.Time     `bson:"dateOfBirth" json:"dateOfBirth"`
 	Gender         string        `bson:"gender" json:"gender"`
@@ -56,6 +56,7 @@ type User struct {
 	IsActive       bool          `bson:"isActive" json:"isActive"`
 	PhoneNumber    string        `bson:"phoneNumber,omitempty" json:"phoneNumber,omitempty"`
 	Live           Live          `bson:"live" json:"live"`
+	Role           string        `bson:"role" json:"role"` // "user", "admin"
 }
 
 type Live struct {

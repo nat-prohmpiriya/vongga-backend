@@ -32,6 +32,14 @@ type Config struct {
 	RefreshTokenSecret string
 	RefreshTokenExpiry int // in days
 
+	// Cloudflare
+	R2AccountID    string
+	R2AccessKeyID  string
+	R2SecretKey    string
+	R2BucketName   string
+	R2CustomDomain string
+	R2URLSpecial   string
+
 	// App
 	AppEnv  string
 	AppMode string
@@ -60,6 +68,12 @@ func LoadConfig() *Config {
 		RefreshTokenExpiry:      7,
 		AppEnv:                  getEnv("APP_ENV", "development"),
 		AppMode:                 getEnv("APP_MODE", "dev"),
+		R2AccountID:             getEnv("R2_ACCOUNT_ID", ""),
+		R2AccessKeyID:           getEnv("R2_ACCESS_KEY_ID", ""),
+		R2SecretKey:             getEnv("R2_SECRET_KEY", ""),
+		R2BucketName:            getEnv("R2_BUCKET_NAME", ""),
+		R2CustomDomain:          getEnv("R2_CUSTOM_DOMAIN", ""),
+		R2URLSpecial:            getEnv("R2_URL_SPECIAL", ""),
 	}
 
 	// Log loaded configuration (mask sensitive values)

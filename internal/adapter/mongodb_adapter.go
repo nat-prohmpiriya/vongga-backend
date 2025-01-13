@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"log"
 	"vongga_api/config"
 )
 
@@ -25,6 +26,6 @@ func NewMongoDBClient(config *config.Config) (*mongo.Database, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	log.Print("Connected to MongoDB")
 	return client.Database(config.MongoDB), nil
 }

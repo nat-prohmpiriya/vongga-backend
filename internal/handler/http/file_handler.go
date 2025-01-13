@@ -1,114 +1,162 @@
+// internal/handler/file_handler.go
 package handler
 
 import (
 	"fmt"
 
-	"vongga_api/internal/domain"
-	"vongga_api/utils"
-
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/trace"
+
+	"vongga_api/internal/domain"
+	"vongga_api/utils"
 )
 
-type FileHandler struct {
-	fileRepo domain.FileRepository
-	tracer   trace.Tracer
+type fileHandler struct {
+	useCase domain.FileUseCase
+	tracer  trace.Tracer
 }
 
-func NewFileHandler(router fiber.Router, fileRepo domain.FileRepository, tracer trace.Tracer) *FileHandler {
-	handler := &FileHandler{
-		fileRepo: fileRepo,
-		tracer:   tracer,
+func NewFileHandler(router fiber.Router, useCase domain.FileUseCase, tracer trace.Tracer) *fileHandler {
+
+	handler := &fileHandler{
+		useCase: useCase,
+		tracer:  tracer,
 	}
 
 	router.Post("/upload", handler.Upload)
+	router.Delete("/:id", handler.Delete)
+	router.Get("/:id", handler.GetByID)
+	router.Get("/user", handler.GetByUserID)
 
 	return handler
 }
 
-func (h *FileHandler) Upload(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FileHandler.Upload")
+func (h *fileHandler) Upload(c *fiber.Ctx) error {
+	ctx, span := h.tracer.Start(c.Context(), "FileHandler.Upload")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
-	// Find file from request
+	// 1. Get user ID from context
+	userID := c.Locals("userId").(string)
+
+	// 2. Get file from request
 	file, err := c.FormFile("file")
 	if err != nil {
-		logger.Output("error getting file from request", fmt.Errorf("error getting file from request: %v", err))
+		logger.Output("failed to get file from request", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "file is required",
+			"error": fmt.Sprintf("failed to get file: %v", err),
 		})
 	}
 
-	logger.Input(map[string]interface{}{
-		"filename":    file.Filename,
-		"size":        file.Size,
-		"header":      file.Header,
-		"contentType": file.Header.Get("Content-Type"),
-	})
-
-	// Validate file type
-	contentType := file.Header.Get("Content-Type")
-	if !isValidFileType(contentType) {
-		err := fmt.Errorf("invalid file type: %s", contentType)
-		logger.Output("error invalid file type", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	// Validate file size (max 10MB)
-	if file.Size > 10*1024*1024 {
-		err := fmt.Errorf("file size too large: %d bytes", file.Size)
-		logger.Output("error file size too large", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	// Open file
-	fileData, err := file.Open()
+	// 3. Open file
+	fileContent, err := file.Open()
 	if err != nil {
-		logger.Output("error opening file", fmt.Errorf("error opening file: %v", err))
+		logger.Output("failed to open file", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "error opening file",
+			"error": fmt.Sprintf("failed to open file: %v", err),
 		})
 	}
-	defer fileData.Close()
+	defer fileContent.Close()
 
-	// Create file model
-	fileModel := &domain.File{
-		FileName:    file.Filename,
-		ContentType: contentType,
-	}
-
-	// Upload file
-	uploadedFile, err := h.fileRepo.Upload(ctx, fileModel, fileData)
+	// 4. Upload file
+	uploadedFile, err := h.useCase.Upload(ctx, userID, fileContent, file.Filename, file.Size, file.Header.Get("Content-Type"))
 	if err != nil {
-		logger.Output(nil, fmt.Errorf("error uploading file: %v", err))
+		logger.Output("failed to upload file", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "error uploading file",
+			"error": fmt.Sprintf("failed to upload file: %v", err),
 		})
 	}
 
 	logger.Output(map[string]interface{}{
-		"fileURL":  uploadedFile.FileURL,
-		"fileName": uploadedFile.FileName,
+		"message": "file uploaded successfully",
+		"file":    uploadedFile,
 	}, nil)
 
-	return c.JSON(fiber.Map{
-		"url":      uploadedFile.FileURL,
-		"fileName": uploadedFile.FileName,
-	})
+	return c.Status(fiber.StatusCreated).JSON(uploadedFile)
 }
 
-func isValidFileType(contentType string) bool {
-	validTypes := map[string]bool{
-		"image/jpeg": true,
-		"image/png":  true,
-		"image/gif":  true,
-		"image/webp": true,
+func (h *fileHandler) Delete(c *fiber.Ctx) error {
+	ctx, span := h.tracer.Start(c.Context(), "FileHandler.Delete")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
+	// 1. Get user ID from context
+	userID := c.Locals("userId").(string)
+
+	// 2. Get file ID from params
+	fileID := c.Params("id")
+	if fileID == "" {
+		logger.Output("missing file id", nil)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "missing file id",
+		})
 	}
 
-	return validTypes[contentType]
+	// 3. Delete file
+	err := h.useCase.Delete(ctx, userID, fileID)
+	if err != nil {
+		logger.Output("failed to delete file", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Sprintf("failed to delete file: %v", err),
+		})
+	}
+
+	logger.Output("file deleted successfully", nil)
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func (h *fileHandler) GetByID(c *fiber.Ctx) error {
+	ctx, span := h.tracer.Start(c.Context(), "FileHandler.GetByID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
+	// 1. Get file ID from params
+	fileID := c.Params("id")
+	if fileID == "" {
+		logger.Output("missing file id", nil)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "missing file id",
+		})
+	}
+
+	// 2. Get file
+	file, err := h.useCase.GetByID(ctx, fileID)
+	if err != nil {
+		logger.Output("failed to get file", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Sprintf("failed to get file: %v", err),
+		})
+	}
+
+	logger.Output(map[string]interface{}{
+		"message": "file found",
+		"file":    file,
+	}, nil)
+
+	return c.JSON(file)
+}
+
+func (h *fileHandler) GetByUserID(c *fiber.Ctx) error {
+	ctx, span := h.tracer.Start(c.Context(), "FileHandler.GetByUserID")
+	defer span.End()
+	logger := utils.NewTraceLogger(span)
+
+	// 1. Get user ID from context
+	userID := c.Locals("userId").(string)
+
+	// 2. Get files
+	files, err := h.useCase.GetByUserID(ctx, userID)
+	if err != nil {
+		logger.Output("failed to get files", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Sprintf("failed to get files: %v", err),
+		})
+	}
+
+	logger.Output(map[string]interface{}{
+		"message": "files found",
+		"count":   len(files),
+	}, nil)
+
+	return c.JSON(files)
 }

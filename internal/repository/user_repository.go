@@ -227,23 +227,23 @@ func (r *userRepository) FindByID(ctx context.Context, id string) (*domain.User,
 	}
 
 	// Try to get from Redis first
-	key := fmt.Sprintf("user:id:%s", id)
-	userJSON, err := r.rdb.Get(ctx, key).Result()
-	if err == nil {
-		// Found in Redis
-		var user domain.User
-		err = json.Unmarshal([]byte(userJSON), &user)
-		if err != nil {
-			logger.Output("redis unmarshal 2", err)
-			return nil, err
-		}
-		logger.Output(&user, nil)
-		return &user, nil
-	} else if err != redis.Nil {
-		// Redis error
-		logger.Output("redis error 3", err)
-		return nil, err
-	}
+	// key := fmt.Sprintf("user:id:%s", id)
+	// userJSON, err := r.rdb.Get(ctx, key).Result()
+	// if err == nil {
+	// 	// Found in Redis
+	// 	var user domain.User
+	// 	err = json.Unmarshal([]byte(userJSON), &user)
+	// 	if err != nil {
+	// 		logger.Output("redis unmarshal 2", err)
+	// 		return nil, err
+	// 	}
+	// 	logger.Output(&user, nil)
+	// 	return &user, nil
+	// } else if err != redis.Nil {
+	// 	// Redis error
+	// 	logger.Output("redis error 3", err)
+	// 	return nil, err
+	// }
 
 	// Not found in Redis, get from MongoDB
 	var user domain.User
@@ -258,17 +258,17 @@ func (r *userRepository) FindByID(ctx context.Context, id string) (*domain.User,
 	}
 
 	// Cache in Redis for 24 hours
-	userBytes, err := json.Marshal(user)
-	if err != nil {
-		logger.Error(err)
-		return nil, err
-	}
+	// userBytes, err := json.Marshal(user)
+	// if err != nil {
+	// 	logger.Error(err)
+	// 	return nil, err
+	// }
 
-	err = r.rdb.Set(ctx, key, string(userBytes), 24*time.Hour).Err()
-	if err != nil {
-		// Log Redis error but don't return it since we have the data
-		logger.Error(err)
-	}
+	// err = r.rdb.Set(ctx, key, string(userBytes), 24*time.Hour).Err()
+	// if err != nil {
+	// 	// Log Redis error but don't return it since we have the data
+	// 	logger.Error(err)
+	// }
 
 	logger.Output(&user, nil)
 	return &user, nil

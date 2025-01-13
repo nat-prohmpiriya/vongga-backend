@@ -19,7 +19,7 @@ func HttpAuthMiddleware(authUseCase domain.AuthUseCase, tracer trace.Tracer) fib
 		// 1. ตรวจสอบ header
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
-			logger.Output("missing authorization header", nil)
+			logger.Output("missing authorization header 1", nil)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "unauthorized",
 			})
@@ -27,7 +27,7 @@ func HttpAuthMiddleware(authUseCase domain.AuthUseCase, tracer trace.Tracer) fib
 
 		// 2. แยก token
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			logger.Output("invalid token format", nil)
+			logger.Output("invalid token format 2", nil)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token format",
 			})
@@ -37,7 +37,7 @@ func HttpAuthMiddleware(authUseCase domain.AuthUseCase, tracer trace.Tracer) fib
 		// 3. verify token
 		claims, err := authUseCase.VerifyToken(ctx, tokenString)
 		if err != nil {
-			logger.Output("invalid token", err)
+			logger.Output("invalid token 3", err)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid token",
 			})
