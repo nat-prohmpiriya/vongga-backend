@@ -19,18 +19,9 @@
 
 <body class="">
     <div id="app">
-        <div v-if="isLoggedIn">
-            <div class="alert alert-success d-flex justify-content-center" role="alert">
-                You are logged in
-            </div>
-            <div class="d-flex justify-content-center align-items-cente gap-3">
-                <a href="/api/web/logs">Go to Logs</a>
-                <a href="/api/web/socket">Go to Web Socket</a>
-                <button class="btn btn-danger" @click="refreshToken = ''">Logout</button>
-            </div>
-        </div>
+
         <div class="d-flex justify-content-center align-items-center " style="height: 100vh;">
-            <form>
+            <form v-if="!isLoggedIn">
                 <div class="form-group" style="width: 300px;">
                     <label for="exampleInputEmail1">ID</label>
                     <input type="text" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp"
@@ -41,6 +32,17 @@
                         @click.prevent="submit">Submit</button>
                 </div>
             </form>
+
+            <div v-else style="width: 300px;">
+                <div class="d-flex justify-content-center align-items-center alert alert-success" role="alert">
+                    You are logged in
+                </div>
+                <div class="d-flex flex-column justify-content-center align-items-cente gap-3">
+                    <a href="/api/web/logs"><button class="btn btn-primary w-100">Go to Logs</button></a>
+                    <a href="/api/web/socket"><button class="btn btn-primary w-100">Go to Web Socket</button></a>
+                    <button class="btn btn-light" style="margin-top: 50vh;" @click="refreshToken = ''">Logout</button>
+                </div>
+            </div>
         </div>
     </div>
 </body>

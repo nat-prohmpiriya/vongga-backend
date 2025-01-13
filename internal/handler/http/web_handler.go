@@ -11,7 +11,7 @@ func NewWebHandler(router fiber.Router) *WebHandler {
 	handler := &WebHandler{}
 
 	router.Get("", handler.Home)
-	router.Get("/", handler.Home)
+	router.Get("", handler.Home)
 	router.Get("/login", handler.Home)
 	router.Get("/logs", handler.Logs)
 	router.Get("/socket", handler.WebSocket)

@@ -15,9 +15,10 @@ services:
       - "4000:4000"
     environment:
       - env_file=.env
+      - APP_MODE=dev
     volumes:
       - ./config/firebase-credentials.json:/app/config/firebase-credentials.json:ro
-      - ./:/app:delegated
+      - ./:/app
     networks:
       - vongga-network
 

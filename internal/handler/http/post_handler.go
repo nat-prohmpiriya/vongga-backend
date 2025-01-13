@@ -22,8 +22,8 @@ func NewPostHandler(router fiber.Router, pu domain.PostUseCase, tracer trace.Tra
 		tracer:      tracer,
 	}
 
-	router.Post("/", handler.CreatePost)
-	router.Get("/", handler.FindManyPosts)
+	router.Post("", handler.CreatePost)
+	router.Get("", handler.FindManyPosts)
 	router.Get("/:id", handler.FindPost)
 	router.Put("/:id", handler.UpdatePost)
 	router.Delete("/:id", handler.DeletePost)

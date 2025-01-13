@@ -16,6 +16,7 @@ import (
 	"vongga_api/utils"
 
 	// เพิ่มตรงนี้
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -107,10 +108,12 @@ func main() {
 
 	// CORS
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",                                           // อนุญาตทุก origin
-		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",                 // HTTP methods ที่อนุญาต
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization", // headers ที่อนุญาต
-		MaxAge:       3600,                                          // browser จะ cache CORS response นานเท่าไร
+		AllowOrigins:     "http://localhost:4001, https://dev.dacbok.com, https://dacbok.com", // ต้องระบุ origin ชัดเจนเมื่อใช้ credentials
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowCredentials: true,
+		ExposeHeaders:    "Content-Length, Authorization",
+		MaxAge:           3600,
 	}))
 
 	// Add compression middleware
@@ -131,8 +134,7 @@ func main() {
 	// Health check - public endpoint
 	app.Get("/api", handler.NewHealthHandler(db, redisClient).Health)
 	webGroup := app.Group("api/web")
-	jaeger := app.Group("/jaeger")
-	handler.NewJeagerHandler(jaeger)
+
 	handler.NewWebHandler(webGroup)
 	// Health check - Ping
 	app.Get("/api/ping", handler.NewHealthHandler(db, redisClient).Ping)
@@ -168,6 +170,7 @@ func main() {
 	notifications := protectedApi.Group("/notifications")
 	stories := protectedApi.Group("/stories")
 	chats := protectedApi.Group("/chat")
+	jaeger := protectedApi.Group("/jaeger")
 
 	// Initialize handlers with their respective route groups
 	handler.NewUserHandler(users, userUseCase, tracer)
@@ -181,6 +184,7 @@ func main() {
 	handler.NewStoryHandler(stories, storyUseCase, tracer)
 	handler.NewFileHandler(protectedApi, fileRepo, tracer)
 	handler.NewChatHandler(chats, chatUseCase, tracer)
+	handler.NewJeagerHandler(jaeger)
 
 	// Start server
 	log.Fatal(app.Listen(cfg.ServerAddress))

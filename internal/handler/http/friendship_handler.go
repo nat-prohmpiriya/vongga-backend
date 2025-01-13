@@ -26,7 +26,7 @@ func NewFriendshipHandler(router fiber.Router, fu domain.FriendshipUseCase, trac
 	router.Post("/accept/:userId", handler.AcceptFriendRequest)
 	router.Post("/reject/:userId", handler.RejectFriendRequest)
 	router.Delete("/:userId", handler.RemoveFriend)
-	router.Get("/", handler.FindManyFriends)
+	router.Get("", handler.FindManyFriends)
 	router.Get("/requests", handler.FindManyFriendRequests)
 
 	return handler

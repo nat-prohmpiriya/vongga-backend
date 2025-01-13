@@ -20,7 +20,7 @@ func NewReactionHandler(router fiber.Router, ru domain.ReactionUseCase, tracer t
 		tracer:          tracer,
 	}
 
-	router.Post("/", handler.CreateReaction)
+	router.Post("", handler.CreateReaction)
 	router.Delete("/:id", handler.DeleteReaction)
 	router.Get("/post/:postId", handler.FindManyPostReactions)
 	router.Get("/comment/:commentId", handler.FindManyCommentReactions)

@@ -276,14 +276,14 @@ func (r *postRepository) FindByUserID(ctx context.Context, userID primitive.Obje
 	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {
 		logger.Output("failed to find posts 1", err)
-		return nil, err
+		return []domain.Post{}, err
 	}
 	defer cursor.Close(ctx)
 
 	var posts []domain.Post
 	if err := cursor.All(ctx, &posts); err != nil {
 		logger.Output("failed to decode posts 2", err)
-		return nil, err
+		return []domain.Post{}, err
 	}
 
 	logger.Output(posts, nil)

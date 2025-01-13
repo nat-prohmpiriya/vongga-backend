@@ -19,7 +19,7 @@ func NewStoryHandler(router fiber.Router, storyUseCase domain.StoryUseCase, trac
 		tracer:       tracer,
 	}
 
-	router.Post("/", handler.CreateStory)
+	router.Post("", handler.CreateStory)
 	router.Get("/active", handler.FindActiveStories)
 	router.Get("/user/:userId", handler.FindUserStories)
 	router.Get("/:storyId", handler.FindStoryByID)

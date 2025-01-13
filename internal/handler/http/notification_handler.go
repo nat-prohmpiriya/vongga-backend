@@ -20,7 +20,7 @@ func NewNotificationHandler(router fiber.Router, notificationUseCase domain.Noti
 		tracer:              tracer,
 	}
 
-	router.Get("/", handler.FindManyNotifications)
+	router.Get("", handler.FindManyNotifications)
 	router.Get("/unread-count", handler.FindUnreadCount)
 	router.Get("/:id", handler.FindNotification)
 	router.Post("/:id/read", handler.MarkAsRead)

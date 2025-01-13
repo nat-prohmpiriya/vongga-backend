@@ -33,7 +33,8 @@ type Config struct {
 	RefreshTokenExpiry int // in days
 
 	// App
-	AppEnv string
+	AppEnv  string
+	AppMode string
 }
 
 func LoadConfig() *Config {
@@ -58,6 +59,7 @@ func LoadConfig() *Config {
 		RefreshTokenSecret:      getEnv("REFRESH_TOKEN_SECRET", ""),
 		RefreshTokenExpiry:      7,
 		AppEnv:                  getEnv("APP_ENV", "development"),
+		AppMode:                 getEnv("APP_MODE", "dev"),
 	}
 
 	// Log loaded configuration (mask sensitive values)
