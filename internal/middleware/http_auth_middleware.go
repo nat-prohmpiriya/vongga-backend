@@ -44,7 +44,7 @@ func HttpAuthMiddleware(authUseCase domain.AuthUseCase, tracer trace.Tracer) fib
 		}
 
 		// 4. เก็บ claims
-		c.Locals("user", claims)
+		c.Locals("userId", claims.UserID)
 
 		return c.Next()
 	}

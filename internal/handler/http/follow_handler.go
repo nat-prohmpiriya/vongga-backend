@@ -35,7 +35,7 @@ func NewFollowHandler(router fiber.Router, fu domain.FollowUseCase, tracer trace
 
 // Follow handles following a user
 func (h *FollowHandler) Follow(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FollowHandler.Follow")
+	ctx, span := h.tracer.Start(c.Context(), "FollowHandler.Follow")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -78,7 +78,7 @@ func (h *FollowHandler) Follow(c *fiber.Ctx) error {
 
 // Unfollow handles unfollowing a user
 func (h *FollowHandler) Unfollow(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FollowHandler.Unfollow")
+	ctx, span := h.tracer.Start(c.Context(), "FollowHandler.Unfollow")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -121,7 +121,7 @@ func (h *FollowHandler) Unfollow(c *fiber.Ctx) error {
 
 // Block handles blocking a user
 func (h *FollowHandler) Block(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FollowHandler.Block")
+	ctx, span := h.tracer.Start(c.Context(), "FollowHandler.Block")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -180,7 +180,7 @@ func (h *FollowHandler) Block(c *fiber.Ctx) error {
 
 // Unblock handles unblocking a user
 func (h *FollowHandler) Unblock(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FollowHandler.Unblock")
+	ctx, span := h.tracer.Start(c.Context(), "FollowHandler.Unblock")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -223,7 +223,7 @@ func (h *FollowHandler) Unblock(c *fiber.Ctx) error {
 
 // FindFollowers handles getting a user's followers
 func (h *FollowHandler) FindFollowers(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FollowHandler.FindFollowers")
+	ctx, span := h.tracer.Start(c.Context(), "FollowHandler.FindFollowers")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -260,7 +260,7 @@ func (h *FollowHandler) FindFollowers(c *fiber.Ctx) error {
 
 // FindFollowing handles getting users that a user is following
 func (h *FollowHandler) FindFollowing(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FollowHandler.FindFollowing")
+	ctx, span := h.tracer.Start(c.Context(), "FollowHandler.FindFollowing")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 

@@ -80,9 +80,9 @@ func (f *followUseCase) Follow(ctx context.Context, followerID, followingID prim
 	// Create notification for the user being followed
 	_, err = f.notificationUseCase.CreateNotification(
 		ctx,
-		followingID, // recipientID (user being followed)
-		followerID,  // senderID (user who followed)
-		followerID,  // refID (reference to the follower)
+		followingID.Hex(), // recipientID (user being followed)
+		followerID.Hex(),  // senderID (user who followed)
+		followerID.Hex(),  // refID (reference to the follower)
 		domain.NotificationTypeFollow,
 		"user",                  // refType
 		"started following you", // message

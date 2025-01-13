@@ -33,7 +33,7 @@ func NewFriendshipHandler(router fiber.Router, fu domain.FriendshipUseCase, trac
 }
 
 func (h *FriendshipHandler) SendFriendRequest(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FriendshipHandler.SendFriendRequest")
+	ctx, span := h.tracer.Start(c.Context(), "FriendshipHandler.SendFriendRequest")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -70,7 +70,7 @@ func (h *FriendshipHandler) SendFriendRequest(c *fiber.Ctx) error {
 }
 
 func (h *FriendshipHandler) AcceptFriendRequest(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FriendshipHandler.AcceptFriendRequest")
+	ctx, span := h.tracer.Start(c.Context(), "FriendshipHandler.AcceptFriendRequest")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -102,7 +102,7 @@ func (h *FriendshipHandler) AcceptFriendRequest(c *fiber.Ctx) error {
 }
 
 func (h *FriendshipHandler) RejectFriendRequest(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FriendshipHandler.RejectFriendRequest")
+	ctx, span := h.tracer.Start(c.Context(), "FriendshipHandler.RejectFriendRequest")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -134,7 +134,7 @@ func (h *FriendshipHandler) RejectFriendRequest(c *fiber.Ctx) error {
 }
 
 func (h *FriendshipHandler) RemoveFriend(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FriendshipHandler.RemoveFriend")
+	ctx, span := h.tracer.Start(c.Context(), "FriendshipHandler.RemoveFriend")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -166,7 +166,7 @@ func (h *FriendshipHandler) RemoveFriend(c *fiber.Ctx) error {
 }
 
 func (h *FriendshipHandler) FindManyFriends(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FriendshipHandler.FindManyFriends")
+	ctx, span := h.tracer.Start(c.Context(), "FriendshipHandler.FindManyFriends")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -196,7 +196,7 @@ func (h *FriendshipHandler) FindManyFriends(c *fiber.Ctx) error {
 }
 
 func (h *FriendshipHandler) FindManyFriendRequests(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "FriendshipHandler.FindManyFriendRequests")
+	ctx, span := h.tracer.Start(c.Context(), "FriendshipHandler.FindManyFriendRequests")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 

@@ -31,7 +31,7 @@ func NewAuthHandler(authUseCase domain.AuthUseCase, tracer trace.Tracer) *AuthHa
 // @Failure 400 {object} ErrorResponse
 // @Router /auth/createTestToken [post]
 func (h *AuthHandler) CreateTestToken(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "AuthHandler.CreateTestToken")
+	ctx, span := h.tracer.Start(c.Context(), "AuthHandler.CreateTestToken")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -58,7 +58,7 @@ func (h *AuthHandler) CreateTestToken(c *fiber.Ctx) error {
 
 // VerifyTokenFirebase verifies Firebase ID token and returns user data with JWT tokens
 func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "AuthHandler.VerifyTokenFirebase")
+	ctx, span := h.tracer.Start(c.Context(), "AuthHandler.VerifyTokenFirebase")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -94,7 +94,7 @@ func (h *AuthHandler) VerifyTokenFirebase(c *fiber.Ctx) error {
 
 // RefreshToken refreshes the access token using a refresh token
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "AuthHandler.RefreshToken")
+	ctx, span := h.tracer.Start(c.Context(), "AuthHandler.RefreshToken")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -121,7 +121,7 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 
 // Logout revokes the refresh token
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "AuthHandler.Logout")
+	ctx, span := h.tracer.Start(c.Context(), "AuthHandler.Logout")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 

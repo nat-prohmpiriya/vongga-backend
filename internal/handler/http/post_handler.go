@@ -49,7 +49,7 @@ type UpdatePostRequest struct {
 }
 
 func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "PostHandler.CreatePost")
+	ctx, span := h.tracer.Start(c.Context(), "PostHandler.CreatePost")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -91,7 +91,7 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 }
 
 func (h *PostHandler) UpdatePost(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "PostHandler.UpdatePost")
+	ctx, span := h.tracer.Start(c.Context(), "PostHandler.UpdatePost")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -130,7 +130,7 @@ func (h *PostHandler) UpdatePost(c *fiber.Ctx) error {
 }
 
 func (h *PostHandler) DeletePost(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "PostHandler.DeletePost")
+	ctx, span := h.tracer.Start(c.Context(), "PostHandler.DeletePost")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -156,7 +156,7 @@ func (h *PostHandler) DeletePost(c *fiber.Ctx) error {
 }
 
 func (h *PostHandler) FindPost(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "PostHandler.FindPost")
+	ctx, span := h.tracer.Start(c.Context(), "PostHandler.FindPost")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -193,7 +193,7 @@ func (h *PostHandler) FindPost(c *fiber.Ctx) error {
 }
 
 func (h *PostHandler) FindManyPosts(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "PostHandler.FindManyPosts")
+	ctx, span := h.tracer.Start(c.Context(), "PostHandler.FindManyPosts")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 

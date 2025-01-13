@@ -88,9 +88,9 @@ func (f *friendshipUseCase) SendFriendRequest(ctx context.Context, fromID, toID 
 	// Create notification for friend request
 	_, err = f.notificationUseCase.CreateNotification(
 		ctx,
-		toID,   // recipientID (user receiving the request)
-		fromID, // senderID (user sending the request)
-		fromID, // refID (reference to the requester)
+		toID.Hex(),   // recipientID (user receiving the request)
+		fromID.Hex(), // senderID (user sending the request)
+		fromID.Hex(), // refID (reference to the requester)
 		domain.NotificationTypeFriendReq,
 		"user",                      // refType
 		"sent you a friend request", // message
@@ -150,9 +150,9 @@ func (f *friendshipUseCase) AcceptFriendRequest(ctx context.Context, userID, fri
 	// Create notification for the user who sent the request
 	_, err = f.notificationUseCase.CreateNotification(
 		ctx,
-		friendship.RequestedBy, // recipientID (user who sent the request)
-		userID,                 // senderID (user accepting the request)
-		userID,                 // refID (reference to the accepter)
+		friendship.RequestedBy.Hex(), // recipientID (user who sent the request)
+		userID.Hex(),                 // senderID (user accepting the request)
+		userID.Hex(),                 // refID (reference to the accepter)
 		domain.NotificationTypeFriendReq,
 		"user",                         // refType
 		"accepted your friend request", // message

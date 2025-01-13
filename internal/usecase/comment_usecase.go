@@ -96,9 +96,9 @@ func (c *commentUseCase) CreateComment(ctx context.Context, userID, postID primi
 		// Create mention notification
 		_, err = c.notificationUseCase.CreateNotification(
 			ctx,
-			mentionedUser.ID, // recipientID (mentioned user)
-			userID,           // senderID (user who mentioned)
-			comment.ID,       // refID (reference to the comment)
+			mentionedUser.ID.Hex(), // recipientID (mentioned user)
+			userID.Hex(),           // senderID (user who mentioned)
+			comment.ID.Hex(),       // refID (reference to the comment)
 			domain.NotificationTypeMention,
 			"comment",                    // refType
 			"mentioned you in a comment", // message
@@ -119,9 +119,9 @@ func (c *commentUseCase) CreateComment(ctx context.Context, userID, postID primi
 			// Create notification for reply
 			_, err = c.notificationUseCase.CreateNotification(
 				ctx,
-				originalComment.UserID, // recipientID (original comment owner)
-				userID,                 // senderID (user who replied)
-				comment.ID,             // refID (reference to the reply)
+				originalComment.UserID.Hex(), // recipientID (original comment owner)
+				userID.Hex(),                 // senderID (user who replied)
+				comment.ID.Hex(),             // refID (reference to the reply)
 				domain.NotificationTypeComment,
 				"comment",                 // refType
 				"replied to your comment", // message
@@ -137,9 +137,9 @@ func (c *commentUseCase) CreateComment(ctx context.Context, userID, postID primi
 		if post.UserID != userID {
 			_, err = c.notificationUseCase.CreateNotification(
 				ctx,
-				post.UserID, // recipientID (post owner)
-				userID,      // senderID (commenter)
-				comment.ID,  // refID (reference to the comment)
+				post.UserID.Hex(), // recipientID (post owner)
+				userID.Hex(),      // senderID (commenter)
+				comment.ID.Hex(),  // refID (reference to the comment)
 				domain.NotificationTypeComment,
 				"post",                   // refType
 				"commented on your post", // message

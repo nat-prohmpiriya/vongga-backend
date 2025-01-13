@@ -51,8 +51,8 @@ func (r *notificationRepository) Create(ctx context.Context, notification *domai
 	notification.ID = result.InsertedID.(primitive.ObjectID)
 
 	// Invalidate recipient's notifications cache and unread count
-	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID.Hex())
-	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID.Hex())
+	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID)
+	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID)
 
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
@@ -104,8 +104,8 @@ func (r *notificationRepository) Update(ctx context.Context, notification *domai
 	}
 
 	// Invalidate recipient's notifications cache and unread count
-	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID.Hex())
-	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID.Hex())
+	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID)
+	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID)
 
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
@@ -131,46 +131,49 @@ func (r *notificationRepository) Update(ctx context.Context, notification *domai
 	return nil
 }
 
-func (r *notificationRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
+func (r *notificationRepository) Delete(ctx context.Context, id string) error {
 	ctx, span := r.tracer.Start(ctx, "NotificationRepository.Delete")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
-	logger.Input(map[string]interface{}{"id": id.Hex()})
+	logger.Input(map[string]interface{}{"id": id})
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	filter := bson.M{"_id": id}
-	result, err := r.collection.DeleteOne(ctx, filter)
+
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		logger.Output("failed to delete notification 1", err)
+		logger.Output("invalid notification ID format", err)
 		return err
 	}
 
-	if result.DeletedCount == 0 {
-		err := domain.ErrNotFound
-		logger.Output("notification not found 2", err)
+	filter := bson.M{"_id": objectID}
+	
+	// Use FindOneAndDelete to get the document and delete it in one operation
+	notification := &domain.Notification{}
+	err = r.collection.FindOneAndDelete(ctx, filter).Decode(notification)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			err = domain.ErrNotFound
+			logger.Output("notification not found 1", err)
+			return err
+		}
+		logger.Output("failed to delete notification 2", err)
 		return err
 	}
 
 	// Invalidate recipient's notifications cache and unread count
-	notification := &domain.Notification{}
-	err = r.collection.FindOne(ctx, filter).Decode(notification)
-	if err != nil {
-		logger.Output("failed to find notification 3", err)
-		return err
-	}
-	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID.Hex())
-	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID.Hex())
+	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID)
+	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID)
 
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
-		logger.Output("failed to get cache keys 4", err)
+		logger.Output("failed to get cache keys 3", err)
 		return err
 	}
 	if len(keys) > 0 {
 		err = r.rdb.Del(ctx, keys...).Err()
 		if err != nil {
-			logger.Output("failed to invalidate cache 5", err)
+			logger.Output("failed to invalidate cache 4", err)
 			return err
 		}
 	}
@@ -178,7 +181,7 @@ func (r *notificationRepository) Delete(ctx context.Context, id primitive.Object
 	// Delete unread count cache
 	err = r.rdb.Del(ctx, unreadKey).Err()
 	if err != nil {
-		logger.Output("failed to delete unread count cache 6", err)
+		logger.Output("failed to delete unread count cache 5", err)
 		return err
 	}
 
@@ -186,16 +189,23 @@ func (r *notificationRepository) Delete(ctx context.Context, id primitive.Object
 	return nil
 }
 
-func (r *notificationRepository) FindByID(ctx context.Context, id primitive.ObjectID) (*domain.Notification, error) {
+func (r *notificationRepository) FindByID(ctx context.Context, id string) (*domain.Notification, error) {
 	ctx, span := r.tracer.Start(ctx, "NotificationRepository.FindByID")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
-	logger.Input(map[string]interface{}{"id": id.Hex()})
+	logger.Input(map[string]interface{}{"id": id})
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		logger.Output("invalid notification ID format", err)
+		return nil, err
+	}
+
 	var notification domain.Notification
-	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&notification)
+	err = r.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&notification)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			err = domain.ErrNotFound
@@ -210,12 +220,12 @@ func (r *notificationRepository) FindByID(ctx context.Context, id primitive.Obje
 	return &notification, nil
 }
 
-func (r *notificationRepository) FindByRecipient(ctx context.Context, recipientID primitive.ObjectID, limit, offset int) ([]domain.Notification, error) {
+func (r *notificationRepository) FindByRecipient(ctx context.Context, recipientID string, limit, offset int) ([]domain.Notification, error) {
 	ctx, span := r.tracer.Start(ctx, "NotificationRepository.FindByRecipient")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 	logger.Input(map[string]interface{}{
-		"recipientID": recipientID.Hex(),
+		"recipientID": recipientID,
 		"limit":       limit,
 		"offset":      offset,
 	})
@@ -241,7 +251,7 @@ func (r *notificationRepository) FindByRecipient(ctx context.Context, recipientI
 	}
 
 	// Cache notifications
-	notificationsKey := fmt.Sprintf("user_notifications:%s:%d:%d", recipientID.Hex(), limit, offset)
+	notificationsKey := fmt.Sprintf("user_notifications:%s:%d:%d", recipientID, limit, offset)
 	notificationsJSON, err := json.Marshal(notifications)
 	if err != nil {
 		logger.Output("failed to marshal notifications 3", err)
@@ -257,15 +267,22 @@ func (r *notificationRepository) FindByRecipient(ctx context.Context, recipientI
 	return notifications, nil
 }
 
-func (r *notificationRepository) MarkAsRead(ctx context.Context, notificationID primitive.ObjectID) error {
+func (r *notificationRepository) MarkAsRead(ctx context.Context, notificationID string) error {
 	ctx, span := r.tracer.Start(ctx, "NotificationRepository.MarkAsRead")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
-	logger.Input(map[string]interface{}{"notificationID": notificationID.Hex()})
+	logger.Input(map[string]interface{}{"notificationID": notificationID})
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	filter := bson.M{"_id": notificationID}
+
+	objectID, err := primitive.ObjectIDFromHex(notificationID)
+	if err != nil {
+		logger.Output("invalid notification ID format", err)
+		return err
+	}
+
+	filter := bson.M{"_id": objectID}
 	update := bson.M{
 		"$set": bson.M{
 			"isRead":    true,
@@ -292,8 +309,8 @@ func (r *notificationRepository) MarkAsRead(ctx context.Context, notificationID 
 		logger.Output("failed to find notification 3", err)
 		return err
 	}
-	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID.Hex())
-	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID.Hex())
+	pattern := fmt.Sprintf("user_notifications:%s:*", notification.RecipientID)
+	unreadKey := fmt.Sprintf("unread_count:%s", notification.RecipientID)
 
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
@@ -319,11 +336,11 @@ func (r *notificationRepository) MarkAsRead(ctx context.Context, notificationID 
 	return nil
 }
 
-func (r *notificationRepository) MarkAllAsRead(ctx context.Context, recipientID primitive.ObjectID) error {
+func (r *notificationRepository) MarkAllAsRead(ctx context.Context, recipientID string) error {
 	ctx, span := r.tracer.Start(ctx, "NotificationRepository.MarkAllAsRead")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
-	logger.Input(map[string]interface{}{"recipientID": recipientID.Hex()})
+	logger.Input(map[string]interface{}{"recipientID": recipientID})
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -345,8 +362,8 @@ func (r *notificationRepository) MarkAllAsRead(ctx context.Context, recipientID 
 	}
 
 	// Invalidate recipient's notifications cache and unread count
-	pattern := fmt.Sprintf("user_notifications:%s:*", recipientID.Hex())
-	unreadKey := fmt.Sprintf("unread_count:%s", recipientID.Hex())
+	pattern := fmt.Sprintf("user_notifications:%s:*", recipientID)
+	unreadKey := fmt.Sprintf("unread_count:%s", recipientID)
 
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
@@ -372,15 +389,15 @@ func (r *notificationRepository) MarkAllAsRead(ctx context.Context, recipientID 
 	return nil
 }
 
-func (r *notificationRepository) CountUnread(ctx context.Context, recipientID primitive.ObjectID) (int64, error) {
+func (r *notificationRepository) CountUnread(ctx context.Context, recipientID string) (int64, error) {
 	ctx, span := r.tracer.Start(ctx, "NotificationRepository.CountUnread")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
-	logger.Input(map[string]interface{}{"recipientID": recipientID.Hex()})
+	logger.Input(map[string]interface{}{"recipientID": recipientID})
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	unreadKey := fmt.Sprintf("unread_count:%s", recipientID.Hex())
+	unreadKey := fmt.Sprintf("unread_count:%s", recipientID)
 	unreadCount, err := r.rdb.Get(ctx, unreadKey).Int64()
 	if err != nil && err != redis.Nil {
 		logger.Output("failed to get unread count from cache 1", err)

@@ -38,7 +38,7 @@ type CreateCommentRequest struct {
 }
 
 func (h *CommentHandler) CreateComment(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "CommentHandler.CreateComment")
+	ctx, span := h.tracer.Start(c.Context(), "CommentHandler.CreateComment")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -104,7 +104,7 @@ type UpdateCommentRequest struct {
 }
 
 func (h *CommentHandler) UpdateComment(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "CommentHandler.UpdateComment")
+	ctx, span := h.tracer.Start(c.Context(), "CommentHandler.UpdateComment")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -143,7 +143,7 @@ func (h *CommentHandler) UpdateComment(c *fiber.Ctx) error {
 }
 
 func (h *CommentHandler) DeleteComment(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "CommentHandler.DeleteComment")
+	ctx, span := h.tracer.Start(c.Context(), "CommentHandler.DeleteComment")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -169,7 +169,7 @@ func (h *CommentHandler) DeleteComment(c *fiber.Ctx) error {
 }
 
 func (h *CommentHandler) FindComment(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "CommentHandler.FindComment")
+	ctx, span := h.tracer.Start(c.Context(), "CommentHandler.FindComment")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -195,7 +195,7 @@ func (h *CommentHandler) FindComment(c *fiber.Ctx) error {
 }
 
 func (h *CommentHandler) FindManyComments(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "CommentHandler.FindManyComments")
+	ctx, span := h.tracer.Start(c.Context(), "CommentHandler.FindManyComments")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 

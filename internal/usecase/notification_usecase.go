@@ -6,7 +6,6 @@ import (
 	"vongga_api/internal/domain"
 	"vongga_api/utils"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -28,15 +27,15 @@ func NewNotificationUseCase(
 	}
 }
 
-func (n *notificationUseCase) CreateNotification(ctx context.Context, recipientID, senderID, refID primitive.ObjectID, nType domain.NotificationType, refType, message string) (*domain.Notification, error) {
+func (n *notificationUseCase) CreateNotification(ctx context.Context, recipientID, senderID, refID string, nType domain.NotificationType, refType, message string) (*domain.Notification, error) {
 	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.CreateNotification")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
 	input := map[string]interface{}{
-		"recipientID": recipientID.Hex(),
-		"senderID":    senderID.Hex(),
-		"refID":       refID.Hex(),
+		"recipientID": recipientID,
+		"senderID":    senderID,
+		"refID":       refID,
 		"type":        nType,
 		"refType":     refType,
 		"message":     message,
@@ -63,7 +62,7 @@ func (n *notificationUseCase) CreateNotification(ctx context.Context, recipientI
 	return notification, nil
 }
 
-func (n *notificationUseCase) FindNotification(ctx context.Context, notificationID primitive.ObjectID) (*domain.NotificationResponse, error) {
+func (n *notificationUseCase) FindNotification(ctx context.Context, notificationID string) (*domain.NotificationResponse, error) {
 	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.FindNotification")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
@@ -77,7 +76,7 @@ func (n *notificationUseCase) FindNotification(ctx context.Context, notification
 	}
 
 	// Find sender information
-	sender, err := n.userRepo.FindByID(ctx, notification.SenderID.Hex())
+	sender, err := n.userRepo.FindByID(ctx, notification.SenderID)
 	if err != nil {
 		logger.Output("error finding sender 2", err)
 		return nil, err
@@ -97,13 +96,13 @@ func (n *notificationUseCase) FindNotification(ctx context.Context, notification
 	return response, nil
 }
 
-func (n *notificationUseCase) FindManyNotifications(ctx context.Context, recipientID primitive.ObjectID, limit, offset int) ([]domain.NotificationResponse, error) {
+func (n *notificationUseCase) FindManyNotifications(ctx context.Context, recipientID string, limit, offset int) ([]domain.NotificationResponse, error) {
 	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.FindManyNotifications")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
 	input := map[string]interface{}{
-		"recipientID": recipientID.Hex(),
+		"recipientID": recipientID,
 		"limit":       limit,
 		"offset":      offset,
 	}
@@ -118,7 +117,7 @@ func (n *notificationUseCase) FindManyNotifications(ctx context.Context, recipie
 	// Create response with user information
 	response := make([]domain.NotificationResponse, len(notifications))
 	for i, notification := range notifications {
-		sender, err := n.userRepo.FindByID(ctx, notification.SenderID.Hex())
+		sender, err := n.userRepo.FindByID(ctx, notification.SenderID)
 		if err != nil {
 			logger.Output("error finding sender 2", err)
 			continue
@@ -139,13 +138,13 @@ func (n *notificationUseCase) FindManyNotifications(ctx context.Context, recipie
 	return response, nil
 }
 
-func (n *notificationUseCase) MarkAsRead(ctx context.Context, notificationID primitive.ObjectID) error {
+func (n *notificationUseCase) MarkAsRead(ctx context.Context, notificationID string) error {
 	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.MarkAsRead")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
 	input := map[string]interface{}{
-		"notificationID": notificationID.Hex(),
+		"notificationID": notificationID,
 	}
 	logger.Input(input)
 
@@ -159,13 +158,13 @@ func (n *notificationUseCase) MarkAsRead(ctx context.Context, notificationID pri
 	return nil
 }
 
-func (n *notificationUseCase) MarkAllAsRead(ctx context.Context, recipientID primitive.ObjectID) error {
+func (n *notificationUseCase) MarkAllAsRead(ctx context.Context, recipientID string) error {
 	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.MarkAllAsRead")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
 	input := map[string]interface{}{
-		"recipientID": recipientID.Hex(),
+		"recipientID": recipientID,
 	}
 	logger.Input(input)
 
@@ -179,13 +178,13 @@ func (n *notificationUseCase) MarkAllAsRead(ctx context.Context, recipientID pri
 	return nil
 }
 
-func (n *notificationUseCase) DeleteNotification(ctx context.Context, notificationID primitive.ObjectID) error {
+func (n *notificationUseCase) DeleteNotification(ctx context.Context, notificationID string) error {
 	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.DeleteNotification")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
 	input := map[string]interface{}{
-		"notificationID": notificationID.Hex(),
+		"notificationID": notificationID,
 	}
 	logger.Input(input)
 
@@ -199,13 +198,13 @@ func (n *notificationUseCase) DeleteNotification(ctx context.Context, notificati
 	return nil
 }
 
-func (n *notificationUseCase) FindUnreadCount(ctx context.Context, recipientID primitive.ObjectID) (int64, error) {
+func (n *notificationUseCase) FindUnreadCount(ctx context.Context, recipientID string) (int64, error) {
 	ctx, span := n.tracer.Start(ctx, "NotificationUseCase.FindUnreadCount")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
 	input := map[string]interface{}{
-		"recipientID": recipientID.Hex(),
+		"recipientID": recipientID,
 	}
 	logger.Input(input)
 

@@ -140,9 +140,9 @@ func (r *reactionUseCase) CreateReaction(ctx context.Context, userID, postID pri
 		} else if comment.UserID != userID { // Don't notify if user reacts to their own comment
 			_, err = r.notificationUseCase.CreateNotification(
 				ctx,
-				comment.UserID, // recipientID (comment owner)
-				userID,         // senderID (user who reacted)
-				reaction.ID,    // refID (reference to the reaction)
+				comment.UserID.Hex(), // recipientID (comment owner)
+				userID.Hex(),         // senderID (user who reacted)
+				reaction.ID.Hex(),    // refID (reference to the reaction)
 				domain.NotificationTypeLike,
 				"comment",                 // refType
 				"reacted to your comment", // message
@@ -161,9 +161,9 @@ func (r *reactionUseCase) CreateReaction(ctx context.Context, userID, postID pri
 		} else if post.UserID != userID { // Don't notify if user reacts to their own post
 			_, err = r.notificationUseCase.CreateNotification(
 				ctx,
-				post.UserID, // recipientID (post owner)
-				userID,      // senderID (user who reacted)
-				reaction.ID, // refID (reference to the reaction)
+				post.UserID.Hex(), // recipientID (post owner)
+				userID.Hex(),      // senderID (user who reacted)
+				reaction.ID.Hex(), // refID (reference to the reaction)
 				domain.NotificationTypeLike,
 				"post",                 // refType
 				"reacted to your post", // message

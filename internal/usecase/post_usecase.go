@@ -124,9 +124,9 @@ func (p *postUseCase) CreatePost(ctx context.Context, userID primitive.ObjectID,
 		// Create mention notification
 		_, err = p.notificationUseCase.CreateNotification(
 			ctx,
-			mentionedUser.ID, // recipientID (mentioned user)
-			userID,           // senderID (user who mentioned)
-			post.ID,          // refID (reference to the post)
+			mentionedUser.ID.Hex(), // recipientID (mentioned user)
+			userID.Hex(),           // senderID (user who mentioned)
+			post.ID.Hex(),          // refID (reference to the post)
 			domain.NotificationTypeMention,
 			"post",                    // refType
 			"mentioned you in a post", // message
@@ -205,9 +205,9 @@ func (p *postUseCase) UpdatePost(ctx context.Context, postID primitive.ObjectID,
 		// Create mention notification
 		_, err = p.notificationUseCase.CreateNotification(
 			ctx,
-			mentionedUser.ID, // recipientID (mentioned user)
-			post.UserID,      // senderID (user who mentioned)
-			post.ID,          // refID (reference to the post)
+			mentionedUser.ID.Hex(), // recipientID (mentioned user)
+			post.UserID.Hex(),      // senderID (user who mentioned)
+			post.ID.Hex(),          // refID (reference to the post)
 			domain.NotificationTypeMention,
 			"post",                    // refType
 			"mentioned you in a post", // message

@@ -45,7 +45,7 @@ func NewChatHandler(router fiber.Router, chatUsecase domain.ChatUsecase, tracer 
 
 // Room handlers
 func (h *ChatHandler) CreatePrivateChat(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.CreatePrivateChat")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.CreatePrivateChat")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -79,7 +79,7 @@ func (h *ChatHandler) CreatePrivateChat(c *fiber.Ctx) error {
 }
 
 func (h *ChatHandler) CreateGroupChat(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.CreateGroupChat")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.CreateGroupChat")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -113,7 +113,7 @@ func (h *ChatHandler) CreateGroupChat(c *fiber.Ctx) error {
 }
 
 func (h *ChatHandler) FindUserChats(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.FindUserChats")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.FindUserChats")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -140,7 +140,7 @@ func (h *ChatHandler) FindUserChats(c *fiber.Ctx) error {
 }
 
 func (h *ChatHandler) AddMemberToGroup(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.AddMemberToGroup")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.AddMemberToGroup")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -174,7 +174,7 @@ func (h *ChatHandler) AddMemberToGroup(c *fiber.Ctx) error {
 }
 
 func (h *ChatHandler) RemoveMemberFromGroup(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.RemoveMemberFromGroup")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.RemoveMemberFromGroup")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -199,7 +199,7 @@ func (h *ChatHandler) RemoveMemberFromGroup(c *fiber.Ctx) error {
 
 // Message handlers
 func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.SendMessage")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.SendMessage")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -244,7 +244,7 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 }
 
 func (h *ChatHandler) SendFileMessage(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.SendFileMessage")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.SendFileMessage")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -291,7 +291,7 @@ func (h *ChatHandler) SendFileMessage(c *fiber.Ctx) error {
 }
 
 func (h *ChatHandler) FindChatMessages(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.FindChatMessages")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.FindChatMessages")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -318,7 +318,7 @@ func (h *ChatHandler) FindChatMessages(c *fiber.Ctx) error {
 }
 
 func (h *ChatHandler) MarkMessageRead(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.MarkMessageRead")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.MarkMessageRead")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -350,7 +350,7 @@ func (h *ChatHandler) MarkMessageRead(c *fiber.Ctx) error {
 
 // User status handlers
 func (h *ChatHandler) UpdateUserStatus(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.UpdateUserStatus")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.UpdateUserStatus")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -390,7 +390,7 @@ func (h *ChatHandler) UpdateUserStatus(c *fiber.Ctx) error {
 }
 
 func (h *ChatHandler) FindUserStatus(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.FindUserStatus")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.FindUserStatus")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -411,7 +411,7 @@ func (h *ChatHandler) FindUserStatus(c *fiber.Ctx) error {
 
 // Notification handlers
 func (h *ChatHandler) FindUserNotifications(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.FindUserNotifications")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.FindUserNotifications")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
@@ -438,7 +438,7 @@ func (h *ChatHandler) FindUserNotifications(c *fiber.Ctx) error {
 }
 
 func (h *ChatHandler) MarkNotificationRead(c *fiber.Ctx) error {
-	ctx, span := h.tracer.Start(c.UserContext(), "ChatHandler.MarkNotificationRead")
+	ctx, span := h.tracer.Start(c.Context(), "ChatHandler.MarkNotificationRead")
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
