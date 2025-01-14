@@ -10,7 +10,7 @@ import (
 )
 
 func FindUserIDFromContext(c *fiber.Ctx) (primitive.ObjectID, error) {
-	userValue := c.Locals("user")
+	userValue := c.Locals("userId")
 	if userValue == nil {
 		return primitive.NilObjectID, errors.New("user not found in context")
 	}

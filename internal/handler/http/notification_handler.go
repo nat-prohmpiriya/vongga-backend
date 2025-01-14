@@ -38,7 +38,7 @@ func (h *NotificationHandler) FindManyNotifications(c *fiber.Ctx) error {
 	defer span.End()
 	logger := utils.NewTraceLogger(span)
 
-	userID := c.Locals("userID").(string)
+	userID := c.Locals("userId").(string)
 
 	var req dto.FindManyNotificationsRequest
 	if err := c.QueryParser(&req); err != nil {

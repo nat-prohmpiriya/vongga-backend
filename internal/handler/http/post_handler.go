@@ -61,11 +61,13 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 		})
 	}
 
-	userID, err := utils.FindUserIDFromContext(c)
+	userIDstr := c.Locals("userId").(string)
+
+	userID, err := primitive.ObjectIDFromHex(userIDstr)
 	if err != nil {
-		logger.Output("error finding user ID 2", err)
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
+		logger.Output("error parsing user ID 2", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid user ID",
 		})
 	}
 
